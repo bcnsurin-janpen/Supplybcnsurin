@@ -115,31 +115,8 @@
       <h2>ข่าวประชาสัมพันธ์ล่าสุด</h2>
       <a class="see-all" href="announcements.html">ดูประกาศทั้งหมด →</a>
     </div>
-    <div class="ledger">
-      <a class="ledger-row" href="announcements.html">
-        <span class="code mono">ปชส. 003/2568</span>
-        <span class="main">
-          <span class="cat sky">ประชาสัมพันธ์</span>
-          <h4>ตัวอย่างข่าวประชาสัมพันธ์ทั่วไป — แก้ไขเป็นข่าวจริง</h4>
-        </span>
-        <span class="go">-- ม.ค. 2568 →</span>
-      </a>
-      <a class="ledger-row" href="procurement-news.html">
-        <span class="code mono">พด. 014/2568</span>
-        <span class="main">
-          <span class="cat amber">ข่าวจัดซื้อจัดจ้าง</span>
-          <h4>ประกวดราคาซื้อครุภัณฑ์สำนักงาน ด้วยวิธี e-bidding</h4>
-        </span>
-        <span class="go">15 ม.ค. 2568 →</span>
-      </a>
-      <a class="ledger-row" href="procurement-news.html">
-        <span class="code mono">พด. 015/2568</span>
-        <span class="main">
-          <span class="cat stamp">ประกาศผล</span>
-          <h4>ประกาศผลผู้ชนะการเสนอราคา — แก้ไขเป็นหัวข้อจริง</h4>
-        </span>
-        <span class="go">18 ม.ค. 2568 →</span>
-      </a>
+    <div class="ledger" id="homeLatest">
+      <p style="padding:1.75rem; color: var(--ink-soft); text-align:center;">กำลังโหลดข่าวประชาสัมพันธ์...</p>
     </div>
   </section>
 
@@ -148,11 +125,11 @@
       <h2>ช่องทางติดต่อ</h2>
     </div>
     <div class="contact-grid">
-      <a class="contact-card" href="tel:0000000000">
+      <a class="contact-card" href="tel:044514422">
         <span class="c-icon" style="background: var(--tab-sky);" aria-hidden="true">📞</span>
         <span>
           <span class="c-label">โทรศัพท์</span>
-          <span class="c-value">0-0000-0000</span>
+          <span class="c-value">0-4451-4422 ต่อ 4106</span>
         </span>
       </a>
       <a class="contact-card" href="mailto:procurement@bcnsurin.ac.th">
@@ -176,11 +153,11 @@
           <span class="c-value">@bcnsurin-procurement</span>
         </span>
       </a>
-      <a class="contact-card" href="#" target="_blank" rel="noopener">
+      <a class="contact-card" href="https://www.google.com/maps/search/?api=1&query=320+%E0%B8%96%E0%B8%99%E0%B8%99%E0%B8%AB%E0%B8%A5%E0%B8%B1%E0%B8%81%E0%B9%80%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%87+%E0%B8%95%E0%B8%B3%E0%B8%9A%E0%B8%A5%E0%B9%83%E0%B8%99%E0%B9%80%E0%B8%A1%E0%B8%B7%E0%B8%AD%E0%B8%87+%E0%B8%AA%E0%B8%B8%E0%B8%A3%E0%B8%B4%E0%B8%99%E0%B8%97%E0%B8%A3%E0%B9%8C+32000" target="_blank" rel="noopener">
         <span class="c-icon" style="background: var(--stamp-bg);" aria-hidden="true">📍</span>
         <span>
           <span class="c-label">ที่ตั้ง / แผนที่</span>
-          <span class="c-value">วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</span>
+          <span class="c-value">320 ถ.หลักเมือง ต.ในเมือง อ.เมืองสุรินทร์</span>
         </span>
       </a>
     </div>
@@ -193,11 +170,11 @@
   <div class="wrap footer-grid">
     <div>
       <h4>งานพัสดุและทรัพย์สิน</h4>
-      <p>วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>[เลขที่/ถนน] ตำบล/แขวง ... อำเภอเมืองสุรินทร์ จังหวัดสุรินทร์ 32000 <span class="mono" style="font-size:0.75em;">(กรุณาตรวจสอบที่อยู่ให้ถูกต้อง)</span></p>
+      <p>วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>320 ถนนหลักเมือง ตำบลในเมือง อำเภอเมืองสุรินทร์ จังหวัดสุรินทร์ 32000</p>
     </div>
     <div>
       <h4>ติดต่อ</h4>
-      <a href="tel:0000000000">โทร. 0-0000-0000</a>
+      <a href="tel:044514422">โทร. 0-4451-4422 ต่อ 4106</a>
       <a href="mailto:procurement@bcnsurin.ac.th">procurement@bcnsurin.ac.th <span class="mono" style="font-size:0.7em;">(ตรวจสอบอีเมลจริง)</span></a>
     </div>
     <div>
@@ -217,6 +194,10 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client.js"></script>
 <script src="js/main.js"></script>
+<script src="js/public-data.js"></script>
 </body>
 </html>

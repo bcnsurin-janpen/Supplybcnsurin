@@ -46,46 +46,7 @@
       <button class="chip" data-filter="asset">แบบฟอร์มครุภัณฑ์/ทรัพย์สิน</button>
     </div>
     <div class="ledger" id="dlList">
-      <a class="ledger-row" href="#" data-category="purchase">
-        <span class="code mono">DOCX</span>
-        <span class="main">
-          <span class="cat sky">แบบฟอร์มจัดซื้อจัดจ้าง</span>
-          <h4>แบบขอซื้อ/ขอจ้าง (ใบขอซื้อขอจ้าง)</h4>
-        </span>
-        <span class="go">ดาวน์โหลด →</span>
-      </a>
-      <a class="ledger-row" href="#" data-category="purchase">
-        <span class="code mono">DOCX</span>
-        <span class="main">
-          <span class="cat sky">แบบฟอร์มจัดซื้อจัดจ้าง</span>
-          <h4>แบบรายงานผลการตรวจรับพัสดุ</h4>
-        </span>
-        <span class="go">ดาวน์โหลด →</span>
-      </a>
-      <a class="ledger-row" href="#" data-category="asset">
-        <span class="code mono">XLSX</span>
-        <span class="main">
-          <span class="cat sage">แบบฟอร์มครุภัณฑ์/ทรัพย์สิน</span>
-          <h4>แบบฟอร์มขึ้นทะเบียนครุภัณฑ์</h4>
-        </span>
-        <span class="go">ดาวน์โหลด →</span>
-      </a>
-      <a class="ledger-row" href="#" data-category="asset">
-        <span class="code mono">DOCX</span>
-        <span class="main">
-          <span class="cat sage">แบบฟอร์มครุภัณฑ์/ทรัพย์สิน</span>
-          <h4>แบบฟอร์มยืม-คืนพัสดุ</h4>
-        </span>
-        <span class="go">ดาวน์โหลด →</span>
-      </a>
-      <a class="ledger-row" href="#" data-category="asset">
-        <span class="code mono">DOCX</span>
-        <span class="main">
-          <span class="cat sage">แบบฟอร์มครุภัณฑ์/ทรัพย์สิน</span>
-          <h4>แบบฟอร์มแจ้งซ่อมครุภัณฑ์</h4>
-        </span>
-        <span class="go">ดาวน์โหลด →</span>
-      </a>
+      <p style="padding:1.75rem; color: var(--ink-soft); text-align:center;">กำลังโหลดเอกสาร...</p>
     </div>
     <p style="color: var(--ink-soft); font-size: 0.88rem; margin-top: 1.5rem;">
       💡 รายการข้างต้นเป็นตัวอย่างโครงสร้าง กรุณาแนบไฟล์จริง (PDF/DOCX/XLSX) แทนลิงก์ <code class="mono">href="#"</code>
@@ -97,11 +58,11 @@
   <div class="wrap footer-grid">
     <div>
       <h4>งานพัสดุและทรัพย์สิน</h4>
-      <p>วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>[เลขที่/ถนน] ตำบล/แขวง ... อำเภอเมืองสุรินทร์ จังหวัดสุรินทร์ 32000 <span class="mono" style="font-size:0.75em;">(กรุณาตรวจสอบที่อยู่ให้ถูกต้อง)</span></p>
+      <p>วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>320 ถนนหลักเมือง ตำบลในเมือง อำเภอเมืองสุรินทร์ จังหวัดสุรินทร์ 32000</p>
     </div>
     <div>
       <h4>ติดต่อ</h4>
-      <a href="tel:0000000000">โทร. 0-0000-0000</a>
+      <a href="tel:044514422">โทร. 0-4451-4422 ต่อ 4106</a>
       <a href="mailto:procurement@bcnsurin.ac.th">procurement@bcnsurin.ac.th <span class="mono" style="font-size:0.7em;">(ตรวจสอบอีเมลจริง)</span></a>
     </div>
     <div>
@@ -121,6 +82,10 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client.js"></script>
 <script src="js/main.js"></script>
+<script src="js/public-data.js"></script>
 </body>
 </html>

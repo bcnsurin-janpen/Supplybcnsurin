@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>หลังบ้าน (Admin) | พัสดุและทรัพย์สิน วพบ.สุรินทร์</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;700&family=Noto+Serif+Thai:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ===== หน้า Login ===== -->
+<div class="admin-login-wrap" id="loginView">
+  <div class="admin-login-card">
+    <h1>เข้าสู่ระบบหลังบ้าน</h1>
+    <p>สำหรับเจ้าหน้าที่งานพัสดุและทรัพย์สินเท่านั้น</p>
+    <form id="loginForm">
+      <div class="field">
+        <label>อีเมล</label>
+        <input type="email" id="loginEmail" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" type="submit" style="width:100%; justify-content:center;">เข้าสู่ระบบ</button>
+      <p class="field-error" id="loginError"></p>
+    </form>
+  </div>
+</div>
+
+<!-- ===== หน้าแอปหลังบ้าน ===== -->
+<div class="admin-shell" id="appView" style="display:none;">
+
+  <header class="admin-header">
+    <div class="wrap">
+      <a class="brand" href="index.html" style="text-decoration:none;">
+        <span class="brand-mark" aria-hidden="true">พ</span>
+        <span class="brand-text">
+          <span class="name">หลังบ้าน (Admin)</span>
+          <span class="sub">พัสดุและทรัพย์สิน วพบ.สุรินทร์</span>
+        </span>
+      </a>
+      <button class="btn btn-ghost" id="logoutBtn" type="button">ออกจากระบบ</button>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <div class="admin-tabs" id="adminTabs"></div>
+
+    <div class="admin-form-card" id="formCard"></div>
+
+    <div class="admin-toolbar">
+      <h2>รายการทั้งหมด</h2>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="admin-table">
+        <thead><tr id="tableHeadRow"></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <p style="color: var(--ink-soft); font-size: 0.85rem; margin: 2rem 0;">
+      💡 การแก้ไข/เพิ่ม/ลบที่นี่จะแสดงผลบนหน้าเว็บสาธารณะทันที ไม่ต้องอัปโหลดไฟล์ใหม่
+    </p>
+  </main>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

@@ -47,30 +47,7 @@
       <button class="chip" data-filter="internal">ระเบียบภายใน</button>
     </div>
     <div class="ledger" id="annList">
-      <a class="ledger-row" href="#" data-category="pr">
-        <span class="code mono">ปชส. 003/2568</span>
-        <span class="main">
-          <span class="cat sky">ประชาสัมพันธ์</span>
-          <h4>ตัวอย่างข่าวประชาสัมพันธ์ทั่วไป — แก้ไขเป็นข่าวจริง</h4>
-        </span>
-        <span class="go">20 ม.ค. 2568 →</span>
-      </a>
-      <a class="ledger-row" href="#" data-category="staff">
-        <span class="code mono">บค. 002/2568</span>
-        <span class="main">
-          <span class="cat sage">บุคลากร</span>
-          <h4>ประกาศรับสมัครบุคลากรงานพัสดุ — แก้ไขเป็นประกาศจริง</h4>
-        </span>
-        <span class="go">12 ม.ค. 2568 →</span>
-      </a>
-      <a class="ledger-row" href="#" data-category="internal">
-        <span class="code mono">รบ. 001/2568</span>
-        <span class="main">
-          <span class="cat lilac">ระเบียบภายใน</span>
-          <h4>ประกาศแนวปฏิบัติงานพัสดุภายในหน่วยงาน — แก้ไขเป็นประกาศจริง</h4>
-        </span>
-        <span class="go">03 ม.ค. 2568 →</span>
-      </a>
+      <p style="padding:1.75rem; color: var(--ink-soft); text-align:center;">กำลังโหลดประกาศ...</p>
     </div>
     <p style="color: var(--ink-soft); font-size: 0.88rem; margin-top: 1.5rem;">
       💡 รายการข้างต้นเป็นตัวอย่างโครงสร้าง เมื่อมีประกาศจริงให้เพิ่มแถวใหม่ในไฟล์นี้ตามรูปแบบเดิม
@@ -82,11 +59,11 @@
   <div class="wrap footer-grid">
     <div>
       <h4>งานพัสดุและทรัพย์สิน</h4>
-      <p>วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>[เลขที่/ถนน] ตำบล/แขวง ... อำเภอเมืองสุรินทร์ จังหวัดสุรินทร์ 32000 <span class="mono" style="font-size:0.75em;">(กรุณาตรวจสอบที่อยู่ให้ถูกต้อง)</span></p>
+      <p>วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>320 ถนนหลักเมือง ตำบลในเมือง อำเภอเมืองสุรินทร์ จังหวัดสุรินทร์ 32000</p>
     </div>
     <div>
       <h4>ติดต่อ</h4>
-      <a href="tel:0000000000">โทร. 0-0000-0000</a>
+      <a href="tel:044514422">โทร. 0-4451-4422 ต่อ 4106</a>
       <a href="mailto:procurement@bcnsurin.ac.th">procurement@bcnsurin.ac.th <span class="mono" style="font-size:0.7em;">(ตรวจสอบอีเมลจริง)</span></a>
     </div>
     <div>
@@ -106,6 +83,10 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client.js"></script>
 <script src="js/main.js"></script>
+<script src="js/public-data.js"></script>
 </body>
 </html>

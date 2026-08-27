@@ -41,67 +41,8 @@
       <p>ทางเข้าสู่ระบบต่างๆ ของงานพัสดุและทรัพย์สิน ทุกระบบต้องเข้าสู่ระบบด้วยบัญชีผู้ใช้ก่อนใช้งาน ระบบด้านล่างอยู่ระหว่างการพัฒนาแยกต่างหาก เมื่อพร้อมใช้งานจริงให้แก้ไขลิงก์ปุ่ม “เข้าสู่ระบบ” ของแต่ละการ์ดให้ชี้ไปยัง URL ของระบบนั้นๆ</p>
     </div>
 
-    <div class="systems-grid">
-      <div class="system-card">
-        <div class="top">
-          <div class="icon" style="background: var(--tab-sky);" aria-hidden="true">🏢</div>
-          <span class="lock-badge">🔒 ต้องเข้าสู่ระบบ</span>
-        </div>
-        <h3>ระบบบริการภายใน</h3>
-        <p>ยื่นคำขอรับบริการต่างๆ ของงานพัสดุและทรัพย์สิน ติดตามสถานะคำขอได้แบบออนไลน์</p>
-        <span class="status mono">สถานะ: กำลังพัฒนา — เชื่อมต่อภายหลัง</span>
-        <a class="btn btn-ghost" href="#" aria-disabled="true" onclick="return false;">เข้าสู่ระบบ →</a>
-      </div>
-      <div class="system-card">
-        <div class="top">
-          <div class="icon" style="background: var(--tab-sage);" aria-hidden="true">📦</div>
-          <span class="lock-badge">🔒 ต้องเข้าสู่ระบบ</span>
-        </div>
-        <h3>ระบบยืมพัสดุ</h3>
-        <p>ยืม-คืนครุภัณฑ์และพัสดุของหน่วยงาน บันทึกกำหนดคืนและประวัติการยืมของแต่ละบุคคล</p>
-        <span class="status mono">สถานะ: กำลังพัฒนา — เชื่อมต่อภายหลัง</span>
-        <a class="btn btn-ghost" href="#" aria-disabled="true" onclick="return false;">เข้าสู่ระบบ →</a>
-      </div>
-      <div class="system-card">
-        <div class="top">
-          <div class="icon" style="background: var(--tab-amber);" aria-hidden="true">🔧</div>
-          <span class="lock-badge">🔒 ต้องเข้าสู่ระบบ</span>
-        </div>
-        <h3>ระบบแจ้งซ่อม</h3>
-        <p>แจ้งซ่อมครุภัณฑ์และอุปกรณ์ภายในหน่วยงาน ติดตามสถานะการซ่อมได้แบบเรียลไทม์</p>
-        <span class="status mono">สถานะ: กำลังพัฒนา — เชื่อมต่อภายหลัง</span>
-        <a class="btn btn-ghost" href="#" aria-disabled="true" onclick="return false;">เข้าสู่ระบบ →</a>
-      </div>
-      <div class="system-card">
-        <div class="top">
-          <div class="icon" style="background: var(--tab-lilac);" aria-hidden="true">🔍</div>
-          <span class="lock-badge">🔒 ต้องเข้าสู่ระบบ</span>
-        </div>
-        <h3>ระบบสืบค้นครุภัณฑ์</h3>
-        <p>ค้นหาข้อมูลครุภัณฑ์ของหน่วยงาน ตรวจสอบสถานะ ตำแหน่งที่ตั้ง และผู้รับผิดชอบดูแล</p>
-        <span class="status mono">สถานะ: กำลังพัฒนา — เชื่อมต่อภายหลัง</span>
-        <a class="btn btn-ghost" href="#" aria-disabled="true" onclick="return false;">เข้าสู่ระบบ →</a>
-      </div>
-      <div class="system-card">
-        <div class="top">
-          <div class="icon" style="background: var(--stamp-bg);" aria-hidden="true">⚙️</div>
-          <span class="lock-badge">🔒 ต้องเข้าสู่ระบบ</span>
-        </div>
-        <h3>ระบบหลังบ้าน</h3>
-        <p>จัดการข้อมูลหลังบ้านของระบบงานพัสดุทั้งหมด กำหนดสิทธิ์ผู้ใช้งาน และตั้งค่าส่วนกลางของระบบ</p>
-        <span class="status mono">สถานะ: กำลังพัฒนา — เชื่อมต่อภายหลัง</span>
-        <a class="btn btn-ghost" href="#" aria-disabled="true" onclick="return false;">เข้าสู่ระบบ →</a>
-      </div>
-      <div class="system-card">
-        <div class="top">
-          <div class="icon" style="background: var(--tab-sky);" aria-hidden="true">📊</div>
-          <span class="lock-badge">🔒 ต้องเข้าสู่ระบบ</span>
-        </div>
-        <h3>ระบบสต๊อกพัสดุ</h3>
-        <p>บันทึกและติดตามจำนวนคงคลังพัสดุ พร้อม Dashboard สรุปรายงานการเบิก-จ่ายและยอดคงเหลือแบบเรียลไทม์</p>
-        <span class="status mono">สถานะ: กำลังพัฒนา — เชื่อมต่อภายหลัง</span>
-        <a class="btn btn-ghost" href="#" aria-disabled="true" onclick="return false;">เข้าสู่ระบบ →</a>
-      </div>
+    <div class="systems-grid" id="systemsGrid">
+      <p style="padding:1.75rem; color: var(--ink-soft); text-align:center;">กำลังโหลดระบบภายใน...</p>
     </div>
 
     <p style="color: var(--ink-soft); font-size: 0.88rem; margin-top: 1.75rem;">
@@ -116,11 +57,11 @@
   <div class="wrap footer-grid">
     <div>
       <h4>งานพัสดุและทรัพย์สิน</h4>
-      <p>วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>[เลขที่/ถนน] ตำบล/แขวง ... อำเภอเมืองสุรินทร์ จังหวัดสุรินทร์ 32000 <span class="mono" style="font-size:0.75em;">(กรุณาตรวจสอบที่อยู่ให้ถูกต้อง)</span></p>
+      <p>วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>320 ถนนหลักเมือง ตำบลในเมือง อำเภอเมืองสุรินทร์ จังหวัดสุรินทร์ 32000</p>
     </div>
     <div>
       <h4>ติดต่อ</h4>
-      <a href="tel:0000000000">โทร. 0-0000-0000</a>
+      <a href="tel:044514422">โทร. 0-4451-4422 ต่อ 4106</a>
       <a href="mailto:procurement@bcnsurin.ac.th">procurement@bcnsurin.ac.th <span class="mono" style="font-size:0.7em;">(ตรวจสอบอีเมลจริง)</span></a>
     </div>
     <div>
@@ -140,6 +81,10 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/supabase-config.js"></script>
+<script src="js/supabase-client.js"></script>
 <script src="js/main.js"></script>
+<script src="js/public-data.js"></script>
 </body>
 </html>
