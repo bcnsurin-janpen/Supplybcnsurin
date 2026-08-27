@@ -1,0 +1,675 @@
+/* ============================================================
+   งานพัสดุ — Design tokens
+   แนวคิด: แฟ้มเอกสารสีต่างๆ ที่ใช้จำแนกประเภทงานในหน่วยงานราชการ
+   หัวเรื่อง = Noto Serif Thai (ทางการ) / เนื้อหา = Noto Sans Thai (อ่านง่าย)
+   ตัวเลข/เลขที่หนังสือ = JetBrains Mono (เหมือนเลขทะเบียน)
+   ============================================================ */
+
+:root {
+  /* สี */
+  --paper: #F5F6F0;
+  --paper-raised: #FFFFFF;
+  --ink: #202A33;
+  --ink-soft: #57626C;
+  --line: #DEDFD6;
+
+  --tab-sky: #BFD7EA;
+  --tab-sky-deep: #4C7A9C;
+  --tab-sage: #C9E4D2;
+  --tab-sage-deep: #3E7A57;
+  --tab-amber: #F3D9AE;
+  --tab-amber-deep: #96692A;
+  --tab-lilac: #DBD3EE;
+  --tab-lilac-deep: #6753A0;
+
+  --stamp: #B3555B;
+  --stamp-bg: #F7E4E3;
+
+  /* ตัวอักษร */
+  --font-display: "Noto Serif Thai", "Sarabun", serif;
+  --font-body: "Noto Sans Thai", "Sarabun", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  /* ระยะ */
+  --gap-xs: 0.5rem;
+  --gap-sm: 1rem;
+  --gap-md: 1.75rem;
+  --gap-lg: 3rem;
+  --gap-xl: 5rem;
+
+  --radius: 14px;
+  --shadow-tab: 0 10px 24px -14px rgba(32, 42, 51, 0.35);
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  line-height: 1.7;
+  font-size: 16px;
+}
+
+img { max-width: 100%; display: block; }
+
+a { color: inherit; }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: 1.3;
+  margin: 0 0 0.5em;
+}
+
+.mono { font-family: var(--font-mono); letter-spacing: 0.01em; }
+
+.wrap {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ---------- Skip link (a11y) ---------- */
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.75rem 1.25rem;
+  z-index: 200;
+  border-radius: 0 0 8px 0;
+}
+.skip-link:focus {
+  left: 0;
+}
+
+/* ---------- Header ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(245, 246, 240, 0.92);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--line);
+}
+
+.header-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 0;
+  gap: 1rem;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: linear-gradient(155deg, var(--tab-sky), var(--tab-sage) 55%, var(--tab-amber));
+  display: grid;
+  place-items: center;
+  color: var(--paper-raised);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.brand-text .name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.05rem;
+  display: block;
+}
+.brand-text .sub {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.main-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.main-nav a {
+  text-decoration: none;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  color: var(--ink-soft);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.main-nav a:hover,
+.main-nav a:focus-visible {
+  background: var(--paper-raised);
+  color: var(--ink);
+}
+
+.main-nav a.active {
+  color: var(--ink);
+  font-weight: 700;
+  background: var(--paper-raised);
+}
+
+.nav-toggle {
+  display: none;
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.nav-toggle span,
+.nav-toggle span::before,
+.nav-toggle span::after {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 2px;
+  background: var(--ink);
+  position: relative;
+  transition: transform 0.2s ease;
+}
+.nav-toggle span::before { position: absolute; top: -6px; }
+.nav-toggle span::after { position: absolute; top: 6px; }
+
+/* ---------- Hero ---------- */
+.hero {
+  padding: var(--gap-xl) 0 var(--gap-lg);
+  border-bottom: 1px solid var(--line);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: var(--gap-lg);
+  align-items: center;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--tab-sky-deep);
+  background: rgba(191, 215, 234, 0.35);
+  border: 1px solid rgba(76, 122, 156, 0.25);
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  margin-bottom: 1.1rem;
+}
+
+.hero h1 {
+  font-size: clamp(1.9rem, 3.4vw, 2.7rem);
+  max-width: 16ch;
+}
+
+.hero p.lede {
+  color: var(--ink-soft);
+  font-size: 1.05rem;
+  max-width: 46ch;
+  margin-bottom: var(--gap-md);
+}
+
+.hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.3rem;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn-primary {
+  background: var(--ink);
+  color: var(--paper);
+}
+.btn-ghost {
+  background: var(--paper-raised);
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+/* หมุดทะเบียนตกแต่ง (signature motif เล็กๆ ใน hero) */
+.registry-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-tab);
+}
+.registry-card .row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.6rem 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 0.92rem;
+}
+.registry-card .row:last-child { border-bottom: none; }
+.registry-card .row .k { color: var(--ink-soft); }
+.registry-card .row .v { font-family: var(--font-mono); font-weight: 600; }
+.registry-card .title {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  margin-bottom: 0.75rem;
+}
+
+/* ---------- Folder-tab cards (signature element) ---------- */
+.section-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--gap-md);
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.section-heading h2 { margin: 0; font-size: 1.5rem; }
+.section-heading .see-all {
+  font-size: 0.9rem;
+  text-decoration: none;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--line);
+}
+.section-heading .see-all:hover { color: var(--ink); border-color: var(--ink); }
+
+.tabs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--gap-md);
+  padding-top: 0.6rem; /* เผื่อที่ให้ตัว tab โผล่ */
+}
+
+.folder-tab {
+  position: relative;
+  text-decoration: none;
+  color: var(--ink);
+  display: block;
+  padding-top: 0.4rem;
+  transition: transform 0.18s ease;
+}
+.folder-tab:hover,
+.folder-tab:focus-visible { transform: translateY(-6px); }
+
+.folder-tab .tab-flap {
+  width: 62%;
+  height: 22px;
+  border-radius: 10px 10px 0 0;
+  position: relative;
+  z-index: 1;
+  margin-left: 1.1rem;
+}
+.folder-tab .tab-body {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: 4px var(--radius) var(--radius) var(--radius);
+  padding: 1.4rem 1.3rem 1.6rem;
+  margin-top: -1px;
+  box-shadow: var(--shadow-tab);
+  position: relative;
+  z-index: 2;
+}
+.folder-tab .icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 0.9rem;
+  font-size: 1.2rem;
+}
+.folder-tab h3 { font-size: 1.1rem; margin-bottom: 0.35rem; }
+.folder-tab p { color: var(--ink-soft); font-size: 0.92rem; margin: 0; }
+
+.folder-tab.sky .tab-flap, .folder-tab.sky .icon { background: var(--tab-sky); }
+.folder-tab.sage .tab-flap, .folder-tab.sage .icon { background: var(--tab-sage); }
+.folder-tab.amber .tab-flap, .folder-tab.amber .icon { background: var(--tab-amber); }
+.folder-tab.lilac .tab-flap, .folder-tab.lilac .icon { background: var(--tab-lilac); }
+.folder-tab.blush .tab-flap, .folder-tab.blush .icon { background: var(--stamp-bg); }
+
+/* ---------- Ledger / registry list ---------- */
+.ledger {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-raised);
+  overflow: hidden;
+}
+.ledger-row {
+  display: grid;
+  grid-template-columns: 110px 1fr auto;
+  gap: 1rem;
+  align-items: center;
+  padding: 1.05rem 1.3rem;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: var(--ink);
+}
+.ledger-row:last-child { border-bottom: none; }
+.ledger-row:hover { background: rgba(191, 215, 234, 0.16); }
+
+.ledger-row .code {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+.ledger-row .main .cat {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  margin-bottom: 0.4rem;
+}
+.ledger-row .main h4 { margin: 0; font-family: var(--font-body); font-size: 1rem; font-weight: 700; }
+.ledger-row .go { color: var(--ink-soft); font-size: 0.85rem; white-space: nowrap; }
+
+.cat.sky { background: var(--tab-sky); color: var(--tab-sky-deep); }
+.cat.sage { background: var(--tab-sage); color: var(--tab-sage-deep); }
+.cat.amber { background: var(--tab-amber); color: var(--tab-amber-deep); }
+.cat.lilac { background: var(--tab-lilac); color: var(--tab-lilac-deep); }
+.cat.stamp { background: var(--stamp-bg); color: var(--stamp); }
+
+/* ---------- Page header (สำหรับหน้าย่อย) ---------- */
+.page-head {
+  padding: var(--gap-lg) 0 var(--gap-md);
+  border-bottom: 1px solid var(--line);
+  margin-bottom: var(--gap-lg);
+}
+.page-head h1 { font-size: clamp(1.6rem, 3vw, 2.2rem); margin-bottom: 0.5rem; }
+.page-head p { color: var(--ink-soft); max-width: 60ch; margin: 0; }
+
+/* ---------- Filter chips ---------- */
+.chip-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: var(--gap-md);
+}
+.chip {
+  border: 1px solid var(--line);
+  background: var(--paper-raised);
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.88rem;
+  cursor: pointer;
+  color: var(--ink-soft);
+}
+.chip.is-active {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+
+/* ---------- System cards ---------- */
+.systems-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--gap-md);
+}
+.system-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+.system-card .top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.system-card .icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+.system-card .lock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-family: var(--font-mono);
+  color: var(--stamp);
+  background: var(--stamp-bg);
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.system-card h3 { margin: 0; font-size: 1.05rem; }
+.system-card p { margin: 0; color: var(--ink-soft); font-size: 0.9rem; flex-grow: 1; }
+.system-card .status {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  font-family: var(--font-mono);
+}
+.system-card .btn { align-self: flex-start; }
+.system-card .btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* ---------- FAQ accordion ---------- */
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.faq-item {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 1.1rem 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-weight: 700;
+  font-family: var(--font-body);
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary .q-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--tab-sky);
+  color: var(--tab-sky-deep);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+.faq-item summary .chevron {
+  color: var(--ink-soft);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.faq-item[open] summary .chevron { transform: rotate(180deg); }
+.faq-item .faq-answer {
+  padding: 0 1.3rem 1.2rem 3.7rem;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+}
+
+.ask-cta {
+  margin-top: var(--gap-lg);
+  background: var(--paper-raised);
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 1.75rem;
+  text-align: center;
+}
+.ask-cta h3 { margin-bottom: 0.4rem; }
+.ask-cta p { color: var(--ink-soft); max-width: 48ch; margin: 0 auto 1.1rem; }
+.ask-cta .note {
+  margin-top: 0.9rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- Contact channels ---------- */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--gap-sm);
+}
+.contact-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  text-decoration: none;
+  color: var(--ink);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.contact-card:hover,
+.contact-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-tab);
+}
+.contact-card .c-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.contact-card .c-label {
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.2rem;
+}
+.contact-card .c-value {
+  font-weight: 700;
+  font-size: 0.95rem;
+  word-break: break-word;
+}
+.contact-hours {
+  margin-top: 1rem;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+/* ---------- Footer ---------- */
+.site-footer {
+  margin-top: var(--gap-xl);
+  border-top: 1px solid var(--line);
+  padding: var(--gap-lg) 0;
+  background: var(--paper-raised);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: var(--gap-lg);
+}
+.footer-grid h4 { font-size: 0.95rem; margin-bottom: 0.8rem; }
+.footer-grid p, .footer-grid a {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+  text-decoration: none;
+  display: block;
+  margin-bottom: 0.45rem;
+}
+.footer-grid a:hover { color: var(--ink); }
+.footer-bottom {
+  margin-top: var(--gap-lg);
+  padding-top: var(--gap-md);
+  border-top: 1px dashed var(--line);
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 980px) {
+  .tabs-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 860px) {
+  .hero-grid { grid-template-columns: 1fr; }
+  .systems-grid { grid-template-columns: 1fr; }
+  .footer-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 520px) {
+  .tabs-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .main-nav { display: none; }
+  .main-nav.is-open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--paper-raised);
+    border-bottom: 1px solid var(--line);
+    padding: 0.75rem 1.5rem 1.25rem;
+    gap: 0.2rem;
+  }
+  .nav-toggle { display: flex; }
+  .ledger-row { grid-template-columns: 1fr; }
+  .ledger-row .go { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* ---------- Focus visibility (a11y) ---------- */
+a:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--tab-sky-deep);
+  outline-offset: 2px;
+}
