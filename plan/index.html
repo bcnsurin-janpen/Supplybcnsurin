@@ -644,6 +644,7 @@ function itemRow(i,k){
   <td style="min-width:300px"><input type="text" data-f="name" value="${esc(i.name)}" placeholder="เช่น จัดซื้อวัสดุสำนักงาน"></td>
   <td style="width:70px"><input type="number" data-f="qty" value="${i.qty??''}" step="any"></td>
   <td style="width:90px"><input type="text" data-f="unit" value="${esc(i.unit)}" list="unitList"></td>
+  <td style="width:110px"><input type="number" data-f="price" value="${i.price??''}" step="0.01" placeholder="ไม่บังคับ"></td>
   <td style="width:120px"><input type="number" data-f="budget" value="${i.budget??''}" step="0.01"></td>
   <td style="width:100px"><select data-f="fund"><option value=""></option>${S2.funds.map(x=>`<option ${i.fund===x?'selected':''}>${x}</option>`).join('')}</select></td>
   <td style="width:130px"><select data-f="method">${S2.methods.map(x=>`<option ${i.method===x?'selected':''}>${x}</option>`).join('')}</select></td>
@@ -672,9 +673,9 @@ function drawEditor(){
     <div class="row" style="margin-top:6px"><label class="row"><input type="radio" name="hasBuy" data-act="hasBuy" data-v="1" ${p.hasBuy===true?'checked':''}> มี</label><label class="row"><input type="radio" name="hasBuy" data-act="hasBuy" data-v="0" ${p.hasBuy===false?'checked':''}> ไม่มี</label>${p.hasBuy==null?'<span class="small" style="color:var(--bad)">ต้องเลือกก่อนลงรายการ</span>':''}</div></div>
    ${p.hasBuy!==true?`<div class="small muted" style="margin-bottom:8px">${p.hasBuy===false?'ไม่มีรายการซื้อ/จ้าง/เช่า — โครงการนี้ไม่ต้องเข้าแผนปฏิบัติการ':'เลือก "มี" เพื่อเปิดตารางลงรายการซื้อ/จ้าง/เช่า'}</div>`:`
    <h3>รายการซื้อ / จ้าง / เช่า ในโครงการ</h3>
-   <div style="overflow-x:auto"><table class="t items"><tr><th>#</th><th>ประเภท</th><th>รายการที่จัดซื้อจัดจ้าง</th><th>จำนวน</th><th>หน่วยนับ</th><th>งบประมาณ (บาท)</th><th>หมวดเงิน</th><th>วิธีการจัดหา</th><th>เดือนที่จะจัดซื้อจัดจ้าง</th><th></th></tr>
+   <div style="overflow-x:auto"><table class="t items"><tr><th>#</th><th>ประเภท</th><th>รายการที่จัดซื้อจัดจ้าง</th><th>จำนวน</th><th>หน่วยนับ</th><th>ราคาต่อหน่วย (บาท)</th><th>งบประมาณ (บาท)</th><th>หมวดเงิน</th><th>วิธีการจัดหา</th><th>เดือนที่จะจัดซื้อจัดจ้าง</th><th></th></tr>
    ${p.items.map(itemRow).join('')}
-   <tr class="sum"><td></td><td colspan="4">รวม ${activeItems(p).length} รายการ ${Object.entries(funds).map(([f,v])=>`· ${esc(f)} ${money(v)}`).join(' ')}</td><td class="n">${money(tot)}</td><td colspan="4"></td></tr></table></div>
+   <tr class="sum"><td></td><td colspan="5" id="edSumTxt">รวม ${activeItems(p).length} รายการ ${Object.entries(funds).map(([f,v])=>`· ${esc(f)} ${money(v)}`).join(' ')}</td><td class="n" id="edSumTot">${money(tot)}</td><td colspan="4"></td></tr></table></div>
    <div class="row" style="margin-top:6px"><button class="btn sm" data-act="itemAdd">+ เพิ่มรายการ</button><button class="btn sm" data-act="itemPaste">วางรายการจาก Excel</button><span class="small muted">คัดลอกคอลัมน์ รายการ | จำนวน | หน่วยนับ | งบประมาณ | หมวดเงิน จาก Excel แล้ววาง</span></div>`}
    <datalist id="unitList">${S.settings.unitList.map(x=>`<option>${esc(x)}</option>`).join('')}</datalist>
    <datalist id="unitsList">${S.settings.units.map(x=>`<option>${esc(x)}</option>`).join('')}</datalist>
@@ -699,7 +700,7 @@ function drawEditor(){
 function readEditor(){
   const m=document.getElementById('modal');
   m.querySelectorAll('[data-p]').forEach(el=>{const k=el.dataset.p;let v=el.value;if(k==='budgetTotal')v=v===''?null:num(v);if(k==='seq')v=num(v);ED[k]=v});
-  m.querySelectorAll('tr[data-k]').forEach(tr=>{const i=ED.items[tr.dataset.k];if(!i)return;tr.querySelectorAll('[data-f]').forEach(el=>{let v=el.value;if(el.dataset.f==='qty'||el.dataset.f==='budget')v=v===''?null:num(v);i[el.dataset.f]=v});i.months=[...tr.querySelectorAll('[data-m]')].filter(x=>x.checked).map(x=>Number(x.dataset.m));const mk=/^\s*จัด(ซื้อ|จ้าง|เช่า)/.exec(i.name||'');if(mk)i.kind=mk[1]});
+  m.querySelectorAll('tr[data-k]').forEach(tr=>{const i=ED.items[tr.dataset.k];if(!i)return;tr.querySelectorAll('[data-f]').forEach(el=>{let v=el.value;if(el.dataset.f==='qty'||el.dataset.f==='budget'||el.dataset.f==='price')v=v===''?null:num(v);i[el.dataset.f]=v});i.months=[...tr.querySelectorAll('[data-m]')].filter(x=>x.checked).map(x=>Number(x.dataset.m));const mk=/^\s*จัด(ซื้อ|จ้าง|เช่า)/.exec(i.name||'');if(mk)i.kind=mk[1]});
   m.querySelectorAll('[data-c][data-cf]').forEach(el=>{ED.checks[el.dataset.c][el.dataset.cf]=el.value});
   const ar={};m.querySelectorAll('[data-c][data-area]').forEach(el=>{const k=el.dataset.c;ar[k]=ar[k]||[];if(el.checked)ar[k].push(el.dataset.area)});Object.entries(ar).forEach(([k,v])=>{ED.checks[k].areas=v});
 }
@@ -1924,7 +1925,12 @@ document.addEventListener('change',e=>{
   if(t.dataset.sl){S.settings[t.dataset.sl]=t.value.split(',').map(x=>x.trim()).filter(Boolean);save();toast('บันทึกการตั้งค่าแล้ว');return}
   if(t.id==='fileIn'){onFiles(t.files);t.value='';return}
 });
-document.addEventListener('input',e=>{if(e.target.id==='staffSearch'){UI.staffQ=e.target.value;const pos=e.target.selectionStart;render();const x=document.getElementById('staffSearch');x.focus();x.setSelectionRange(pos,pos);return}
+document.addEventListener('input',e=>{const tr=e.target.closest&&e.target.closest('tr[data-k]');
+  if(tr&&ED&&e.target.dataset.f&&['qty','price','budget','fund'].includes(e.target.dataset.f)){
+    const g=f=>tr.querySelector(`[data-f="${f}"]`);if(e.target.dataset.f!=='budget'&&g('price').value!==''){g('budget').value=r2(num(g('qty').value||1)*num(g('price').value))}
+    const fs={};let tot=0,n=0;document.querySelectorAll('#modal tr[data-k]').forEach(r=>{const i=ED.items[r.dataset.k];if(!i||i.cancelled)return;const b=num(r.querySelector('[data-f="budget"]').value),f=r.querySelector('[data-f="fund"]').value||'?';tot+=b;n++;fs[f]=(fs[f]||0)+b});
+    const a=document.getElementById('edSumTot'),t=document.getElementById('edSumTxt');if(a)a.textContent=money(tot);if(t)t.textContent=`รวม ${n} รายการ `+Object.entries(fs).map(([f,v])=>`· ${f} ${money(v)}`).join(' ')}
+  if(e.target.id==='staffSearch'){UI.staffQ=e.target.value;const pos=e.target.selectionStart;render();const x=document.getElementById('staffSearch');x.focus();x.setSelectionRange(pos,pos);return}
   if(e.target.id==='qcRes'){const v=e.target.value.trim(),cl=v?classify(v):'';const b=document.getElementById('qcSendBox');if(b)b.style.display=v?'':'none';const sl=document.getElementById('qcSendLbl');if(sl)sl.textContent=cl==='fix'?'ส่งกลับให้ผู้รับผิดชอบแก้ไขแล้ว เมื่อวันที่':'ส่งคืนผู้รับผิดชอบแล้ว เมื่อวันที่ (ยังไม่ส่งให้เอาติ๊กออก)';const ab=document.getElementById('qcAreaBox');if(ab){ab.style.display=cl==='fix'?'':'none';const g=cl==='fix'?guessAreas(v):[];document.querySelectorAll('.qcArea').forEach(x=>x.checked=g.includes(x.value))}const l=document.getElementById('qcDateLbl');if(l)l.textContent=cl==='signed'?'วันที่ลงนาม':'วันที่ตรวจ'}
   if(e.target.id==='chkSearch'){UI.chkSearch=e.target.value;const pos=e.target.selectionStart;render();const s=document.getElementById('chkSearch');s.focus();s.setSelectionRange(pos,pos)}});
 document.addEventListener('click',e=>{const el=e.target;if(el&&el.tagName==='INPUT'&&(el.type==='date'||el.type==='month')&&!el.disabled&&el.showPicker){try{el.showPicker()}catch(_){}}});
