@@ -432,8 +432,12 @@ function timeline(p){ // days at supply section vs at project owner
     if(c.sentBack){const n=p.checks[k+1];if(n&&n.recvDate){const x=daysBetween(c.sentBack,n.recvDate);if(x!==null&&x>=0)own+=x}else if(!n&&classify(c.result)==='fix'){ownNow=daysBetween(c.sentBack,todayISO());if(ownNow>=0)own+=ownNow}}});
   return {sup,own,ownNow};
 }
+function canSignSameRound(p){const last=p.checks[p.checks.length-1];return !!(last&&(last.result||'').trim()&&classify(last.result)==='ok'&&!last.sentBack)}
 function addRound(p,result,opt={}){
   const last=p.checks[p.checks.length-1];
+  if(classify(result)==='signed'&&!opt.forceNew&&canSignSameRound(p)){ // sign in the same round (already checked OK, not yet returned)
+    last.prevResult=last.result;last.result=last.result+'; '+result;last.signDate=opt.date||todayISO();last.signMerged=true;
+    if(opt.sentBack)last.sentBack=opt.sentBack;if(p.hasBuy)last.snap=snapItems(p);return last}
   let c;if(last&&!(last.result||'').trim()){c=last}else{c={recvDate:opt.recvDate||(p.checks.length?todayISO():p.submitDate||todayISO()),date:'',result:'',sentBack:'',note:''};p.checks.push(c)}
   c.date=opt.date||c.date||todayISO();c.result=result;
   if(opt.areas)c.areas=opt.areas;else if(classify(result)==='fix'&&!c.areas)c.areas=guessAreas(result);
@@ -459,7 +463,7 @@ function migrateChecks(){
   S.projects.forEach(p=>{if(p._ckv===2)return;p.checks.forEach((c,k)=>{c.recvDate=c.recvDate||(k===0?(p.submitDate||c.date):'');c.sentBack=c.sentBack||'';
     const n=p.checks[k+1];if(classify(c.result)==='fix'&&!c.sentBack&&(n||p.fy<currentFY())){c.sentBack=c.date;if(n&&!n.recvDate)n.recvDate=n.date}});p._ckv=2});
 }
-function signedDate(p){const c=p.checks.find(c=>classify(c.result)==='signed');return c?c.date:null}
+function signedDate(p){const c=p.checks.find(c=>classify(c.result)==='signed');return c?(c.signDate||c.date):null}
 function daysBetween(a,b){if(!a||!b)return null;return Math.round((new Date(b)-new Date(a))/864e5)}
 function autoCheck(p){
   const w=[];const items=activeItems(p);
@@ -599,7 +603,7 @@ function vCheck(){
     <td class="small">${planLabel(p)}</td>
     <td style="white-space:nowrap">${st==='tosend'?`<button class="btn sm pri" data-act="sendBack" data-id="${p.id}">ส่งกลับ</button>`:st==='fix'?`<button class="btn sm pri" data-act="recvBack" data-id="${p.id}">รับคืน</button>`:st==='cancel'?'':`${(p.hasBuy===false&&['new','wait','ok'].includes(st))||(p.hasBuy&&st==='ok')?`<button class="btn sm pri" data-act="signNow" data-id="${p.id}">ลงนาม</button> `:''}${['ok','signed'].includes(st)&&p.checks.length&&!p.checks[p.checks.length-1].sentBack?`<button class="btn sm" data-act="sendBack" data-id="${p.id}">ส่งคืน</button> `:''}${st==='signed'?`<button class="btn sm danger" data-act="unsign" data-id="${p.id}" title="ให้กลับเป็นยังไม่ลงชื่อ">ยกเลิกลงชื่อ</button> `:''}<button class="btn sm" data-act="addCheck" data-id="${p.id}">+ ผลตรวจ</button>`}</td></tr>`}).join('')}</table>`:'<div class="card empty">ยังไม่มีโครงการ กด "+ รับโครงการเข้าตรวจ" หรือ "คัดลอกโครงการจากปีก่อน"</div>'}`;
 }
-function unsign(p){const k=[...p.checks].map((c,i)=>[c,i]).reverse().find(([c])=>classify(c.result)==='signed');if(!k)return false;p.checks.splice(k[1],1);return true}
+function unsign(p){const k=[...p.checks].map((c,i)=>[c,i]).reverse().find(([c])=>classify(c.result)==='signed');if(!k)return false;const c=k[0];if(c.signMerged){c.result=c.prevResult||'';delete c.prevResult;delete c.signDate;delete c.signMerged;return true}p.checks.splice(k[1],1);return true}
 function lastTxt(p){
   const c=p.checks[p.checks.length-1];if(!c)return '–';
   if(!c.result)return `รับคืน ${thDate(c.recvDate)}`;
@@ -613,7 +617,8 @@ function openDateAct(id,kind){
   MD={type:'dateAct',id,kind};
   document.getElementById('modal').innerHTML=`<div class="modal-back"><div class="modal narrow"><div class="mh"><h3>${kind==='send'?(classify((c||{}).result)==='fix'?'ส่งกลับให้ผู้รับผิดชอบแก้ไข':'ส่งคืนโครงการให้ผู้รับผิดชอบ'):kind==='sign'?(p.hasBuy===false?'ลงนามในโครงการ (ไม่มีรายการซื้อ/จ้าง/เช่า)':'บันทึกการลงชื่อในโครงการ'):'รับโครงการคืนจากการแก้ไข'}</h3><button class="btn sm" data-act="close">ปิด</button></div>
   <div class="mb"><div class="small muted">${esc(p.name)} · ${esc(ownerText(p))}</div><div class="small" style="margin:6px 0 10px">${c?`ผลตรวจครั้งที่ ${p.checks.length}: ${esc(c.result||'รอตรวจ')}${c.sentBack?` · ส่งกลับ ${thDate(c.sentBack,true)}`:''}`:'ยังไม่มีผลตรวจ'}</div>
-  ${kind==='sign'&&(!c||c.result)?`<div class="field" style="margin-bottom:8px"><label>${c?'วันที่รับคืน / รับเข้า (รอบที่ '+(p.checks.length+1)+')':'วันที่รับเข้าตรวจ'}</label><input type="date" id="daRecv" value="${c?todayISO():(p.submitDate||todayISO())}"></div>`:''}
+  ${kind==='sign'&&canSignSameRound(p)?`<div class="small" style="margin-bottom:8px;color:var(--ok)">ลงนามในการตรวจครั้งที่ ${p.checks.length} ได้เลย (ผลตรวจไม่มีแก้ไข) ไม่ต้องเปิดรอบใหม่</div>`:''}
+  ${kind==='sign'&&(!c||c.result)&&!canSignSameRound(p)?`<div class="field" style="margin-bottom:8px"><label>${c?'วันที่รับคืน / รับเข้า (รอบที่ '+(p.checks.length+1)+')':'วันที่รับเข้าตรวจ'}</label><input type="date" id="daRecv" value="${c?todayISO():(p.submitDate||todayISO())}"></div>`:''}
   <div class="field"><label>${kind==='send'?'วันที่ส่งกลับ / ส่งคืน':kind==='sign'?'วันที่ลงนาม':'วันที่รับคืน'}</label><input type="date" id="daDate" value="${todayISO()}"></div>
   ${kind==='sign'?`<div class="field" style="margin-top:8px"><label class="row small"><input type="checkbox" id="daSendChk" checked> ส่งคืนผู้รับผิดชอบแล้ว เมื่อวันที่</label><input type="date" id="daSend" value="${todayISO()}"></div>`:''}
   ${kind==='recv'?'<p class="small muted">ระบบจะเปิดการตรวจครั้งที่ '+(p.checks.length+1)+' ให้ สถานะเป็น "รับคืนแล้ว รอตรวจ"</p>':''}</div>
@@ -684,7 +689,7 @@ function drawEditor(){
    <h3>ผลการตรวจแต่ละครั้ง</h3>
    ${p.checks.length?`<div style="overflow-x:auto"><table class="t items" style="min-width:900px"><tr><th style="width:40px">ครั้งที่</th><th style="width:170px">รับเข้า / รับคืน</th><th style="width:170px">วันที่ตรวจ / ลงนาม</th><th>ผลการตรวจ / ความเห็น</th><th style="width:150px">ส่วนที่ให้แก้ไข</th><th style="width:170px">วันที่ส่งกลับ / ส่งคืน</th><th class="n" style="width:80px">พัสดุใช้</th><th class="n" style="width:90px">ผู้รับผิดชอบใช้</th><th style="width:40px"></th></tr>
    ${p.checks.map((c,k)=>{const n=p.checks[k+1];const ds=daysBetween(roundRecv(p,k),c.date);const dow=c.sentBack&&(n||classify(c.result)==='fix')?daysBetween(c.sentBack,n?n.recvDate:todayISO()):null;
-     return `<tr><td>${k+1}</td><td><input type="date" data-c="${k}" data-cf="recvDate" value="${c.recvDate||''}"></td><td><input type="date" data-c="${k}" data-cf="date" value="${c.date||''}"></td><td><input type="text" data-c="${k}" data-cf="result" value="${esc(c.result)}" list="chkList" placeholder="${c.result?'':'รอตรวจ'}">${(()=>{const d=roundDiff(p,k);return d.length?`<div class="small" style="color:var(--info);margin-top:3px">เปลี่ยนจากรอบก่อน: ${d.map(esc).join(' · ')}</div>`:''})()}</td><td class="small">${classify(c.result)==='fix'||(c.areas&&c.areas.length)?AREAS.map(a=>`<label class="row" style="gap:3px"><input type="checkbox" data-c="${k}" data-area="${a}" ${(c.areas||[]).includes(a)?'checked':''}> ${a}</label>`).join(''):''}</td><td><input type="date" data-c="${k}" data-cf="sentBack" value="${c.sentBack||''}" ${c.result?'':'disabled title="บันทึกผลตรวจก่อน"'}></td><td class="n">${ds!==null&&ds>=0?ds+' วัน':''}</td><td class="n">${dow!==null&&dow>=0?dow+' วัน'+(n?'':' (ยังไม่คืน)'):''}</td><td><button class="btn sm danger" data-act="chkDel" data-k="${k}">✕</button></td></tr>`}).join('')}</table></div>
+     return `<tr><td>${k+1}</td><td><input type="date" data-c="${k}" data-cf="recvDate" value="${c.recvDate||''}"></td><td><input type="date" data-c="${k}" data-cf="date" value="${c.date||''}"></td><td><input type="text" data-c="${k}" data-cf="result" value="${esc(c.result)}" list="chkList" placeholder="${c.result?'':'รอตรวจ'}">${c.signDate?`<div class="small" style="margin-top:3px;color:var(--ok)">ลงนามในรอบนี้ วันที่ <input type="date" data-c="${k}" data-cf="signDate" value="${c.signDate}" style="width:auto"></div>`:''}${(()=>{const d=roundDiff(p,k);return d.length?`<div class="small" style="color:var(--info);margin-top:3px">เปลี่ยนจากรอบก่อน: ${d.map(esc).join(' · ')}</div>`:''})()}</td><td class="small">${classify(c.result)==='fix'||(c.areas&&c.areas.length)?AREAS.map(a=>`<label class="row" style="gap:3px"><input type="checkbox" data-c="${k}" data-area="${a}" ${(c.areas||[]).includes(a)?'checked':''}> ${a}</label>`).join(''):''}</td><td><input type="date" data-c="${k}" data-cf="sentBack" value="${c.sentBack||''}" ${c.result?'':'disabled title="บันทึกผลตรวจก่อน"'}></td><td class="n">${ds!==null&&ds>=0?ds+' วัน':''}</td><td class="n">${dow!==null&&dow>=0?dow+' วัน'+(n?'':' (ยังไม่คืน)'):''}</td><td><button class="btn sm danger" data-act="chkDel" data-k="${k}">✕</button></td></tr>`}).join('')}</table></div>
    <div class="small muted" style="margin-top:4px">${(()=>{const t=timeline(p);return `รวมเวลาที่พัสดุใช้ตรวจ ${t.sup} วัน · เวลาที่อยู่ระหว่างแก้ไขที่ผู้รับผิดชอบ ${t.own} วัน`})()}</div>`:'<div class="small muted">ยังไม่มีผลการตรวจ</div>'}
    <datalist id="chkList">${[...S.settings.chkOk,...S.settings.chkSigned,...S.settings.chkFix].map(x=>`<option>${esc(x)}</option>`).join('')}</datalist>
    <div class="row" style="margin-top:6px"><button class="btn sm" data-act="chkRecv">+ รับคืน (เปิดรอบตรวจใหม่)</button>${pStatus(p)==='signed'?'<button class="btn sm danger" data-act="unsignEd">ยกเลิกการลงชื่อ</button>':''}<span class="small muted">บันทึกผลด่วน:</span>${['ไม่มีแก้ไข','ไม่มีรายการซื้อจ้าง','ลงชื่อ'].map(x=>`<button class="btn sm" data-act="chkQuick" data-v="${x}">${x}</button>`).join('')}
