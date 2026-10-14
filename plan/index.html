@@ -36,6 +36,7 @@ h3{font-size:16px;margin:18px 0 8px}
 .btn.sm{padding:2px 9px;font-size:13px}
 .btn.danger{color:var(--bad)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
+input.money{text-align:right}
 input[type=text],input[type=number],input[type=date],select,textarea{border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:#fff;min-width:0}
 textarea{width:100%;resize:vertical}
 table.t{width:100%;border-collapse:collapse;background:#fff}
@@ -329,6 +330,9 @@ function parseThaiDate(s){ // "1 ตุลาคม 2569"
   return y+'-'+String(mi+1).padStart(2,'0')+'-'+String(m[1]).padStart(2,'0');
 }
 const nf=new Intl.NumberFormat('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+// clean Thai text typed/pasted from other programs: invisible chars, tone mark typed before vowel, split sara am
+function thNorm(t){return String(t??'').replace(/[\u200B-\u200D\uFEFF\u00AD]/g,'').replace(/\u00A0/g,' ').replace(/([\u0E48-\u0E4B])([\u0E31\u0E34-\u0E37\u0E47])/g,'$2$1').replace(/\u0E4D\u0E32/g,'\u0E33').replace(/\s+/g,' ').trim()}
+function mv(v){return (v===null||v===undefined||v==='')?'':money(r2(num(v)))}
 function money(v){return (v===null||v===undefined||v==='')?'':nf.format(Number(v)||0)}
 function num(v){const n=Number(String(v??'').replace(/,/g,''));return isFinite(n)?n:0}
 function r2(v){return Math.round((Number(v)||0)*100)/100}
@@ -484,8 +488,8 @@ function autoCheck(p){
     if(!(num(i.qty)>0))w.push(['w',L+': ยังไม่ระบุจำนวน']);
     if(!i.months.length)w.push(['w',L+': ยังไม่ระบุเดือนที่จะจัดซื้อจัดจ้าง']);
     const pre=(i.name||'').trim().slice(0,6);
-    if(i.name&&!/^จัด(ซื้อ|จ้าง|เช่า)/.test(i.name.trim()))w.push(['w',L+': ชื่อรายการควรขึ้นต้นด้วย "จัดซื้อ/จัดจ้าง/จัดเช่า"']);
-    else if(i.name){const k2=/^จัดซื้อ/.test(i.name)?'ซื้อ':/^จัดจ้าง/.test(i.name)?'จ้าง':'เช่า';if(i.kind&&k2!==i.kind)w.push(['w',L+`: ชื่อขึ้นต้นด้วย "จัด${k2}" แต่ประเภทเลือกเป็น "${i.kind}"`])}
+    const nm=thNorm(i.name);if(nm&&!/^จัด(ซื้อ|จ้าง|เช่า)/.test(nm)){const typo=/^จัดชื้อ/.test(nm)?' — พิมพ์ "ชื้อ" (ช ช้าง) ควรเป็น "ซื้อ" (ซ โซ่)':/^จัด(ซ|ช)/.test(nm)?' — ตรวจตัวสะกด "ซื้อ" อีกครั้ง':'';w.push(['w',L+': ชื่อรายการควรขึ้นต้นด้วย "จัดซื้อ/จัดจ้าง/จัดเช่า" (ตอนนี้ขึ้นต้นว่า "'+nm.slice(0,8)+'…")'+typo])}
+    else if(nm){const k2=/^จัดซื้อ/.test(nm)?'ซื้อ':/^จัดจ้าง/.test(nm)?'จ้าง':'เช่า';if(i.kind&&k2!==i.kind)w.push(['w',L+`: ชื่อขึ้นต้นด้วย "จัด${k2}" แต่ประเภทเลือกเป็น "${i.kind}"`])}
     if(num(i.budget)>500000&&i.method==='เฉพาะเจาะจง')w.push(['w',L+': วงเงินเกิน 500,000 บาท ตรวจสอบวิธีการจัดหาอีกครั้ง']);
     const nk=norm(i.name);if(nk&&seen[nk])w.push(['w',L+': ชื่อซ้ำกับรายการที่ '+seen[nk]]);seen[nk]=k+1;
   });
@@ -650,8 +654,8 @@ function itemRow(i,k){
   <td style="min-width:300px"><input type="text" data-f="name" value="${esc(i.name)}" placeholder="เช่น จัดซื้อวัสดุสำนักงาน"></td>
   <td style="width:70px"><input type="number" data-f="qty" value="${i.qty??''}" step="any"></td>
   <td style="width:90px"><input type="text" data-f="unit" value="${esc(i.unit)}" list="unitList"></td>
-  <td style="width:110px"><input type="number" data-f="price" value="${i.price??''}" step="0.01" placeholder="ไม่บังคับ"></td>
-  <td style="width:120px"><input type="number" data-f="budget" value="${i.budget??''}" step="0.01"></td>
+  <td style="width:110px"><input type="text" inputmode="decimal" class="money" data-f="price" value="${mv(i.price??'')}" placeholder="ไม่บังคับ"></td>
+  <td style="width:120px"><input type="text" inputmode="decimal" class="money" data-f="budget" value="${mv(i.budget??'')}"></td>
   <td style="width:100px"><select data-f="fund"><option value=""></option>${S2.funds.map(x=>`<option ${i.fund===x?'selected':''}>${x}</option>`).join('')}</select></td>
   <td style="width:130px"><select data-f="method">${S2.methods.map(x=>`<option ${i.method===x?'selected':''}>${x}</option>`).join('')}</select></td>
   <td><div class="months">${MONTHS.map((m,mi)=>`<label class="${i.months.includes(mi)?'on':''}"><input type="checkbox" data-m="${mi}" ${i.months.includes(mi)?'checked':''}>${m}</label>`).join('')}</div></td>
@@ -672,7 +676,7 @@ function drawEditor(){
      <div class="row" style="gap:6px">${(p.owners||[]).map((o,k)=>`<span class="tag ${staffFind(o.name)?'s-ok':'s-fix'}" style="padding:2px 4px 2px 10px">${esc(o.name)} <span class="muted">· ${esc(o.pos||'ไม่อยู่ในรายชื่อ')}</span> <button class="btn sm" style="padding:0 6px;border:0;background:none" data-act="ownDel" data-k="${k}" title="เอาออก">✕</button></span>`).join('')}
      <input type="text" id="ownAdd" list="staffList" placeholder="พิมพ์ชื่อแล้วเลือกจากรายชื่อ" style="min-width:260px"><button class="btn sm" data-act="ownAdd">+ เพิ่ม</button></div></div>
     <div class="field"><label>วันที่ส่งตรวจครั้งแรก</label><input type="date" data-p="submitDate" value="${p.submitDate||''}"></div>
-    <div class="field"><label>วงเงินค่าซื้อ/จ้างที่ระบุในโครงการ (ไว้เทียบยอด)</label><input type="number" step="0.01" data-p="budgetTotal" value="${p.budgetTotal??''}"></div>
+    <div class="field"><label>วงเงินค่าซื้อ/จ้างที่ระบุในโครงการ (ไว้เทียบยอด)</label><input type="text" inputmode="decimal" class="money" data-p="budgetTotal" value="${mv(p.budgetTotal??'')}"></div>
     <div class="field"><label>ลำดับที่ในทะเบียน</label><input type="number" data-p="seq" value="${p.seq||''}"></div>
    </div>
    <div class="card" style="margin:14px 0 6px;border-color:${p.hasBuy==null?'var(--bad)':'var(--line)'};background:${p.hasBuy==null?'var(--bad-bg)':'#fafbf8'}"><b>โครงการนี้มีรายการซื้อ / จ้าง / เช่า หรือไม่ *</b>
@@ -706,7 +710,7 @@ function drawEditor(){
 function readEditor(){
   const m=document.getElementById('modal');
   m.querySelectorAll('[data-p]').forEach(el=>{const k=el.dataset.p;let v=el.value;if(k==='budgetTotal')v=v===''?null:num(v);if(k==='seq')v=num(v);ED[k]=v});
-  m.querySelectorAll('tr[data-k]').forEach(tr=>{const i=ED.items[tr.dataset.k];if(!i)return;tr.querySelectorAll('[data-f]').forEach(el=>{let v=el.value;if(el.dataset.f==='qty'||el.dataset.f==='budget'||el.dataset.f==='price')v=v===''?null:num(v);i[el.dataset.f]=v});i.months=[...tr.querySelectorAll('[data-m]')].filter(x=>x.checked).map(x=>Number(x.dataset.m));const mk=/^\s*จัด(ซื้อ|จ้าง|เช่า)/.exec(i.name||'');if(mk)i.kind=mk[1]});
+  m.querySelectorAll('tr[data-k]').forEach(tr=>{const i=ED.items[tr.dataset.k];if(!i)return;tr.querySelectorAll('[data-f]').forEach(el=>{let v=el.value;if(el.dataset.f==='qty'||el.dataset.f==='budget'||el.dataset.f==='price')v=v===''?null:num(v);i[el.dataset.f]=el.dataset.f==='name'?thNorm(v):v});i.months=[...tr.querySelectorAll('[data-m]')].filter(x=>x.checked).map(x=>Number(x.dataset.m));const mk=/^\s*จัด(ซื้อ|จ้าง|เช่า)/.exec(i.name||'');if(mk)i.kind=mk[1]});
   m.querySelectorAll('[data-c][data-cf]').forEach(el=>{ED.checks[el.dataset.c][el.dataset.cf]=el.value});
   const ar={};m.querySelectorAll('[data-c][data-area]').forEach(el=>{const k=el.dataset.c;ar[k]=ar[k]||[];if(el.checked)ar[k].push(el.dataset.area)});Object.entries(ar).forEach(([k,v])=>{ED.checks[k].areas=v});
 }
@@ -913,19 +917,19 @@ function drawPurchase(){
    <div class="field" style="grid-column:1/-1"><label>รายการ (ข้อความในทะเบียนคุม)</label><input type="text" id="puS" value="${esc(x.desc)}" placeholder="เช่น จัดซื้อวัสดุสำนักงาน จำนวน 3 รายการ"></div>
    <div class="field" style="grid-column:1/-1"><label>รายการย่อย (ไม่บังคับ) — ใส่แล้วระบบรวมยอดให้</label>
     <table class="t" id="puLines"><tr><th style="width:4%">#</th><th>ชื่อรายการ</th><th style="width:11%">จำนวน</th><th style="width:13%">หน่วย</th><th style="width:15%">ราคา/หน่วย</th><th class="n" style="width:15%">รวม</th><th style="width:5%"></th></tr>
-    ${(x.lines||[]).map((l,k)=>`<tr><td>${k+1}</td><td><input type="text" data-pl="${k}:name" value="${esc(l.name||'')}" style="width:100%" placeholder="ชื่อรายการ"><input type="text" data-pl="${k}:note" value="${esc(l.note||'')}" style="width:100%;margin-top:3px;font-size:12px" placeholder="รายละเอียดเพิ่ม (ถ้ามี) เช่น ช่วงเวลา/สถานที่/เลขครุภัณฑ์"></td><td><input type="number" step="any" data-pl="${k}:qty" value="${l.qty??''}" style="width:100%"></td><td><input type="text" data-pl="${k}:unit" value="${esc(l.unit||'')}" list="unitDL" style="width:100%"></td><td><input type="number" step="0.01" data-pl="${k}:price" value="${l.price??''}" style="width:100%"></td><td class="n" data-plt="${k}">${money(num(l.qty)*num(l.price))}</td><td><button class="btn sm danger" data-pldel="${k}">✕</button></td></tr>`).join('')}
+    ${(x.lines||[]).map((l,k)=>`<tr><td>${k+1}</td><td><input type="text" data-pl="${k}:name" value="${esc(l.name||'')}" style="width:100%" placeholder="ชื่อรายการ"><input type="text" data-pl="${k}:note" value="${esc(l.note||'')}" style="width:100%;margin-top:3px;font-size:12px" placeholder="รายละเอียดเพิ่ม (ถ้ามี) เช่น ช่วงเวลา/สถานที่/เลขครุภัณฑ์"></td><td><input type="number" step="any" data-pl="${k}:qty" value="${l.qty??''}" style="width:100%"></td><td><input type="text" data-pl="${k}:unit" value="${esc(l.unit||'')}" list="unitDL" style="width:100%"></td><td><input type="text" inputmode="decimal" class="money" data-pl="${k}:price" value="${mv(l.price??'')}" style="width:100%"></td><td class="n" data-plt="${k}">${money(num(l.qty)*num(l.price))}</td><td><button class="btn sm danger" data-pldel="${k}">✕</button></td></tr>`).join('')}
     </table><button class="btn sm" id="puAddLine" style="margin-top:6px">+ เพิ่มรายการย่อย</button>
     <datalist id="unitDL">${(S.settings.unitList||[]).map(u=>`<option>${esc(u)}</option>`).join('')}</datalist></div>
    <div class="field"><label>1) ราคานี้มีภาษีมูลค่าเพิ่ม (VAT) หรือไม่</label><select id="puHasVat"><option value="1" ${(x.vatMode||'none')!=='none'?'selected':''}>มี VAT</option><option value="0" ${(x.vatMode||'none')==='none'?'selected':''}>ไม่มี VAT (ผู้ขายไม่จด VAT / ยกเว้น)</option></select>
     <label style="margin-top:6px;${(x.vatMode||'none')==='none'?'display:none':''}" id="puVatL">2) แบบของ VAT</label><select id="puVat" style="${(x.vatMode||'none')==='none'?'display:none':''}"><option value="excl" ${(x.vatMode||'excl')==='excl'||x.vatMode==='none'||!x.vatMode?'selected':''}>VAT นอก — ราคาที่กรอกยังไม่รวม VAT (บวกเพิ่ม 7%)</option><option value="incl" ${x.vatMode==='incl'?'selected':''}>VAT ใน — ราคาที่กรอกรวม VAT แล้ว</option></select></div>
-   <div class="field"><label>จำนวนเงินรวมทั้งสิ้น (บาท รวม VAT)${(x.lines||[]).length?' — คำนวณจากรายการย่อย':''}</label><input type="number" step="0.01" id="puA" value="${x.amount??''}"><div class="small muted" id="puBrk"></div></div>
+   <div class="field"><label>จำนวนเงินรวมทั้งสิ้น (บาท รวม VAT)${(x.lines||[]).length?' — คำนวณจากรายการย่อย':''}</label><input type="text" inputmode="decimal" class="money" id="puA" value="${mv(x.amount??'')}"><div class="small muted" id="puBrk"></div></div>
    <div class="field"><label>กิจกรรมที่ (ถ้ามี)</label><input type="text" id="puAct" value="${esc(x.activity||'')}"></div>
    <div class="field"><label>ระยะที่ (ถ้ามี)</label><input type="text" id="puPh" value="${esc(x.phase||'')}"></div>
   </div><datalist id="vendList">${[...new Set(S.purchases.map(p=>p.vendor).filter(Boolean))].map(v=>`<option>${esc(v)}</option>`).join('')}</datalist></div>
   <div class="mf"><button class="btn" data-act="close">ยกเลิก</button><button class="btn pri" data-act="puSave">บันทึก</button></div></div></div>`;
   const m=document.getElementById('modal');
   const vatMode=()=>document.getElementById('puHasVat').value==='0'?'none':document.getElementById('puVat').value;
-  const sumLines=()=>{MD.x.vatMode=vatMode();const hv=MD.x.vatMode!=='none';document.getElementById('puVat').style.display=hv?'':'none';document.getElementById('puVatL').style.display=hv?'':'none';const L=MD.x.lines||[];if(L.length)document.getElementById('puA').value=puCalc(MD.x).total;else MD.x.amount=num(document.getElementById('puA').value);
+  const sumLines=()=>{MD.x.vatMode=vatMode();const hv=MD.x.vatMode!=='none';document.getElementById('puVat').style.display=hv?'':'none';document.getElementById('puVatL').style.display=hv?'':'none';const L=MD.x.lines||[];if(L.length)document.getElementById('puA').value=money(puCalc(MD.x).total);else MD.x.amount=num(document.getElementById('puA').value);
     const c=puCalc(Object.assign({},MD.x,{amount:num(document.getElementById('puA').value)}));document.getElementById('puBrk').textContent=`ราคารวม ${money(c.sub)} · ภาษี ${money(c.vat)} · รวมภาษี ${money(c.total)}`};
   document.getElementById('puVat').addEventListener('change',sumLines);document.getElementById('puHasVat').addEventListener('change',sumLines);document.getElementById('puA').addEventListener('input',()=>{if(!(MD.x.lines||[]).length)sumLines()});sumLines();
   m.querySelectorAll('[data-pl]').forEach(el=>el.addEventListener('input',()=>{const [k,f]=el.dataset.pl.split(':');const l=MD.x.lines[+k];l[f]=(f==='qty'||f==='price')?(el.value===''?null:num(el.value)):el.value;if(f==='note')return;const c=m.querySelector(`[data-plt="${k}"]`);if(c)c.textContent=money(num(l.qty)*num(l.price));sumLines()}));
@@ -975,7 +979,7 @@ function drawImport(){
     <div class="field"><label>รายการ (ทะเบียนคุม)</label><input type="text" data-ir="desc" value="${esc(r.desc)}"></div>
     <div class="field"><label>ผู้ขาย/ผู้รับจ้าง</label><input type="text" data-ir="vendor" value="${esc(r.vendor)}"></div>
     <div class="field"><label>วันที่</label><input type="date" data-ir="date" value="${r.date||''}"></div>
-    <div class="field"><label>จำนวนเงินรวม</label><input type="number" step="0.01" data-ir="amount" value="${r.amount}"></div>
+    <div class="field"><label>จำนวนเงินรวม</label><input type="text" inputmode="decimal" class="money" data-ir="amount" value="${mv(r.amount)}"></div>
     ${r.months?`<div class="field"><label>งานเช่า ${r.months} เดือน</label><label class="row small"><input type="checkbox" data-ir="split" ${r.split?'checked':''}> แบ่งเป็นรายเดือน ${r.months} งวด งวดละ ${money(r.amount/r.months)} บาท</label></div>`:''}
     <div class="field"><label>&nbsp;</label><label class="row small"><input type="checkbox" data-ir="skip" ${r.skip?'checked':''}> ไม่นำเข้าไฟล์นี้</label></div>
    </div>${dupWarn(r)}</div>`).join('')}
@@ -1473,7 +1477,7 @@ function vDrug(){
       <td style="width:80px"><input type="number" step="any" data-di="estUse" value="${i.estUse??''}"></td>
       <td style="width:80px"><input type="number" step="any" data-di="stock" value="${i.stock??''}"></td>
       <td class="n">${dBuy(i)}</td>
-      <td style="width:90px"><input type="number" step="any" data-di="price" value="${i.price??''}"></td>
+      <td style="width:90px"><input type="text" inputmode="decimal" class="money" data-di="price" value="${mv(i.price??'')}"></td>
       <td class="n">${money(dAmt(i))}</td>
       ${[0,1,2,3].map(q=>`<td style="width:72px"><input type="number" step="any" data-dq="${q}" value="${i.q[q]||''}"><div class="small muted n">${i.q[q]?money(dQAmt(i,q)):''}</div></td>`).join('')}
       <td><button class="btn sm danger" data-dact="del" data-k="${k}">✕</button></td></tr>`}).join('')}
@@ -1482,7 +1486,7 @@ function vDrug(){
      <div class="card"><h3 style="margin-top:0">บันทึกการจัดซื้อจริง และการใช้จริงทั้งปี</h3>
       <p class="small muted">ใส่จำนวนแล้วระบบเติมมูลค่าจากราคาต่อหน่วยให้ แก้ได้ถ้าราคาจริงต่างจากแผน · คงเหลือ = ตามแผน − ใช้จริง · ยอดจัดซื้อจริงรายไตรมาสใช้ในแถว "จัดซื้อจริง" ของสรุปแผน · "ใช้จริงทั้งปี" กรอกตอนสิ้นปี จะกลายเป็นอัตราการใช้ย้อนหลังของแผนปีถัดไป</p>
       <div style="overflow-x:auto"><table class="t items" style="min-width:1100px"><tr><th>#</th><th>รายการ</th>${QTXT.map(q=>`<th>${q}<br><span class="small muted">จำนวน / มูลค่า</span></th>`).join('')}<th class="n">ตามแผน<br><span class="small muted">จำนวน / บาท</span></th><th class="n">ใช้จริง<br><span class="small muted">จำนวน / บาท</span></th><th class="n">คงเหลือ<br><span class="small muted">จำนวน / บาท</span></th><th>ใช้จริงทั้งปี ${FY}</th></tr>
-      ${p.items.map((i,k)=>`<tr data-dk="${k}"><td>${k+1}</td><td>${esc(i.name)}</td>${[0,1,2,3].map(q=>`<td><div class="row" style="gap:4px;flex-wrap:nowrap"><input type="number" step="any" style="width:70px" data-daq="${q}" value="${(i.act[q]&&i.act[q].qty)??''}"><input type="number" step="0.01" style="width:100px" data-daa="${q}" value="${(i.act[q]&&i.act[q].amt)??''}"></div></td>`).join('')}<td class="n">${dBuy(i)} / ${money(dAmt(i))}</td><td class="n">${dActQty(i)} / ${money(dActAmt(i))}</td><td class="n" style="${dRemAmt(i)<0?'color:var(--bad)':''}">${dRemQty(i)} / ${money(dRemAmt(i))}</td><td style="width:100px"><input type="number" step="any" data-di="actualUse" value="${i.actualUse??''}"></td></tr>`).join('')}
+      ${p.items.map((i,k)=>`<tr data-dk="${k}"><td>${k+1}</td><td>${esc(i.name)}</td>${[0,1,2,3].map(q=>`<td><div class="row" style="gap:4px;flex-wrap:nowrap"><input type="number" step="any" style="width:70px" data-daq="${q}" value="${(i.act[q]&&i.act[q].qty)??''}"><input type="text" inputmode="decimal" class="money" style="width:100px" data-daa="${q}" value="${mv((i.act[q]&&i.act[q].amt)??'')}"></div></td>`).join('')}<td class="n">${dBuy(i)} / ${money(dAmt(i))}</td><td class="n">${dActQty(i)} / ${money(dActAmt(i))}</td><td class="n" style="${dRemAmt(i)<0?'color:var(--bad)':''}">${dRemQty(i)} / ${money(dRemAmt(i))}</td><td style="width:100px"><input type="number" step="any" data-di="actualUse" value="${i.actualUse??''}"></td></tr>`).join('')}
       <tr class="sum"><td></td><td>รวม</td><td colspan="4"></td><td class="n">${money(sum(p.items,dAmt))}</td><td class="n">${money(sum(p.items,dActAmt))}</td><td class="n">${money(sum(p.items,dRemAmt))}</td><td></td></tr></table></div></div>
      <div class="row" style="margin-bottom:14px"><button class="btn" data-dact="prPlan">พิมพ์แผนปฏิบัติการ</button><button class="btn" data-dact="docPlan">แผนปฏิบัติการ Word</button><button class="btn" data-dact="prSum">พิมพ์สรุปแผน</button><button class="btn" data-dact="docSum">สรุปแผน Word</button><button class="btn" data-dact="xls">ส่งออก Excel (ยา + เวชภัณฑ์)</button><span class="grow"></span><button class="btn danger" data-dact="dropPlan">ลบแผน${DKIND[kind]}ปีนี้</button></div>`;
   }
@@ -1695,8 +1699,8 @@ function eqEdit(i){
     <div class="field"><label>ประกาศจัดซื้อจัดจ้าง (เดือน/ปี)</label><input type="month" data-ex="annMonth" value="${x.annMonth||''}"></div>
     <div class="field"><label>คาดว่าจะลงนามในสัญญา (เดือน/ปี)</label><input type="month" data-ex="signMonth" value="${x.signMonth||''}"></div>
     <div class="field"><label>คาดว่าจะมีการส่งมอบ (เดือน/ปี)</label><input type="month" data-ex="dlvMonth" value="${x.dlvMonth||''}"></div>
-    <div class="field"><label>งบประมาณที่ได้รับอนุมัติ (บาท) · แสดงในแบบเป็นล้านบาท</label><input type="number" step="0.01" data-ex="budget" value="${x.budget??''}"></div>
-    <div class="field"><label>เงินนอกงบประมาณหรือเงินสมทบ (บาท)</label><input type="number" step="0.01" data-ex="offBudget" value="${x.offBudget??''}"></div>
+    <div class="field"><label>งบประมาณที่ได้รับอนุมัติ (บาท) · แสดงในแบบเป็นล้านบาท</label><input type="text" inputmode="decimal" class="money" data-ex="budget" value="${mv(x.budget??'')}"></div>
+    <div class="field"><label>เงินนอกงบประมาณหรือเงินสมทบ (บาท)</label><input type="text" inputmode="decimal" class="money" data-ex="offBudget" value="${mv(x.offBudget??'')}"></div>
     <div class="field" style="grid-column:1/-1"><label>หมายเหตุ (แบบแผน)</label><input type="text" data-ex="note" value="${esc(x.note)}"></div>
    </div>
    <h3>ผลการดำเนินการ (แบบรายงานผล)</h3>
@@ -1705,8 +1709,8 @@ function eqEdit(i){
     <div class="field"><label>(6) ประกาศ/ประกวดราคา (วันที่)</label><input type="date" data-exr="annDate" value="${x.res.annDate||''}"></div>
     <div class="field"><label>(7) ลงนามในสัญญา (วันที่)</label><input type="date" data-exr="signDate" value="${x.res.signDate||''}"></div>
     <div class="field"><label>(8) การส่งมอบ (วันที่)</label><input type="date" data-exr="dlvDate" value="${x.res.dlvDate||''}"></div>
-    <div class="field"><label>(9) เบิกจ่ายเงินงบประมาณ (บาท) — เว้นว่าง = ใช้ยอดจากตัดยอด</label><input type="number" step="0.01" data-exr="paidBudget" value="${x.res.paidBudget??''}" placeholder="${x.itemId?money(usedOf(x.itemId)):''}"></div>
-    <div class="field"><label>(10) เบิกจ่ายเงินนอกงบ/เงินสมทบ (บาท)</label><input type="number" step="0.01" data-exr="paidOff" value="${x.res.paidOff??''}"></div>
+    <div class="field"><label>(9) เบิกจ่ายเงินงบประมาณ (บาท) — เว้นว่าง = ใช้ยอดจากตัดยอด</label><input type="text" inputmode="decimal" class="money" data-exr="paidBudget" value="${mv(x.res.paidBudget??'')}" placeholder="${x.itemId?money(usedOf(x.itemId)):''}"></div>
+    <div class="field"><label>(10) เบิกจ่ายเงินนอกงบ/เงินสมทบ (บาท)</label><input type="text" inputmode="decimal" class="money" data-exr="paidOff" value="${mv(x.res.paidOff??'')}"></div>
     <div class="field"><label>(11)(12) เป็นไปตามแผน</label><select data-exr="onPlan"><option value="auto" ${x.res.onPlan==='auto'?'selected':''}>ให้ระบบพิจารณา (ส่งมอบไม่เกินเดือนในแผน และจ่ายไม่เกินงบ)</option><option value="yes" ${x.res.onPlan==='yes'?'selected':''}>เป็นไปตามแผน</option><option value="no" ${x.res.onPlan==='no'?'selected':''}>ไม่เป็นไปตามแผน</option></select></div>
     <div class="field" style="grid-column:1/-1"><label>(13) หมายเหตุ / สาเหตุที่ไม่เป็นไปตามแผน ผลกระทบ และวิธีการแก้ไข</label><textarea rows="2" data-exr="note">${esc(x.res.note)}</textarea></div>
    </div></div>
@@ -1934,12 +1938,14 @@ document.addEventListener('change',e=>{
 });
 document.addEventListener('input',e=>{const tr=e.target.closest&&e.target.closest('tr[data-k]');
   if(tr&&ED&&e.target.dataset.f&&['qty','price','budget','fund'].includes(e.target.dataset.f)){
-    const g=f=>tr.querySelector(`[data-f="${f}"]`);if(e.target.dataset.f!=='budget'&&g('price').value!==''){g('budget').value=r2(num(g('qty').value||1)*num(g('price').value))}
+    const g=f=>tr.querySelector(`[data-f="${f}"]`);if(e.target.dataset.f!=='budget'&&g('price').value!==''){g('budget').value=money(r2(num(g('qty').value||1)*num(g('price').value)))}
     const fs={};let tot=0,n=0;document.querySelectorAll('#modal tr[data-k]').forEach(r=>{const i=ED.items[r.dataset.k];if(!i||i.cancelled)return;const b=num(r.querySelector('[data-f="budget"]').value),f=r.querySelector('[data-f="fund"]').value||'?';tot+=b;n++;fs[f]=(fs[f]||0)+b});
     const a=document.getElementById('edSumTot'),t=document.getElementById('edSumTxt');if(a)a.textContent=money(tot);if(t)t.textContent=`รวม ${n} รายการ `+Object.entries(fs).map(([f,v])=>`· ${f} ${money(v)}`).join(' ')}
   if(e.target.id==='staffSearch'){UI.staffQ=e.target.value;const pos=e.target.selectionStart;render();const x=document.getElementById('staffSearch');x.focus();x.setSelectionRange(pos,pos);return}
   if(e.target.id==='qcRes'){const v=e.target.value.trim(),cl=v?classify(v):'';const b=document.getElementById('qcSendBox');if(b)b.style.display=v?'':'none';const sl=document.getElementById('qcSendLbl');if(sl)sl.textContent=cl==='signed'?'ส่งหัวหน้าหน่วยบริหารทั่วไปแล้ว เมื่อวันที่ (ไม่ส่งคืนผู้รับผิดชอบ)':cl==='fix'?'ส่งกลับให้ผู้รับผิดชอบแก้ไขแล้ว เมื่อวันที่':'ส่งคืนผู้รับผิดชอบแล้ว เมื่อวันที่ (ยังไม่ส่งให้เอาติ๊กออก)';const ab=document.getElementById('qcAreaBox');if(ab){ab.style.display=cl==='fix'?'':'none';const g=cl==='fix'?guessAreas(v):[];document.querySelectorAll('.qcArea').forEach(x=>x.checked=g.includes(x.value))}const l=document.getElementById('qcDateLbl');if(l)l.textContent=cl==='signed'?'วันที่ลงนาม':'วันที่ตรวจ'}
   if(e.target.id==='chkSearch'){UI.chkSearch=e.target.value;const pos=e.target.selectionStart;render();const s=document.getElementById('chkSearch');s.focus();s.setSelectionRange(pos,pos)}});
+document.addEventListener('input',e=>{const el=e.target;if(el.classList&&el.classList.contains('money')){const v=el.value,c=v.replace(/[^\d.,-]/g,'');if(c!==v)el.value=c}},true);
+document.addEventListener('focusout',e=>{const el=e.target;if(el.classList&&el.classList.contains('money')&&el.value.trim()!==''){el.value=money(r2(num(el.value)))}});
 document.addEventListener('click',e=>{const el=e.target;if(el&&el.tagName==='INPUT'&&(el.type==='date'||el.type==='month')&&!el.disabled&&el.showPicker){try{el.showPicker()}catch(_){}}});
 document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='ownAdd'){e.preventDefault();addOwner();return}if(e.key==='Escape'&&document.getElementById('modal').innerHTML)closeModal()});
 
