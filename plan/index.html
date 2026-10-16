@@ -401,6 +401,13 @@ function staffGuess(token){ // legacy short names like "อ.วรวุฒิ"
   const hits=staff().filter(x=>stripTitle(x.name).split(/\s+/)[0]===t);
   return hits.length===1?hits[0]:null;
 }
+function projKey(t){return thNorm(t).replace(/^โครงการ/,'').replace(/[\s\-–—.,()"'“”]/g,'')}
+function dupOf(p){const k=projKey(p.name),c=(p.code||'').trim();return fyProjects(p.fy).filter(x=>x.id!==p.id&&!x.cancelled&&((c&&(x.code||'').trim()===c)||(k&&projKey(x.name)===k)))}
+function delProject(id){const p=proj(id);if(!p)return false;
+  if(S.purchases.some(x=>x.projectId===id)){alert('โครงการนี้มีการตัดยอดการใช้งบแล้ว ลบไม่ได้ ให้ใช้ "ยกเลิกโครงการ" แทน');return false}
+  const inB=S.batches.filter(b=>b.projectIds.includes(id)).map(b=>`${({approve:'แผน',change:'เปลี่ยนแปลงแผน',cancel:'ยกเลิก'})[b.type]} ครั้งที่ ${b.no}`);
+  if(!confirm(`ลบโครงการนี้ออกจากทะเบียน?\n\n${p.seq?'ลำดับที่ '+p.seq+' · ':''}${p.name}${p.code?' ('+p.code+')':''}\nผลตรวจ ${p.checks.length} ครั้ง · รายการ ${activeItems(p).length} รายการ${inB.length?'\n\nโครงการนี้อยู่ใน '+inB.join(', ')+' แล้ว — แผนที่เสนอไปแล้วยังคงเดิม':''}\n\nลบแล้วกู้คืนไม่ได้ (ยกเว้นจากไฟล์สำรอง)`))return false;
+  S.projects=S.projects.filter(x=>x.id!==id);save();render();toast('ลบโครงการแล้ว');return true}
 function ownerText(p){return p.owners&&p.owners.length?p.owners.map(o=>o.name).join(', '):(p.owner||'')}
 function renderUnitList(){let d=document.getElementById('unitListG');if(!d){d=document.createElement('datalist');d.id='unitListG';document.body.appendChild(d)}d.innerHTML=S.settings.unitList.map(x=>`<option>${esc(x)}</option>`).join('')}
 function renderStaffList(){let d=document.getElementById('staffList');if(!d){d=document.createElement('datalist');d.id='staffList';document.body.appendChild(d)}d.innerHTML=staff().map(x=>`<option value="${esc(x.name)}">${esc(x.pos)}</option>`).join('')}
@@ -473,6 +480,7 @@ function daysBetween(a,b){if(!a||!b)return null;return Math.round((new Date(b)-n
 function autoCheck(p){
   const w=[];const items=activeItems(p);
   if(!p.name.trim())w.push(['bad','ยังไม่มีชื่อโครงการ']);
+  {const d=dupOf(p);if(d.length)w.push(['bad','อาจซ้ำกับโครงการ'+d.map(x=>` ลำดับที่ ${x.seq||'-'}${p.code&&(x.code||'').trim()===p.code.trim()?' (รหัสเดียวกัน)':' (ชื่อเดียวกัน)'}`).join(',')+' — ถ้าซ้ำ ให้ลบรายการที่ไม่ใช้'])}
   if(!p.owners||!p.owners.length)w.push(['w','ยังไม่ระบุผู้รับผิดชอบโครงการ']);
   (p.owners||[]).forEach(o=>{if(!staffFind(o.name))w.push(['w',`ผู้รับผิดชอบ "${o.name}" ไม่อยู่ในไฟล์รายชื่อบุคลากร`])});
   if(p.hasBuy===null||p.hasBuy===undefined){w.push(['bad','ยังไม่ได้ติ๊กว่าโครงการมีรายการซื้อ/จ้าง/เช่าหรือไม่']);return w}
@@ -606,7 +614,7 @@ function vCheck(){
     <td class="small">${lastTxt(p)}<div class="muted">ตรวจ ${p.checks.filter(c=>c.result).length} ครั้ง${p.checks.length?(()=>{const t=timeline(p);return ` · พัสดุ ${t.sup} วัน · ผู้รับผิดชอบ ${t.own} วัน`})():''}</div></td>
     <td><span class="tag ${STATUS[st][1]}">${STATUS[st][0]}</span></td>
     <td class="small">${planLabel(p)}</td>
-    <td style="white-space:nowrap">${st==='tosend'?`<button class="btn sm pri" data-act="sendBack" data-id="${p.id}">ส่งกลับ</button>`:st==='fix'?`<button class="btn sm pri" data-act="recvBack" data-id="${p.id}">รับคืน</button>`:st==='cancel'?'':`${(p.hasBuy===false&&['new','wait','ok'].includes(st))||(p.hasBuy&&st==='ok')?`<button class="btn sm pri" data-act="signNow" data-id="${p.id}">ลงนาม</button> `:''}${st==='ok'&&p.checks.length&&!p.checks[p.checks.length-1].sentBack?`<button class="btn sm" data-act="sendBack" data-id="${p.id}">ส่งคืน</button> `:''}${st==='signed'&&!p.checks[p.checks.length-1].fwdDate&&!p.checks[p.checks.length-1].sentBack?`<button class="btn sm" data-act="fwdHead" data-id="${p.id}" title="บันทึกวันที่ส่งหัวหน้าหน่วยบริหารทั่วไป">ส่งหัวหน้าหน่วยฯ</button> `:''}${st==='signed'?`<button class="btn sm danger" data-act="unsign" data-id="${p.id}" title="ให้กลับเป็นยังไม่ลงชื่อ">ยกเลิกลงชื่อ</button> `:''}<button class="btn sm" data-act="addCheck" data-id="${p.id}">+ ผลตรวจ</button>`}</td></tr>`}).join('')}</table>`:'<div class="card empty">ยังไม่มีโครงการ กด "+ รับโครงการเข้าตรวจ" หรือ "คัดลอกโครงการจากปีก่อน"</div>'}`;
+    <td style="white-space:nowrap">${st==='tosend'?`<button class="btn sm pri" data-act="sendBack" data-id="${p.id}">ส่งกลับ</button>`:st==='fix'?`<button class="btn sm pri" data-act="recvBack" data-id="${p.id}">รับคืน</button>`:st==='cancel'?'':`${(p.hasBuy===false&&['new','wait','ok'].includes(st))||(p.hasBuy&&st==='ok')?`<button class="btn sm pri" data-act="signNow" data-id="${p.id}">ลงนาม</button> `:''}${st==='ok'&&p.checks.length&&!p.checks[p.checks.length-1].sentBack?`<button class="btn sm" data-act="sendBack" data-id="${p.id}">ส่งคืน</button> `:''}${st==='signed'&&!p.checks[p.checks.length-1].fwdDate&&!p.checks[p.checks.length-1].sentBack?`<button class="btn sm" data-act="fwdHead" data-id="${p.id}" title="บันทึกวันที่ส่งหัวหน้าหน่วยบริหารทั่วไป">ส่งหัวหน้าหน่วยฯ</button> `:''}${st==='signed'?`<button class="btn sm danger" data-act="unsign" data-id="${p.id}" title="ให้กลับเป็นยังไม่ลงชื่อ">ยกเลิกลงชื่อ</button> `:''}<button class="btn sm" data-act="addCheck" data-id="${p.id}">+ ผลตรวจ</button>`}${st!=='cancel'&&(dupOf(p).length||st==='new')?` <button class="btn sm danger" data-act="projDel" data-id="${p.id}" title="ลบโครงการนี้ออกจากทะเบียน">ลบ</button>`:''}</td></tr>`}).join('')}</table>`:'<div class="card empty">ยังไม่มีโครงการ กด "+ รับโครงการเข้าตรวจ" หรือ "คัดลอกโครงการจากปีก่อน"</div>'}`;
 }
 function unsign(p){const k=[...p.checks].map((c,i)=>[c,i]).reverse().find(([c])=>classify(c.result)==='signed');if(!k)return false;const c=k[0];if(c.signMerged){c.result=c.prevResult||'';delete c.prevResult;delete c.signDate;delete c.signMerged;return true}p.checks.splice(k[1],1);return true}
 function lastTxt(p){
@@ -1879,7 +1887,8 @@ document.addEventListener('click',e=>{
     chkQuick:()=>{readEditor();addRound(ED,t.dataset.v);drawEditor()},
     chkAuto:()=>{readEditor();const w=autoCheck(ED).filter(x=>x[0]!=='info');if(!w.length){toast('ระบบไม่พบจุดแก้ไข');return}addRound(ED,w.map(x=>x[1]).join('; '));drawEditor()},
     projSave:()=>saveEditor(),
-    projDelete:()=>{if(S.purchases.some(x=>x.projectId===ED.id)){alert('โครงการนี้มีการตัดยอดแล้ว ลบไม่ได้ ให้ใช้ "ยกเลิกโครงการ" แทน');return}if(!confirm('ลบโครงการนี้ออกจากทะเบียน?'))return;S.projects=S.projects.filter(p=>p.id!==ED.id);save();closeModal();render()},
+    projDelete:()=>{if(delProject(ED.id))closeModal()},
+    projDel:()=>delProject(id),
     projCancel:()=>{readEditor();ED.cancelled=!ED.cancelled;drawEditor()},
     copyPrev:()=>openCopyPrev(),
     copyDo:()=>doCopy(),
