@@ -566,6 +566,7 @@ function vDash(){
   const backupAge=S.meta.lastBackup?daysBetween(S.meta.lastBackup,todayISO()):null;
   return `
   ${S.meta.seeded&&FY===2569?`<div class="notice">ข้อมูลปีงบ 2569 นำเข้าจากไฟล์ Excel ตรวจโครงการและแผน 69 (ทะเบียนตรวจ ${ps.length} โครงการ, อนุมัติแผน ${fyBatches('approve').length} ครั้ง, เปลี่ยนแปลงแผน ${fyBatches('change').length} ครั้ง) ยังไม่มีข้อมูลตัดยอดของปี 2569</div>`:''}
+  ${!staff().length?`<div class="notice" style="border-color:var(--bad)">ยังไม่มีรายชื่อบุคลากรในระบบ ช่องผู้รับผิดชอบ/กรรมการจึงไม่มีชื่อให้เลือก · ไปที่ <b>ตั้งค่า / สำรองข้อมูล</b> → รายชื่อบุคลากร → "นำเข้ารายชื่อจากไฟล์สำรอง"</div>`:''}
   ${!ONLINE&&(backupAge===null||backupAge>7)?`<div class="notice">${backupAge===null?'ยังไม่เคยสำรองข้อมูล':'สำรองข้อมูลล่าสุดเมื่อ '+backupAge+' วันก่อน'} · ข้อมูลเก็บอยู่ในเบราว์เซอร์เครื่องนี้ ควรกด <span class="link" data-act="backup">สำรองข้อมูลเป็นไฟล์</span> เป็นประจำ</div>`:''}
   <h2>ภาพรวมปีงบประมาณ ${FY}</h2>
   <div class="kpis">
@@ -1127,7 +1128,7 @@ function vSet(){
    <div class="field"><label>วิธีการจัดหา</label><input type="text" data-sl="methods" value="${esc(s.methods.join(', '))}"></div>
    <div class="field"><label>หน่วยงาน</label><input type="text" data-sl="units" value="${esc(s.units.join(', '))}"></div>
   </div></div>
-  <div class="card"><div class="row"><h3 class="grow" style="margin:0">รายชื่อบุคลากร (${staff().length} คน)</h3><button class="btn" data-act="staffPaste">แทนที่ด้วยรายชื่อชุดใหม่</button>${S.settings.staff?'<button class="btn" data-act="staffReset">คืนค่าไฟล์ 20 ส.ค. 69</button>':''}</div>
+  <div class="card"><div class="row"><h3 class="grow" style="margin:0">รายชื่อบุคลากร (${staff().length} คน)</h3><button class="btn" data-act="staffFromBackup" title="ใช้เฉพาะรายชื่อบุคลากรจากไฟล์สำรอง ข้อมูลอื่นไม่เปลี่ยน">นำเข้ารายชื่อจากไฟล์สำรอง</button><button class="btn" data-act="staffPaste">แทนที่ด้วยรายชื่อชุดใหม่</button>${S.settings.staff&&STAFF_DEFAULT.length?'<button class="btn" data-act="staffReset">คืนค่าไฟล์ 20 ส.ค. 69</button>':''}</div>
    <p class="small muted">ที่มา: ${esc(S.settings.staffVer||STAFF_VER_DEFAULT)} · ใช้เลือกชื่อผู้รับผิดชอบโครงการ กรรมการ และผู้ลงนาม ตำแหน่งจะเติมให้อัตโนมัติ · เมื่อมีไฟล์รายชื่อฉบับใหม่ ให้เปิดไฟล์ Excel คัดลอกคอลัมน์ ชื่อ | สกุล | ตำแหน่ง แล้วกด "แทนที่ด้วยรายชื่อชุดใหม่"</p>
    <input type="text" id="staffSearch" placeholder="ค้นหาชื่อหรือตำแหน่ง" value="${esc(UI.staffQ||'')}" style="min-width:260px;margin-bottom:8px">
    <div style="max-height:320px;overflow:auto"><table class="t"><tr><th>#</th><th>ชื่อ-สกุล</th><th>ตำแหน่ง</th><th>ประเภทบุคลากร</th></tr>${staff().map((x,k)=>[x,k]).filter(([x])=>!UI.staffQ||(x.name+x.pos).includes(UI.staffQ)).map(([x,k])=>`<tr><td>${k+1}</td><td>${esc(x.name)}</td><td>${esc(x.pos)}</td><td class="small muted">${esc(x.grp||'')}</td></tr>`).join('')}</table></div></div>
@@ -1418,7 +1419,7 @@ function onFiles(files){
   const arr=[...files];if(!arr.length)return;
   Promise.all(arr.map(f=>f.text().then(t=>({name:f.name,t})))).then(list=>{
     if(fileMode==='restore'){
-      try{const d=JSON.parse(list[0].t);if(d._type!=='bcn-plan-backup')throw 0;const cnt=`โครงการ ${(d.projects||[]).length} รายการ · แผน ${(d.batches||[]).length} ครั้ง · ตัดยอด ${(d.purchases||[]).length} รายการ · แผนยา/เวชภัณฑ์ ${((d.drug||{}).plans||[]).length} แผน · ครุภัณฑ์ ${((d.eq||{}).items||[]).length} รายการ`;if(!confirm('ไฟล์สำรอง '+list[0].name+'\n'+cnt+'\n\n'+(ONLINE?'กู้คืนจะแทนที่ข้อมูลทั้งหมดในระบบออนไลน์ (เจ้าหน้าที่ทุกคนจะเห็นข้อมูลชุดนี้แทนของเดิม)':'กู้คืนจะแทนที่ข้อมูลทั้งหมดในเครื่องนี้')+' ดำเนินการต่อ?'))return;delete d._type;delete d._ver;const files=d._files||{};delete d._files;S=d;load2();save();
+      try{const d=JSON.parse(list[0].t);if(d._type!=='bcn-plan-backup')throw 0;const cnt=`โครงการ ${(d.projects||[]).length} รายการ · แผน ${(d.batches||[]).length} ครั้ง · ตัดยอด ${(d.purchases||[]).length} รายการ · แผนยา/เวชภัณฑ์ ${((d.drug||{}).plans||[]).length} แผน · ครุภัณฑ์ ${((d.eq||{}).items||[]).length} รายการ`;if(!confirm('ไฟล์สำรอง '+list[0].name+'\n'+cnt+'\n\n'+(ONLINE?'กู้คืนจะแทนที่ข้อมูลทั้งหมดในระบบออนไลน์ (เจ้าหน้าที่ทุกคนจะเห็นข้อมูลชุดนี้แทนของเดิม)':'กู้คืนจะแทนที่ข้อมูลทั้งหมดในเครื่องนี้')+' ดำเนินการต่อ?'))return;delete d._type;delete d._ver;delete d._backup;const files=d._files||{};delete d._files;S=d;load2();save();renderStaffList();renderUnitList();
         Promise.all(Object.entries(files).map(([k,u])=>FDB.put(k,dataURLToBlob(u)).catch(()=>{}))).then(()=>{render();toast('กู้คืนข้อมูลแล้ว'+(Object.keys(files).length?` (รวมไฟล์คำสั่ง ${Object.keys(files).length} ไฟล์)`:''))})}catch(e){alert('ไฟล์นี้ไม่ใช่ไฟล์สำรองของระบบนี้')}
       return}
     const rows=[];const bad=[];
@@ -1876,6 +1877,13 @@ document.addEventListener('click',e=>{
         if(c.length>=3&&c[2])out.push({name:c[0]+'  '+c[1],pos:c[2],grp});else out.push({name:c[0].replace(/\s+/,'  '),pos:c[1],grp})});
       if(!out.length){alert('อ่านรายชื่อไม่ได้');return}if(!confirm(`พบ ${out.length} คน แทนที่รายชื่อเดิมหรือไม่?`))return;const ver=prompt('ระบุที่มา/วันที่ของรายชื่อ','รายชื่อบุคลากร update ');
       S.settings.staff=out;S.settings.staffVer=ver||'รายชื่อบุคลากรที่วางเอง';save();renderStaffList();render();toast('อัปเดตรายชื่อแล้ว')},
+    staffFromBackup:()=>{const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
+      inp.onchange=()=>{const f=inp.files[0];if(!f)return;f.text().then(t=>{let d;try{d=JSON.parse(t)}catch(e){alert('อ่านไฟล์ไม่ได้');return}
+        const st=d&&d.settings||{};const list=(st.staff&&st.staff.length?st.staff:st.staffList)||[];
+        if(!list.length){alert('ไฟล์นี้ไม่มีรายชื่อบุคลากร\nให้เปิดไฟล์ระบบในเครื่องรุ่นล่าสุด กด "สำรองข้อมูล" แล้วใช้ไฟล์ที่ได้');return}
+        if(!confirm(`พบรายชื่อ ${list.length} คน นำเข้าแทนรายชื่อปัจจุบัน (${staff().length} คน) หรือไม่?\nข้อมูลโครงการ/แผนไม่เปลี่ยน`))return;
+        if(st.staff&&st.staff.length){S.settings.staff=st.staff;S.settings.staffVer=st.staffVer||'จากไฟล์สำรอง'}else{delete S.settings.staff;S.settings.staffList=list}
+        save();renderStaffList();render();toast(`นำเข้ารายชื่อ ${list.length} คนแล้ว`)})};inp.click()},
     staffReset:()=>{if(!confirm('คืนค่ารายชื่อเป็นไฟล์ 20 ส.ค. 69?'))return;delete S.settings.staff;delete S.settings.staffVer;save();renderStaffList();render()},
     chkFixMulti:()=>{const v=[...document.querySelectorAll('.edFix:checked')].map(x=>x.value);const o=(document.getElementById('edFixOther').value||'').trim();if(o)v.push(o);if(!v.length){toast('เลือกเหตุที่ส่งกลับอย่างน้อย 1 ข้อ');return}readEditor();addRound(ED,v.join('; '));drawEditor()},
     chkRecv:()=>{readEditor();ED.checks.push({recvDate:todayISO(),date:'',result:'',sentBack:'',note:''});drawEditor()},
