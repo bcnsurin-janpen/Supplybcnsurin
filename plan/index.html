@@ -1615,7 +1615,17 @@ document.addEventListener('click',e=>{
     del:()=>{if(!confirm('ลบรายการนี้?'))return;p.items.splice(+t.dataset.k,1);save();render()},
     useAvg:()=>{const i=p.items[+t.dataset.k];const ob=dBuy(i);i.estUse=Math.ceil(dAvg(i));if(!sum(i.q,num)||(num(i.q[0])===ob&&!num(i.q[1])&&!num(i.q[2])&&!num(i.q[3])))i.q=[dBuy(i),0,0,0];save();render()},
     allQ1:()=>{p.items.forEach(i=>i.q=[dBuy(i),0,0,0]);save();render()},
-    paste:()=>{const txt=prompt('วางจาก Excel แต่ละแถว: รายการ | ประเภท | หน่วยนับ | ราคาต่อหน่วย');if(!txt)return;txt.split(/\r?\n/).filter(l=>l.trim()).forEach(l=>{const c=l.split('\t');const n=dNewItem(p.kind);n.name=(c[0]||'').replace(/^\s*\d+\s*\.\s*/,'').trim();if(c[1])n.type=c[1].trim();n.unit=(c[2]||'').trim();n.price=c[3]?num(c[3]):null;p.items.push(n)});save();render()},
+    paste:()=>{document.getElementById('modal').innerHTML=`<div class="modal-back"><div class="modal narrow"><div class="mh"><h3>วางรายการ${DKIND[p.kind]}จาก Excel / Word</h3><button class="btn sm" data-act="close">ปิด</button></div>
+      <div class="mb"><p class="small">คัดลอกจากตาราง Excel หรือ Word มาวางได้เลย แต่ละแถว: <b>รายการ | ประเภท | หน่วยนับ | ราคาต่อหน่วย | จำนวนที่จะซื้อ</b> (คอลัมน์ประเภทและจำนวนเว้นว่างได้) · แถวหัวตาราง แถว "รวม" และเลขลำดับหน้าชื่อ ระบบตัดออกให้</p>
+      <textarea id="dPasteTxt" rows="10" style="width:100%" placeholder="น้ำยา Normal Saline 0.9% ขนาด 100 มิลลิลิตร&#9;ED&#9;ขวด&#9;35&#9;3"></textarea>
+      <div class="row" style="margin-top:8px"><label class="small">จำนวนที่จะซื้อ ใส่ไว้ในไตรมาสที่ <select id="dPasteQ">${[1,2,3,4].map(q=>`<option value="${q-1}">${q}</option>`).join('')}</select></label></div></div>
+      <div class="mf"><button class="btn" data-act="close">ยกเลิก</button><button class="btn pri" data-dact="pasteDo">เพิ่มรายการ</button></div></div></div>`},
+    pasteDo:()=>{const txt=document.getElementById('dPasteTxt').value;const qi=+document.getElementById('dPasteQ').value;const th=x=>String(x||'').replace(/[๐-๙]/g,d=>'๐๑๒๓๔๕๖๗๘๙'.indexOf(d));let n=0;
+      txt.split(/\r?\n/).forEach(l=>{if(!l.trim())return;let c=l.split('\t').map(x=>x.trim());if(/^\d+$/.test(th(c[0]))&&c.length>4)c=c.slice(1);
+        const nm=thNorm(c[0]).replace(/^\s*[\d๐-๙]+\s*[.)]?\s+/,'');if(!nm||/^(รวม|รายการ|ลำดับ|ยา$|เวชภัณฑ์)/.test(nm))return;
+        const it=dNewItem(p.kind);it.name=nm;if(c[1])it.type=c[1];it.unit=c[2]||'';it.price=c[3]?num(th(c[3])):null;
+        if(c[4]){const q=num(th(c[4]));it.estUse=q;it.stock=0;it.q=[0,0,0,0];it.q[qi]=q}p.items.push(it);n++});
+      if(!n){toast('ไม่พบรายการที่อ่านได้');return}save();closeModal();render();toast(`เพิ่ม ${n} รายการแล้ว`)},
     dropPlan:()=>{if(!confirm(`ลบแผน${DKIND[UI.drugKind]}ปีงบ ${FY} ทั้งหมด?`))return;S.drug.plans=S.drug.plans.filter(x=>x!==p);save();render()},
     prPlan:()=>doPrint(dPlanHTML(p),true),
     prSum:()=>doPrint(dSumHTML(p),true),
