@@ -1465,7 +1465,7 @@ function vDrug(){
   let body='';
   if(!p){
     body=`<div class="card empty">ยังไม่มีแผนจัดซื้อ${DKIND[kind]} ปีงบ ${FY}<div class="row" style="justify-content:center;margin-top:10px">
-     <button class="btn pri" data-act="pullProj" data-t="${kind}">ดึงจากโครงการ</button>${prev?`<button class="btn" data-dact="create" data-from="prev">สร้างจากแผนปี ${FY-1} (${prev.items.length} รายการ)</button>`:''}<button class="btn" data-dact="create">สร้างแผนว่าง</button></div>
+     <button class="btn pri" data-act="pullProj" data-t="${kind}">ดึงจากโครงการ</button>${prev?`<button class="btn" data-dact="create" data-from="prev">สร้างจากแผนปี ${FY-1} (${prev.items.length} รายการ)</button>`:''}<button class="btn" data-dact="create">สร้างแผนว่าง</button><button class="btn" data-dact="imp">นำเข้าจากไฟล์ Word / Excel</button></div>
      ${prev?`<p class="small">ระบบจะยกอัตราการใช้ย้อนหลังมาให้ (ปี ${hy[0]}–${hy[1]} จากแผนปีก่อน และปี ${hy[2]} จากช่อง "ใช้จริงทั้งปี" ของปี ${FY-1} ถ้ายังไม่กรอกจะใช้ประมาณการใช้แทน) แล้วให้กรอกคงคลังยกมาและประมาณการใช้ปีนี้</p>`:''}</div>`;
   }else{
     const tot=sum(p.items,dAmt);const qt=[0,1,2,3].map(k=>sum(p.items,i=>dQAmt(i,k)));
@@ -1475,7 +1475,7 @@ function vDrug(){
       ${kind==='supply'?`<div class="field"><label>ประเภทเวชภัณฑ์ที่มิใช่ยา (หัวแบบฟอร์ม)</label><input type="text" data-dp="supplyType" value="${esc(p.supplyType||'')}"></div>`:''}
      </div></div>
      <div class="card"><div class="row"><h3 class="grow" style="margin:0">แผนปฏิบัติการจัดซื้อ${DKIND[kind]} (${p.items.length} รายการ · ${money(tot)} บาท)</h3>
-      <button class="btn sm" data-act="pullProj" data-t="${kind}">ดึงจากโครงการ</button><button class="btn sm" data-dact="add">+ เพิ่มรายการ</button><button class="btn sm" data-dact="paste">วางจาก Excel</button></div>
+      <button class="btn sm" data-act="pullProj" data-t="${kind}">ดึงจากโครงการ</button><button class="btn sm" data-dact="add">+ เพิ่มรายการ</button><button class="btn sm" data-dact="paste">วางจาก Excel</button><button class="btn sm" data-dact="imp">นำเข้าจากไฟล์</button></div>
      <div style="overflow-x:auto;margin-top:8px"><table class="t items" style="min-width:1450px"><tr><th>#</th><th style="min-width:200px">รายการ${DKIND[kind]}</th><th>ประเภท</th><th>หน่วยนับ</th>${hy.map(y=>`<th>ใช้ปี ${y}</th>`).join('')}<th>เฉลี่ย</th><th>ประมาณการใช้ ${FY}</th><th>คงคลังยกมา</th><th class="n">ประมาณการซื้อ</th><th>ราคา/หน่วย</th><th class="n">มูลค่า (บาท)</th>${['Q1','Q2','Q3','Q4'].map(q=>`<th>${q} (จำนวน)</th>`).join('')}<th></th></tr>
      ${p.items.map((i,k)=>{const w=dWarn(i);const avg=dAvg(i);return `<tr data-dk="${k}">
       <td>${k+1}</td><td><input type="text" data-di="name" value="${esc(i.name)}">${w.length?`<div class="small" style="color:var(--warn)">${w.map(esc).join(' · ')}</div>`:''}${i.histEst?`<div class="small muted">* ปี ${hy[2]} ใช้ค่าประมาณการ (ยังไม่ได้กรอกใช้จริง)</div>`:''}</td>
@@ -1508,15 +1508,130 @@ function vDrug(){
     <div class="small muted">${(()=>{const o=dOrder();return `${o.no?'คำสั่งที่ '+esc(o.no)+(o.date?' ลงวันที่ '+thDate(o.date,true):''):'<span style="color:var(--accent)">ยังไม่ได้กรอกเลขที่คำสั่ง</span>'} · กรรมการ: ${o.committee.filter(c=>c.name).map(c=>esc(c.name)+' ('+esc(c.role)+')').join(', ')||'<span style="color:var(--accent)">ยังไม่ได้ใส่ชื่อ</span>'}`})()} · แก้ไขคำสั่งและรายชื่อกรรมการได้ที่แท็บ "2. แผนปฏิบัติการ" ด้านล่าง</div>
     <div class="row" style="margin-top:8px"><span class="grow"></span><button class="btn" data-dact="prMemo">พิมพ์บันทึก</button><button class="btn" data-dact="docMemo">Word</button></div></div>`;
 }
-function dCreate(fromPrev){
-  const kind=UI.drugKind;const prev=dPlan(kind,FY-1);
+function dCreate(fromPrev){S.drug.plans.push(dMakePlan(UI.drugKind,fromPrev));save();render()}
+function dMakePlan(kind,fromPrev){
+  const prev=dPlan(kind,FY-1);
   const p={id:uid('dp'),fy:FY,kind,fund:prev?prev.fund:'เงินรายได้สถาบันพระบรมราชชนก',projectName:prev?prev.projectName:'',supplyType:prev?prev.supplyType||'':(kind==='supply'?'วัสดุการแพทย์ทั่วไป':''),items:[]};
   if(fromPrev&&prev){const y=histYears();p.items=prev.items.map(o=>{const n=dNewItem(kind);Object.assign(n,{name:o.name,type:o.type,unit:o.unit,price:o.price});
     n.hist[y[0]]=o.hist[y[0]]??null;n.hist[y[1]]=o.hist[y[1]]??null;
     if(o.actualUse!==null&&o.actualUse!==undefined&&o.actualUse!==''){n.hist[y[2]]=num(o.actualUse)}else{n.hist[y[2]]=o.estUse??null;n.histEst=true}
     return n})}
-  S.drug.plans.push(p);save();render();
+  return p;
 }
+/* ---------- นำเข้ารายการยา/เวชภัณฑ์จากไฟล์ Word (.docx) / Excel (.xlsx) / CSV — อ่านในเครื่อง ไม่ส่งไฟล์ออกไปไหน ---------- */
+const thDig=x=>String(x??'').replace(/[๐-๙]/g,d=>'๐๑๒๓๔๕๖๗๘๙'.indexOf(d));
+async function zipOpen(buf){
+  const dv=new DataView(buf),u8=new Uint8Array(buf);let e=-1;
+  for(let i=u8.length-22;i>=Math.max(0,u8.length-65558);i--){if(dv.getUint32(i,true)===0x06054b50){e=i;break}}
+  if(e<0)throw new Error('ไม่ใช่ไฟล์ .docx/.xlsx');
+  const cnt=dv.getUint16(e+10,true);let o=dv.getUint32(e+16,true);const ents={};const dec=new TextDecoder();
+  for(let k=0;k<cnt;k++){if(dv.getUint32(o,true)!==0x02014b50)break;
+    const method=dv.getUint16(o+10,true),csize=dv.getUint32(o+20,true),nl=dv.getUint16(o+28,true),xl=dv.getUint16(o+30,true),cl=dv.getUint16(o+32,true),lo=dv.getUint32(o+42,true);
+    ents[dec.decode(u8.subarray(o+46,o+46+nl))]={method,csize,lo};o+=46+nl+xl+cl}
+  return {names:Object.keys(ents),async text(n){const z=ents[n];if(!z)return null;
+    const s=z.lo+30+dv.getUint16(z.lo+26,true)+dv.getUint16(z.lo+28,true);const raw=u8.slice(s,s+z.csize);
+    if(z.method===0)return dec.decode(raw);
+    const st=new Blob([raw]).stream().pipeThrough(new DecompressionStream('deflate-raw'));return await new Response(st).text()}};
+}
+const xmlDoc=s=>new DOMParser().parseFromString(s,'application/xml');
+const byLocal=(el,n)=>[...el.getElementsByTagName('*')].filter(x=>x.localName===n);
+const kidsLocal=(el,n)=>[...el.children].filter(x=>x.localName===n);
+async function docxBlocks(z){
+  const d=xmlDoc(await z.text('word/document.xml'));const body=byLocal(d,'body')[0];const paras=[],tables=[];
+  const ptext=p=>byLocal(p,'t').map(t=>t.textContent).join('');
+  [...body.children].forEach(el=>{
+    if(el.localName==='p'){const t=ptext(el).trim();if(t&&!tables.length)paras.push(t)}
+    else if(el.localName==='tbl'){const rows=kidsLocal(el,'tr').map(tr=>{const out=[];kidsLocal(tr,'tc').forEach(tc=>{
+        const txt=kidsLocal(tc,'p').map(ptext).map(s=>s.trim()).filter(Boolean).join(' ');
+        const gs=byLocal(tc,'gridSpan')[0];const span=gs?+(gs.getAttribute('w:val')||gs.getAttributeNS(gs.namespaceURI,'val')||1):1;
+        out.push(txt);for(let i=1;i<span;i++)out.push('')});return out});tables.push(rows)}});
+  return {title:paras,sheets:tables.map((rows,i)=>({name:'',rows}))};
+}
+async function xlsxBlocks(z){
+  const ss=[];const sst=await z.text('xl/sharedStrings.xml');
+  if(sst)byLocal(xmlDoc(sst),'si').forEach(si=>ss.push(byLocal(si,'t').map(t=>t.textContent).join('')));
+  const wb=xmlDoc(await z.text('xl/workbook.xml'));const rels=xmlDoc(await z.text('xl/_rels/workbook.xml.rels'));
+  const rmap={};byLocal(rels,'Relationship').forEach(r=>rmap[r.getAttribute('Id')]=r.getAttribute('Target'));
+  const colIdx=ref=>{const m=/^([A-Z]+)/.exec(ref||'');if(!m)return -1;let n=0;for(const ch of m[1])n=n*26+ch.charCodeAt(0)-64;return n-1};
+  const sheets=[];
+  for(const sh of byLocal(wb,'sheet')){
+    const rid=[...sh.attributes].find(a=>a.localName==='id'&&a.prefix==='r');let tg=rmap[rid&&rid.value]||'';
+    tg=tg.startsWith('/')?tg.slice(1):'xl/'+tg.replace(/^\.\//,'');const x=await z.text(tg);if(!x)continue;
+    const rows=byLocal(xmlDoc(x),'row').map(r=>{const out=[];byLocal(r,'c').forEach((c,k)=>{let i=colIdx(c.getAttribute('r'));if(i<0)i=out.length;
+      const t=c.getAttribute('t');const v=byLocal(c,'v')[0];let val='';
+      if(t==='s')val=v?ss[+v.textContent]||'':'';else if(t==='inlineStr')val=byLocal(c,'t').map(e=>e.textContent).join('');else val=v?v.textContent:'';
+      while(out.length<i)out.push('');out[i]=val});return out});
+    sheets.push({name:sh.getAttribute('name')||'',rows})}
+  return {title:[],sheets};
+}
+function csvRows(txt){const rows=[];const tab=txt.includes('\t');txt.split(/\r?\n/).forEach(l=>{if(!l.trim())return;
+  if(tab){rows.push(l.split('\t'));return}const out=[];let cur='',q=false;for(let i=0;i<l.length;i++){const ch=l[i];
+    if(q){if(ch==='"'&&l[i+1]==='"'){cur+='"';i++}else if(ch==='"')q=false;else cur+=ch}else if(ch==='"')q=true;else if(ch===','){out.push(cur);cur=''}else cur+=ch}
+  out.push(cur);rows.push(out)});return rows}
+function dKindOf(t){t=String(t||'').replace(/\s/g,'');if(/มิใช่ยา|เวชภัณฑ์|วัสดุการแพทย์/.test(t))return 'supply';if(/^(รายการ)?ยา$|^ค่ายา|^ยา\b|^ยา$/.test(t)||t==='ยา')return 'drug';return null}
+function dParseSheets(blocks,fallbackKind){
+  const items=[],warn=[];
+  blocks.sheets.forEach(sh=>{
+    const rows=sh.rows.map(r=>r.map(c=>thNorm(c)));let kind=dKindOf(sh.name)||fallbackKind;const col={};let start=-1;
+    for(let r=0;r<Math.min(rows.length,15);r++){const row=rows[r];let hit=false;
+      row.forEach((c,i)=>{const s=c.replace(/\s/g,'');if(!s)return;
+        if(col.name==null&&/^(รายการ|รายการยา|ชื่อ|ชื่อรายการ|รายละเอียด)/.test(s)){col.name=i;hit=true}
+        else if(col.price==null&&/ราคา(ต่อ|\/)หน่วย|^ราคา\/?หน่วย|ราคาหน่วยละ|หน่วยละ/.test(s)){col.price=i;hit=true}
+        else if(col.unit==null&&/^หน่วย(นับ)?$/.test(s)){col.unit=i;hit=true}
+        else if(col.qty==null&&/^จำนวน/.test(s)&&!/เงิน/.test(s)){col.qty=i;hit=true}
+        else if(col.total==null&&/^(ราคารวม|รวมเงิน|จำนวนเงิน|ราคา$|รวม$)/.test(s)){col.total=i;hit=true}
+        else if(col.type==null&&/^(ประเภท|ED\/?NED|บัญชี)/.test(s)){col.type=i;hit=true}});
+      if(hit)start=r}
+    if(col.name==null||start<0){if(sh.rows.length)warn.push(`ข้ามตาราง${sh.name?' "'+sh.name+'"':''}: ไม่พบหัวคอลัมน์ "รายการ"`);return}
+    if(col.qty==null&&col.price==null){warn.push('ไม่พบคอลัมน์ จำนวน / ราคาต่อหน่วย');return}
+    for(let r=start+1;r<rows.length;r++){const row=rows[r];const g=i=>i==null?'':(row[i]||'');
+      const name=g(col.name).replace(/^\s*[\d๐-๙]+\s*[.)]\s*/,'').trim();if(!name)continue;
+      const isNum=s=>/^[\d๐-๙,.\s]+$/.test(s)&&/[\d๐-๙]/.test(s);const qs=g(col.qty),ps=g(col.price);
+      if(!isNum(qs)&&!isNum(ps)){const k=dKindOf(name);if(k)kind=k;continue}
+      if(/^รวม/.test(name.replace(/\s/g,'')))continue;
+      const qty=isNum(qs)?num(thDig(qs).replace(/\s/g,'')):null,price=isNum(ps)?num(thDig(ps).replace(/\s/g,'')):null;
+      const it={kind,name,unit:g(col.unit),qty,price,type:g(col.type)};
+      if(col.total!=null&&isNum(g(col.total))&&qty!=null&&price!=null){const tt=num(thDig(g(col.total)).replace(/\s/g,''));if(Math.abs(tt-qty*price)>0.005)it.warn=`ในไฟล์รวม ${money(tt)} แต่ ${qty}×${money(price)} = ${money(qty*price)}`}
+      items.push(it)}});
+  let title='';const ti=blocks.title.findIndex(t=>/^โครงการ/.test(t.replace(/\s/g,'')));if(ti>=0)title=thNorm(blocks.title.slice(ti).join(' '));
+  return {items,warn,title};
+}
+function dMatchProject(title){if(!title)return '';const tk=s=>new Set(thNorm(s).replace(/[“”"'()]/g,' ').split(/\s+/).filter(w=>w.length>1));const a=tk(title);let best='',bs=0;
+  fyProjects().forEach(p=>{const b=tk(p.name);let s=0;b.forEach(w=>{if(a.has(w))s++});const sc=s/Math.max(1,Math.min(a.size,b.size));if(s>=2&&sc>bs){bs=sc;best=p.name}});return bs>=0.4?best:''}
+let DIMP=null;
+async function dImportFile(f){
+  try{const ext=(f.name.split('.').pop()||'').toLowerCase();let blocks;
+    if(ext==='doc'||ext==='xls'){alert('ไฟล์ .'+ext+' แบบเก่าอ่านไม่ได้ — เปิดไฟล์แล้ว "บันทึกเป็น" .'+ext+'x ก่อน แล้วนำเข้าใหม่');return}
+    if(ext==='docx'||ext==='xlsx'){if(typeof DecompressionStream==='undefined'){alert('เบราว์เซอร์นี้เก่าเกินไปสำหรับอ่านไฟล์ — ใช้ Chrome/Edge รุ่นใหม่ หรือคัดลอกตารางแล้วใช้ "วางจาก Excel"');return}
+      const z=await zipOpen(await f.arrayBuffer());blocks=ext==='docx'?await docxBlocks(z):await xlsxBlocks(z)}
+    else blocks={title:[],sheets:[{name:'',rows:csvRows(await f.text())}]};
+    const r=dParseSheets(blocks,UI.drugKind);if(!r.items.length){alert('ไม่พบรายการที่อ่านได้ในไฟล์นี้'+(r.warn.length?'\n- '+r.warn.join('\n- '):'')+'\n\nตารางควรมีหัวคอลัมน์ เช่น รายการ | หน่วยนับ | จำนวน | ราคาต่อหน่วย');return}
+    DIMP=Object.assign(r,{file:f.name,proj:dMatchProject(r.title)});dImportPreview()}
+  catch(e){console.error(e);alert('อ่านไฟล์ไม่สำเร็จ: '+(e.message||e))}
+}
+function dImportPreview(){const r=DIMP;const kinds=['drug','supply'].filter(k=>r.items.some(i=>i.kind===k));
+  const tbl=k=>{const its=r.items.filter(i=>i.kind===k);const tot=sum(its,i=>num(i.qty)*num(i.price));const ex=dPlan(k);
+    return `<h4 style="margin:12px 0 4px">${DKIND[k]} — ${its.length} รายการ รวม ${money(tot)} บาท ${ex&&ex.items.length?`<span class="small muted">(แผนเดิมมี ${ex.items.length} รายการ)</span>`:''}</h4>
+    <table class="t"><thead><tr><th>#</th><th>รายการ</th><th>หน่วย</th><th style="text-align:right">จำนวน</th><th style="text-align:right">ราคา/หน่วย</th><th style="text-align:right">รวม</th></tr></thead><tbody>
+    ${its.map((i,n)=>`<tr><td>${n+1}</td><td>${esc(i.name)}${i.warn?`<div class="small" style="color:#b45309">⚠ ${esc(i.warn)}</div>`:''}</td><td>${esc(i.unit)}</td><td style="text-align:right">${i.qty==null?'—':money(i.qty).replace(/\.00$/,'')}</td><td style="text-align:right">${i.price==null?'—':money(i.price)}</td><td style="text-align:right">${money(num(i.qty)*num(i.price))}</td></tr>`).join('')}</tbody></table>`};
+  const hasOld=kinds.some(k=>dPlan(k)&&dPlan(k).items.length);
+  document.getElementById('modal').innerHTML=`<div class="modal-back"><div class="modal"><div class="mh"><h3>นำเข้ารายการจากไฟล์ — ปีงบ ${FY}</h3><button class="btn sm" data-act="close">ปิด</button></div>
+   <div class="mb"><p class="small muted">ไฟล์: ${esc(r.file)} · อ่านในเครื่องนี้เท่านั้น ไม่ได้ส่งไฟล์ไปเก็บที่ใด</p>
+   ${r.warn.length?`<p class="small" style="color:#b45309">${r.warn.map(esc).join('<br>')}</p>`:''}
+   <div class="field"><label>ตามโครงการ</label><input type="text" id="dImpProj" value="${esc(r.proj||r.title)}" list="projList2"><datalist id="projList2">${fyProjects().map(x=>`<option>${esc(x.name)}</option>`).join('')}</datalist>
+   <div class="small muted">${r.proj?'จับคู่กับโครงการในระบบแล้ว':r.title?'ไม่พบโครงการที่ตรงกันในระบบ — ใช้ชื่อจากไฟล์ (เลือกจากรายการได้)':'ไม่พบชื่อโครงการในไฟล์ — เลือกหรือพิมพ์เอง (เว้นว่าง = ไม่เปลี่ยน)'}</div></div>
+   ${kinds.map(tbl).join('')}
+   <div class="row" style="margin-top:12px;gap:16px;flex-wrap:wrap"><label class="small">ใส่จำนวนไว้ในไตรมาสที่ <select id="dImpQ">${[1,2,3,4].map(q=>`<option value="${q-1}">${q}</option>`).join('')}</select></label>
+   ${hasOld?`<label class="small"><input type="radio" name="dImpMode" value="replace" checked> แทนที่รายการเดิมในแผน</label><label class="small"><input type="radio" name="dImpMode" value="append"> เพิ่มต่อจากรายการเดิม</label>`:''}</div>
+   <p class="small muted">ประเภทยาจะตั้งเป็น ED ให้ก่อน (ถ้าไฟล์ไม่มีคอลัมน์ประเภท) — ตรวจและแก้ ED/NED ในแผนหลังนำเข้า</p></div>
+   <div class="mf"><button class="btn" data-act="close">ยกเลิก</button><button class="btn pri" data-dact="impDo">บันทึกลงแผน</button></div></div></div>`}
+function dImportApply(){const r=DIMP;if(!r)return;const qi=+document.getElementById('dImpQ').value;const m=document.querySelector('[name=dImpMode]:checked');const replace=!m||m.value==='replace';
+  const proj=thNorm(document.getElementById('dImpProj').value);const done=[];
+  ['drug','supply'].forEach(k=>{const its=r.items.filter(i=>i.kind===k);if(!its.length)return;let p=dPlan(k);if(!p){p=dMakePlan(k,false);S.drug.plans.push(p)}
+    if(replace)p.items=[];if(proj)p.projectName=proj;
+    its.forEach(x=>{const it=dNewItem(k);it.name=x.name;it.unit=x.unit;if(x.type)it.type=x.type;it.price=x.price;if(x.qty!=null){it.estUse=x.qty;it.stock=0;it.q=[0,0,0,0];it.q[qi]=x.qty}p.items.push(it)});
+    done.push(`${DKIND[k]} ${its.length} รายการ`)});
+  UI.drugKind=r.items[0].kind;DIMP=null;save();closeModal();render();toast('บันทึกลงแผนแล้ว: '+done.join(', '))}
 function dRead(el){ // apply single input change
   const p=dPlan(UI.drugKind);if(!p)return;const tr=el.closest('[data-dk]');const i=tr?p.items[tr.dataset.dk]:null;
   const nv=v=>v===''?null:num(v);
@@ -1615,6 +1730,8 @@ document.addEventListener('click',e=>{
     del:()=>{if(!confirm('ลบรายการนี้?'))return;p.items.splice(+t.dataset.k,1);save();render()},
     useAvg:()=>{const i=p.items[+t.dataset.k];const ob=dBuy(i);i.estUse=Math.ceil(dAvg(i));if(!sum(i.q,num)||(num(i.q[0])===ob&&!num(i.q[1])&&!num(i.q[2])&&!num(i.q[3])))i.q=[dBuy(i),0,0,0];save();render()},
     allQ1:()=>{p.items.forEach(i=>i.q=[dBuy(i),0,0,0]);save();render()},
+    imp:()=>{const inp=document.createElement('input');inp.type='file';inp.accept='.docx,.xlsx,.csv,.txt,.doc,.xls';inp.onchange=()=>{if(inp.files[0])dImportFile(inp.files[0])};inp.click()},
+    impDo:()=>dImportApply(),
     paste:()=>{document.getElementById('modal').innerHTML=`<div class="modal-back"><div class="modal narrow"><div class="mh"><h3>วางรายการ${DKIND[p.kind]}จาก Excel / Word</h3><button class="btn sm" data-act="close">ปิด</button></div>
       <div class="mb"><p class="small">คัดลอกจากตาราง Excel หรือ Word มาวางได้เลย แต่ละแถว: <b>รายการ | ประเภท | หน่วยนับ | ราคาต่อหน่วย | จำนวนที่จะซื้อ</b> (คอลัมน์ประเภทและจำนวนเว้นว่างได้) · แถวหัวตาราง แถว "รวม" และเลขลำดับหน้าชื่อ ระบบตัดออกให้</p>
       <textarea id="dPasteTxt" rows="10" style="width:100%" placeholder="น้ำยา Normal Saline 0.9% ขนาด 100 มิลลิลิตร&#9;ED&#9;ขวด&#9;35&#9;3"></textarea>
