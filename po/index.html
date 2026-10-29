@@ -868,8 +868,8 @@ function fromJobJson(j){
   let title='';
   if(method==='buy'){ title='จัดซื้อ'+(j.type||'วัสดุ')+(items.length>1?` จำนวน ${items.length} รายการ`:''); }
   else { const jt=(j.jobTitle||'').trim(); title = /^(จ้าง|เช่า)/.test(jt)?'จัด'+jt:jt; if(j.jobDetail) title+=' '+j.jobDetail; }
-  const rent=j.rent||{};
-  const isContract=method==='rent'&&rent.contract==='contract';
+  const rent=j.rent||j.hire||{};
+  const isContract=rent.contract==='contract'||j.contract==='contract';
   const r={kind:method, book:isContract?'contract':'po', source:'json', title,
     vendor:(j.vendor&&j.vendor.name)||'', vendorTax:(j.vendor&&j.vendor.tax)||'',
     amount: total||null, median: j.medianPrice!=null?r2(j.medianPrice):(total||null),
@@ -880,6 +880,17 @@ function fromJobJson(j){
     fund: /รายได้/.test(j.budgetSource||'')?'รายได้':(/บริจาค/.test(j.budgetSource||'')?'บริจาค':(/งบประมาณ/.test(j.budgetSource||'')?'งบประมาณ':(j.budgetSource?'อื่น ๆ':''))),
     unit:(j.requester&&j.requester.unit)||'', projectCode:(j.project&&j.project.code)||'', projectName:(j.project&&j.project.name)||'',
     note:''};
+  // 4 ช่องท้ายของทะเบียนคุมสัญญา: หลักประกันสัญญา / วันที่ตรวจรับ / วันครบกำหนด / การปฏิบัติ
+  r.inspectDate=parseThaiDate(j.inspectDate)||'';
+  if(rent.end) r.dueDate=parseThaiDate(rent.end)||'';
+  else if(+j.deliveryDays>0&&r.date){ const d=new Date(r.date+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+(+j.deliveryDays)); r.dueDate=d.toISOString().slice(0,10); }
+  const g=j.guarantee||j.security||rent.guarantee||null;   // ถ้าไฟล์ข้อมูลงานมีข้อมูลหลักประกัน
+  if(g&&typeof g==='object'){
+    r.secType=g.type||g.kind||'';
+    r.secDetail=g.detail||[g.bank?'ธ.'+String(g.bank).replace(/^ธ(นาคาร|\.)\s*/,''):'',g.branch?'สาขา'+String(g.branch).replace(/^สาขา\s*/,''):'',g.no?'เลขที่ '+g.no:''].filter(Boolean).join(' ');
+    r.secDate=parseThaiDate(g.date)||''; r.secAmount=g.amount!=null&&g.amount!==''?r2(+String(g.amount).replace(/,/g,'')):null;
+  }
+  if(j.action) r.action=String(j.action);
   if(j.source==='repair'&&j.ref&&j.ref.no) r.repairRef=j.ref.no;
   const months=+rent.months||0;
   if((method==='rent'||method==='hire')&&months>1){
@@ -894,7 +905,7 @@ $('#fileJson').addEventListener('change',async e=>{
     const j=JSON.parse(await f.text());
     if(j&&Array.isArray(j.records)){ alert('ไฟล์นี้เป็นไฟล์สำรองข้อมูลของทะเบียน — ใช้เมนู "ตั้งค่า / สำรองข้อมูล" > กู้คืน'); return; }
     const r=fromJobJson(j);
-    if(r.no){ const dup=DB.records.find(x=>x.book===r.book&&x.fy===fyOf(r.date)&&noKey(x.no)===noKey(r.no)); if(dup){ if(!confirm(`เลขที่ ${r.no}/${dup.fy} มีในทะเบียนแล้ว (${dup.title||STATUS[dup.status]})\nเปิดรายการเดิมเพื่อเติมข้อมูลจากไฟล์หรือไม่?`)) return; const merged=Object.assign({},dup); for(const k of ['title','vendor','vendorTax','amount','median','egpProject','memoNo','memoDate','unit','projectCode','projectName']) if(!merged[k]&&r[k]) merged[k]=r[k]; if(dup.status==='reserved') merged.status='issued'; if(r.inst&&!dup.inst.on) merged.inst=r.inst; merged.kind=r.kind; openForm(merged); return; } }
+    if(r.no){ const dup=DB.records.find(x=>x.book===r.book&&x.fy===fyOf(r.date)&&noKey(x.no)===noKey(r.no)); if(dup){ if(!confirm(`เลขที่ ${r.no}/${dup.fy} มีในทะเบียนแล้ว (${dup.title||STATUS[dup.status]})\nเปิดรายการเดิมเพื่อเติมข้อมูลจากไฟล์หรือไม่?`)) return; const merged=Object.assign({},dup); for(const k of ['title','vendor','vendorTax','amount','median','egpProject','memoNo','memoDate','unit','projectCode','projectName','secType','secDetail','secDate','secAmount','inspectDate','dueDate','action']) if(!merged[k]&&r[k]) merged[k]=r[k]; if(dup.status==='reserved') merged.status='issued'; if(r.inst&&!dup.inst.on) merged.inst=r.inst; merged.kind=r.kind; openForm(merged); return; } }
     openForm(r);
     toast('นำเข้าแล้ว — ตรวจและเติมเลขที่ก่อนบันทึก');
   }catch(err){ alert('อ่านไฟล์ไม่ได้: '+err.message); }
