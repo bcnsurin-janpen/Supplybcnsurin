@@ -1532,11 +1532,26 @@ const SIGNER_ROLES=[
   {k:'FAP',t:'ผู้อนุมัติรับรอง (แบบฟอร์มขอเผยแพร่)'},
   {k:'WEB',t:'ผู้รับผิดชอบการนำข้อมูลขึ้นเผยแพร่ (แบบฟอร์มขอเผยแพร่)',auto:true},
 ];
+// ตัวเลือกตำแหน่งผู้ลงนาม: ตำแหน่งจากรายชื่อบุคลากร + ตำแหน่งที่เคยใช้/บันทึกไว้ + แบบรักษาการ/รักษาราชการแทน
+const DIR_TITLE='ผู้อำนวยการวิทยาลัยพยาบาลบรมราชชนนี สุรินทร์';
+function posOptions(){
+  const s=S().signers||{}, used=new Set();
+  [DIR_TITLE,'รองผู้อำนวยการด้านบริหารและยุทธศาสตร์',...SIGNER_ROLES.map(r=>s[r.k+'P']),...(S().posList||[])].forEach(v=>{ v=(v||'').trim(); if(v) used.add(v); });
+  const admin=[...used].filter(v=>/^(ผู้อำนวยการ|รองผู้อำนวยการ|หัวหน้า|รักษา)/.test(v));
+  const acting=admin.filter(v=>/^รักษา/.test(v)); admin.filter(v=>!/^รักษา/.test(v)).forEach(v=>acting.push(v===DIR_TITLE?'รักษาราชการแทน'+v:'รักษาการแทน'+v));
+  const staff=[...new Set(PPL().map(p=>p[1]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+  const other=[...used].filter(v=>!admin.includes(v)&&!staff.includes(v));
+  return {admin:admin.filter(v=>!/^รักษา/.test(v)),acting:[...new Set(acting)],staff:[...new Set([...other,...staff])]};
+}
+function posPicker(id){
+  const o=posOptions(); const og=(t,a)=>a.length?`<optgroup label="${t}">${a.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('')}</optgroup>`:'';
+  return `<select class="pospick" data-for="${id}" title="เลือกตำแหน่ง" style="width:92px;flex:none"><option value="">เลือก ▾</option>${og('ตำแหน่งบริหาร',o.admin)}${og('รักษาการ / รักษาราชการแทน',o.acting)}${og('ตำแหน่งตามรายชื่อบุคลากร',o.staff)}</select>`;
+}
 function signerRows(){
   const s=S().signers;
   return SIGNER_ROLES.map(r=>`<fieldset style="margin-bottom:8px"><legend>${r.t}</legend><div class="row">
     <label class="w4">ชื่อ-สกุล<input id="sg_${r.k}N" list="dlPeople" data-auto="${r.auto?1:''}" value="${esc(s[r.k+'N'])}" placeholder="${r.ph||''}"></label>
-    <label class="w4">ตำแหน่ง<input id="sg_${r.k}P" value="${esc(s[r.k+'P'])}"></label>
+    <label class="w4">ตำแหน่ง (พิมพ์เอง หรือกด "เลือก")<span style="display:flex;gap:4px"><input id="sg_${r.k}P" value="${esc(s[r.k+'P'])}" style="flex:1;min-width:0">${posPicker('sg_'+r.k+'P')}</span></label>
     ${r.role?`<label class="w3">บรรทัดหน้าที่<input id="sg_${r.k}R" value="${esc(s[r.k+'R'])}"></label>`:''}
     ${r.acting?`<label class="wf">บรรทัดที่ 3 (บันทึกไตรมาส/ประกาศ)<input id="sg_${r.k}A" value="${esc(s[r.k+'A'])}" placeholder="เช่น ปฏิบัติราชการแทนอธิการบดีสถาบันพระบรมราชชนก"></label>`:''}
   </div></fieldset>`).join('');
@@ -1645,7 +1660,10 @@ function bindView(){
   if(TAB==='set'){
     $('#bkSave').onclick=backup;
     $$('[id^=sg_][data-auto="1"]').forEach(inp=>inp.addEventListener('change',()=>{ const p=PPL().find(x=>x[0]===inp.value.trim()); const pos=$('#'+inp.id.slice(0,-1)+'P'); if(p&&pos) pos.value=p[1]; }));
-    $('#sg_save').onclick=()=>{ const s=S().signers; $$('[id^=sg_]').forEach(i=>{ if(i.tagName==='INPUT') s[i.id.slice(3)]=i.value.replace(/\s+$/,'').replace(/^\s+/,''); }); save(); toast('บันทึกผู้ลงนามแล้ว'); };
+    $$('select.pospick').forEach(sel=>sel.onchange=()=>{ if(sel.value){ const t=$('#'+sel.dataset.for); t.value=sel.value; t.dispatchEvent(new Event('input')); } sel.value=''; });
+    $('#sg_save').onclick=()=>{ const s=S().signers; $$('[id^=sg_]').forEach(i=>{ if(i.tagName==='INPUT') s[i.id.slice(3)]=i.value.replace(/\s+$/,'').replace(/^\s+/,''); });
+      const pl=new Set(S().posList||[]); SIGNER_ROLES.forEach(r=>{ const v=(s[r.k+'P']||'').trim(); if(v&&!PPL().some(p=>p[1]===v)) pl.add(v); }); S().posList=[...pl].slice(-40);  // จำตำแหน่งที่พิมพ์เอง
+      save(); render(); toast('บันทึกผู้ลงนามแล้ว'); };
     $('#sg_reset').onclick=()=>{ if(!confirm('คืนชื่อผู้ลงนามทั้งหมดเป็นค่าเริ่มต้น?')) return; S().signers=structuredClone(DEFAULT_SETTINGS.signers); save(); render(); }; $('#bkLoad').onclick=()=>$('#fileBackup').click();
     $('#s_save').onclick=()=>{
       const s=S(); s.org=$('#s_org').value.trim()||DEFAULT_SETTINGS.org; s.nonEgpLimit=parseMoney($('#s_lim').value)||5000; s.reserveDays=parseInt($('#s_rd').value)||7; s.qIncludeInst=$('#s_qinst').checked;
