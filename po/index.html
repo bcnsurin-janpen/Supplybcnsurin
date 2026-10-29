@@ -302,6 +302,10 @@ const BOOK = {po:'เล่มใบสั่ง',contract:'เล่มสั�
 const DOCNAME = {po:{buy:'ใบสั่งซื้อ',hire:'ใบสั่งจ้าง',rent:'ใบสั่งเช่า'},contract:{buy:'สัญญาซื้อขาย',hire:'สัญญาจ้าง',rent:'สัญญาเช่า'}};
 const STATUS = {issued:'ออกแล้ว',reserved:'จองเลข',cancelled:'ยกเลิก'};
 const FUNDS = ['งบประมาณ','รายได้','บริจาค','อื่น ๆ'];   // ตามคอลัมน์ "ประเภทเงิน" ในแบบทะเบียนคุมใบสั่ง (G–J)
+const SEC_BANK = ['หนังสือค้ำประกันสัญญา','หนังสือค้ำประกันของธนาคาร','เช็คที่ธนาคารเซ็นสั่งจ่าย','พันธบัตรรัฐบาลไทย'];
+const SEC_CASH = 'เงินสด';
+const SEC_NONE = ['ไม่มีหลักประกันสัญญา เนื่องจากเป็นการจัดเช่าจากหน่วยงานของรัฐ','ไม่มีหลักประกันสัญญา เนื่องจากได้รับยกเว้น ตามหนังสือด่วนที่สุด ที่ กค(กวจ)0405.2/ว727 ลว. 22 ก.ย. 2569'];
+const secKind = t => !t?'':SEC_NONE.includes(t)||/^ไม่มีหลักประกัน/.test(t)?'none':t===SEC_CASH?'cash':'bank';
 const FUND_OLD = {'งปม.':'งบประมาณ','ลงทะเบียน':'อื่น ๆ'};
 const OFFICERS = [];
 // รายชื่อเจ้าหน้าที่ / บุคลากร: ใช้ค่าที่เก็บในข้อมูลก่อน (รุ่นออนไลน์ไม่ฝังรายชื่อในหน้าเว็บ — มาจากการกู้คืนไฟล์สำรอง)
@@ -427,7 +431,7 @@ function normRec(r){
     inst:{on:false,start:'',months:12,monthly:null,amounts:{},notes:{}},
     egpProject:'',egpContract:'',supportCode:'1',fund:'',
     memoNo:'',memoDate:'',cancelReason:'',cancelDate:'',unit:'',projectCode:'',projectName:'',assetNos:'',repairRef:'',deliveryDate:'',note:'',
-    secType:'',secDetail:'',secDate:'',secAmount:null,inspectDate:'',dueDate:'',action:'',
+    secType:'',secDetail:'',secRcBook:'',secRcNo:'',secDate:'',secAmount:null,inspectDate:'',inspectEom:false,dueDate:'',action:'',
     source:'manual',history:[],createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()};
   const o=Object.assign(base,r||{});
   o.inst=Object.assign({on:false,start:'',months:12,monthly:null,amounts:{},notes:{}},o.inst||{});
@@ -702,17 +706,23 @@ function formHtml(){
   </fieldset>
   <fieldset id="f_conBox" style="${r.book==='contract'?'':'display:none'}"><legend>หลักประกันสัญญา และการตรวจรับ (ทะเบียนคุมสัญญา)</legend>
    <div class="row">
-    <label>ประเภทหลักประกัน<input id="f_secType" class="w3" list="dlSec" value="${esc(r.secType)}" placeholder="เช่น หนังสือค้ำประกันสัญญา"></label>
-    <label class="w4">ธนาคาร / สาขา / เลขที่<input id="f_secDetail" value="${esc(r.secDetail)}" placeholder="เช่น ธ.กรุงไทย สาขาสุรินทร์ เลขที่ ..."></label>
-    <div class="fld"><span>ลงวันที่</span>${dateField('f_secDate',r.secDate)}</div>
-    <label>จำนวนเงินหลักประกัน (บาท)<input id="f_secAmt" class="w2" style="text-align:right" value="${r.secAmount==null?'':money(r.secAmount)}"></label>
+    <label class="wf">หลักประกันสัญญา<select id="f_secType"><option value="">— ยังไม่ระบุ —</option>${[...SEC_BANK,SEC_CASH,...SEC_NONE,...(r.secType&&![...SEC_BANK,SEC_CASH,...SEC_NONE].includes(r.secType)?[r.secType]:[])].map(t=>`<option value="${esc(t)}" ${r.secType===t?'selected':''}>${esc(t)}</option>`).join('')}<option value="__other">อื่น ๆ (พิมพ์เอง)…</option></select></label>
    </div>
+   <div class="row" id="f_secRow" style="margin-top:8px">
+    <label class="w3" id="f_secOtherL" style="display:none">ระบุหลักประกัน<input id="f_secOther" placeholder="พิมพ์ประเภทหลักประกัน"></label>
+    <label class="w4" data-sk="bank">ธนาคาร / สาขา / เลขที่<input id="f_secDetail" value="${esc(r.secDetail)}" placeholder="เช่น ธ.กรุงไทย สาขาสุรินทร์ เลขที่ ..."></label>
+    <label data-sk="cash">ใบเสร็จรับเงิน เล่มที่<input id="f_secRcBook" class="w1" value="${esc(r.secRcBook)}"></label>
+    <label data-sk="cash">เลขที่<input id="f_secRcNo" class="w1" value="${esc(r.secRcNo)}"></label>
+    <div class="fld" data-sk="bank cash"><span>ลงวันที่</span>${dateField('f_secDate',r.secDate)}</div>
+    <label data-sk="bank cash">จำนวนเงินหลักประกัน (บาท)<input id="f_secAmt" class="w2" style="text-align:right" value="${r.secAmount==null?'':money(r.secAmount)}"></label>
+   </div>
+   <div class="pv small" id="f_secPv" style="margin-top:4px"></div>
    <div class="row" style="margin-top:8px">
-    <div class="fld"><span>วันที่ตรวจรับ</span>${dateField('f_inspDate',r.inspectDate)}</div>
+    <div class="fld"><span>วันที่ตรวจรับ</span><div style="display:flex;gap:8px;align-items:center"><span id="f_inspBox" style="${r.inspectEom?'display:none':''}">${dateField('f_inspDate',r.inspectDate)}</span><label style="display:flex;flex-direction:row;gap:4px;align-items:center;white-space:nowrap;color:var(--ink)"><input type="checkbox" id="f_inspEom" ${r.inspectEom?'checked':''}> ทุกสิ้นเดือน</label></div></div>
     <div class="fld"><span>วันครบกำหนด</span>${dateField('f_dueDate',r.dueDate)}</div>
     <label class="wf">การปฏิบัติ (เช่น คืนหลักประกัน ที่ … ลว. …)<input id="f_action" value="${esc(r.action)}"></label>
    </div>
-   <div class="hint" style="margin-top:4px">ใช้ในทะเบียนคุมสัญญา (ช่องหลักประกันสัญญา / วันที่ตรวจรับ / วันครบกำหนด / การปฏิบัติ) · ไม่มีหลักประกันเว้นว่างได้</div>
+   <div class="hint" style="margin-top:4px">ใช้ในทะเบียนคุมสัญญา (ช่องหลักประกันสัญญา / วันที่ตรวจรับ / วันครบกำหนด / การปฏิบัติ) · สัญญาเช่า/จ้างรายเดือนติ๊ก "ทุกสิ้นเดือน" ที่วันที่ตรวจรับ</div>
   </fieldset>
   <fieldset><legend>อ้างอิงและเชื่อมระบบอื่น (ไม่บังคับ)</legend>
    <div class="row">
@@ -735,7 +745,7 @@ function formHtml(){
   </div>
   <div class="mf">${!r._isNew?'<button class="b d" id="f_del" style="margin-right:auto">ลบ</button>':''}<button class="b" data-x>ยกเลิก</button><button class="b p" id="f_save">บันทึก</button></div>
   <datalist id="dlVendor">${[...new Set(DB.records.map(x=>x.vendor).filter(Boolean))].sort().map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
-  <datalist id="dlSec"><option value="หนังสือค้ำประกันสัญญา"><option value="หนังสือค้ำประกันของธนาคาร"><option value="เงินสด"><option value="เช็คที่ธนาคารเซ็นสั่งจ่าย"><option value="พันธบัตรรัฐบาลไทย"></datalist>
+  
   <datalist id="dlUnit">${[...new Set(DB.records.map(x=>x.unit).filter(Boolean))].sort().map(v=>`<option value="${esc(v)}">`).join('')}</datalist>
   <datalist id="dlReason">${S().reasons.map(v=>`<option value="${esc(v)}">`).join('')}</datalist>`;
 }
@@ -772,8 +782,8 @@ function readForm(){
   r.memoNo=$('#f_memoNo').value.trim(); r.memoDate=parseThaiDate($('#f_memoDate').value)||'';
   r.unit=$('#f_unit').value.trim(); r.projectCode=$('#f_pcode').value.trim(); r.projectName=$('#f_pname').value.trim();
   r.assetNos=$('#f_asset').value.trim(); r.repairRef=$('#f_repair').value.trim(); r.deliveryDate=parseThaiDate($('#f_deliv').value)||''; r.note=$('#f_note').value.trim();
-  r.secType=$('#f_secType').value.trim(); r.secDetail=$('#f_secDetail').value.trim(); r.secDate=parseThaiDate($('#f_secDate').value)||''; r.secAmount=parseMoney($('#f_secAmt').value);
-  r.inspectDate=parseThaiDate($('#f_inspDate').value)||''; r.dueDate=parseThaiDate($('#f_dueDate').value)||''; r.action=$('#f_action').value.trim();
+  r.secType=$('#f_secType').value==='__other'?$('#f_secOther').value.trim():$('#f_secType').value; r.secDetail=$('#f_secDetail').value.trim(); r.secRcBook=$('#f_secRcBook').value.trim(); r.secRcNo=$('#f_secRcNo').value.trim(); r.secDate=parseThaiDate($('#f_secDate').value)||''; r.secAmount=parseMoney($('#f_secAmt').value);
+  r.inspectEom=$('#f_inspEom').checked; r.inspectDate=r.inspectEom?'':(parseThaiDate($('#f_inspDate').value)||''); r.dueDate=parseThaiDate($('#f_dueDate').value)||''; r.action=$('#f_action').value.trim();
   return r;
 }
 function bidRow(b){return `<tr><td><input class="bn" style="width:100%" list="dlVendor" value="${esc(b.name||'')}"></td><td class="n"><input class="bp" style="width:130px;text-align:right" value="${b.price==null?'':money(b.price)}"></td><td><button class="b sm d" type="button" data-rmbid>ลบ</button></td></tr>`;}
@@ -821,6 +831,14 @@ function bindForm(){
   $('#f_eqMed').onclick=()=>{ $('#f_median').value=$('#f_amount').value; };
   $('#f_instCalc').onclick=()=>{ const a=parseMoney($('#f_amount').value),n=parseInt(fromThaiDigits($('#f_instN').value)); if(a!=null&&n>0){$('#f_instAmt').value=money(r2(a/n));renderInstTbl();} else toast('ใส่ราคาที่ตกลงและจำนวนงวดก่อน'); };
   ['#f_instM','#f_instY','#f_instN','#f_instAmt'].forEach(s=>$(s).addEventListener('change',renderInstTbl));
+  const secUi=()=>{ const v=$('#f_secType').value, other=v==='__other', k=other?'bank':secKind(v);
+    $('#f_secOtherL').style.display=other?'':'none';
+    $$('#f_secRow [data-sk]').forEach(el=>{ el.style.display=k&&el.dataset.sk.split(' ').includes(k)?'':'none'; });
+    const t=other?$('#f_secOther').value.trim():v;
+    const tmp={secType:t,secDetail:$('#f_secDetail').value.trim(),secRcBook:$('#f_secRcBook').value.trim(),secRcNo:$('#f_secRcNo').value.trim(),secDate:parseThaiDate($('#f_secDate').value)||'',secAmount:parseMoney($('#f_secAmt').value)};
+    $('#f_secPv').textContent=t?'ในทะเบียน: '+secText(tmp):''; };
+  $('#f_secType').onchange=secUi; $$('#f_secRow input').forEach(i=>i.addEventListener('input',secUi)); $$('#f_secRow input').forEach(i=>i.addEventListener('change',secUi)); secUi();
+  $('#f_inspEom').onchange=()=>{ $('#f_inspBox').style.display=$('#f_inspEom').checked?'none':''; };
   $('#f_fund').onclick=e=>{const b=e.target.closest('button'); if(!b) return; const on=!b.classList.contains('on'); $$('#f_fund button').forEach(x=>x.classList.remove('on')); if(on) b.classList.add('on');};
   ['#f_no','#f_date','#f_status','#f_amount'].forEach(s=>{$(s).addEventListener('input',refreshFormMsgs);$(s).addEventListener('change',refreshFormMsgs);});
   ['#f_amount','#f_budget','#f_median','#f_instAmt'].forEach(s=>$(s).addEventListener('blur',e=>{const v=parseMoney(e.target.value); if(v!=null) e.target.value=money(v);}));
@@ -882,12 +900,14 @@ function fromJobJson(j){
     note:''};
   // 4 ช่องท้ายของทะเบียนคุมสัญญา: หลักประกันสัญญา / วันที่ตรวจรับ / วันครบกำหนด / การปฏิบัติ
   r.inspectDate=parseThaiDate(j.inspectDate)||'';
+  if(!r.inspectDate&&(+rent.months||0)>1) r.inspectEom=true;   // เช่า/จ้างรายเดือน ตรวจรับทุกสิ้นเดือน
   if(rent.end) r.dueDate=parseThaiDate(rent.end)||'';
   else if(+j.deliveryDays>0&&r.date){ const d=new Date(r.date+'T12:00:00Z'); d.setUTCDate(d.getUTCDate()+(+j.deliveryDays)); r.dueDate=d.toISOString().slice(0,10); }
   const g=j.guarantee||j.security||rent.guarantee||null;   // ถ้าไฟล์ข้อมูลงานมีข้อมูลหลักประกัน
   if(g&&typeof g==='object'){
-    r.secType=g.type||g.kind||'';
-    r.secDetail=g.detail||[g.bank?'ธ.'+String(g.bank).replace(/^ธ(นาคาร|\.)\s*/,''):'',g.branch?'สาขา'+String(g.branch).replace(/^สาขา\s*/,''):'',g.no?'เลขที่ '+g.no:''].filter(Boolean).join(' ');
+    r.secType=g.type||g.kind||''; if(/^(cash|เงินสด)$/i.test(r.secType)) r.secType=SEC_CASH; if(/^(none|state|gov|exempt)$/i.test(r.secType)) r.secType=/exempt/i.test(r.secType)?SEC_NONE[1]:SEC_NONE[0];
+    r.secRcBook=g.receiptBook||g.book||''; r.secRcNo=g.receiptNo||(r.secType===SEC_CASH?g.no||'':'');
+    r.secDetail=r.secType===SEC_CASH?'':g.detail||[g.bank?'ธ.'+String(g.bank).replace(/^ธ(นาคาร|\.)\s*/,''):'',g.branch?'สาขา'+String(g.branch).replace(/^สาขา\s*/,''):'',g.no?'เลขที่ '+g.no:''].filter(Boolean).join(' ');
     r.secDate=parseThaiDate(g.date)||''; r.secAmount=g.amount!=null&&g.amount!==''?r2(+String(g.amount).replace(/,/g,'')):null;
   }
   if(j.action) r.action=String(j.action);
@@ -905,7 +925,7 @@ $('#fileJson').addEventListener('change',async e=>{
     const j=JSON.parse(await f.text());
     if(j&&Array.isArray(j.records)){ alert('ไฟล์นี้เป็นไฟล์สำรองข้อมูลของทะเบียน — ใช้เมนู "ตั้งค่า / สำรองข้อมูล" > กู้คืน'); return; }
     const r=fromJobJson(j);
-    if(r.no){ const dup=DB.records.find(x=>x.book===r.book&&x.fy===fyOf(r.date)&&noKey(x.no)===noKey(r.no)); if(dup){ if(!confirm(`เลขที่ ${r.no}/${dup.fy} มีในทะเบียนแล้ว (${dup.title||STATUS[dup.status]})\nเปิดรายการเดิมเพื่อเติมข้อมูลจากไฟล์หรือไม่?`)) return; const merged=Object.assign({},dup); for(const k of ['title','vendor','vendorTax','amount','median','egpProject','memoNo','memoDate','unit','projectCode','projectName','secType','secDetail','secDate','secAmount','inspectDate','dueDate','action']) if(!merged[k]&&r[k]) merged[k]=r[k]; if(dup.status==='reserved') merged.status='issued'; if(r.inst&&!dup.inst.on) merged.inst=r.inst; merged.kind=r.kind; openForm(merged); return; } }
+    if(r.no){ const dup=DB.records.find(x=>x.book===r.book&&x.fy===fyOf(r.date)&&noKey(x.no)===noKey(r.no)); if(dup){ if(!confirm(`เลขที่ ${r.no}/${dup.fy} มีในทะเบียนแล้ว (${dup.title||STATUS[dup.status]})\nเปิดรายการเดิมเพื่อเติมข้อมูลจากไฟล์หรือไม่?`)) return; const merged=Object.assign({},dup); for(const k of ['title','vendor','vendorTax','amount','median','egpProject','memoNo','memoDate','unit','projectCode','projectName','secType','secDetail','secRcBook','secRcNo','secDate','secAmount','inspectDate','inspectEom','dueDate','action']) if(!merged[k]&&r[k]) merged[k]=r[k]; if(dup.status==='reserved') merged.status='issued'; if(r.inst&&!dup.inst.on) merged.inst=r.inst; merged.kind=r.kind; openForm(merged); return; } }
     openForm(r);
     toast('นำเข้าแล้ว — ตรวจและเติมเลขที่ก่อนบันทึก');
   }catch(err){ alert('อ่านไฟล์ไม่ได้: '+err.message); }
@@ -1076,15 +1096,20 @@ function regNote(r){ return [r.status!=='issued'?STATUS[r.status]+(r.status==='c
 function fmtThS(iso){ if(!iso) return ''; const {y,m,d}=dParts(iso); return `${d} ${TH_MON_S[m-1]} ${String(y+543).slice(-2)}`; }
 function regNoFy(r){ return r.no+(r.fy?'/'+r.fy:''); }
 function secText(r){ // ข้อความช่อง "หลักประกันสัญญา" ตามสมุดทะเบียนคุมสัญญา
-  const p=[r.secType,r.secDetail]; if(r.secDate) p.push('ลว. '+fmtThS(r.secDate)); if(r.secAmount!=null) p.push('จำนวนเงิน '+money(r.secAmount)+' บาท');
+  const k=secKind(r.secType); if(k==='none'||!k) return r.secType||'';
+  const p = k==='cash' ? ['เงินสด ตามใบเสร็จรับเงิน', r.secRcBook?'เล่มที่ '+r.secRcBook:'', r.secRcNo?'เลขที่ '+r.secRcNo:'', r.secDate?'ลงวันที่ '+fmtThS(r.secDate):'']
+                       : [r.secType, r.secDetail, r.secDate?'ลว. '+fmtThS(r.secDate):''];
+  if(r.secAmount!=null) p.push('จำนวนเงิน '+money(r.secAmount)+' บาท');
   return p.filter(Boolean).join(' ');
+}
+function inspText(r){ return r.inspectEom?'ทุกสิ้นเดือน':fmtShort(r.inspectDate);
 }
 function conAction(r){ return [r.status!=='issued'?STATUS[r.status]+(r.status==='cancelled'&&r.cancelReason?' ('+r.cancelReason+')':''):'',r.action,r.note].filter(Boolean).join(' '); }
 const REG_TITLE={po:'ทะเบียนคุมใบสั่งซื้อ/สั่งจ้าง/สั่งเช่า',contract:'ทะเบียนคุมสัญญา'};
 function regCsv(fy,book){
   const list=regList(fy,book);
   if(book==='contract') return [['ลำดับ','สัญญาเลขที่','ลงวันที่','รายการ','ผู้ขาย/ผู้รับจ้าง','วงเงินในสัญญา','หลักประกันสัญญา','วันที่ตรวจรับ','วันครบกำหนด','การปฏิบัติ','เลขที่โครงการ e-GP','เลขคุมสัญญา e-GP','ประเภทเงิน'],
-    ...list.map((r,i)=>[i+1,regNoFy(r),fmtShort(r.date),r.title.replace(/\n/g,' '),r.vendor,num(r.amount),secText(r),fmtShort(r.inspectDate),fmtShort(r.dueDate),conAction(r),r.egpProject,r.egpContract,r.fund])];
+    ...list.map((r,i)=>[i+1,regNoFy(r),fmtShort(r.date),r.title.replace(/\n/g,' '),r.vendor,num(r.amount),secText(r),inspText(r),fmtShort(r.dueDate),conAction(r),r.egpProject,r.egpContract,r.fund])];
   return [['เลขที่','วัน เดือน ปี','รายการซื้อ/จ้าง/เช่า','ผู้ขาย/ผู้รับจ้าง/ผู้ให้เช่า','จำนวนเงิน','เลขที่โครงการ',...FUNDS,'หมายเหตุ'],
     ...list.map(r=>[regNoFy(r),fmtShort(r.date),r.title.replace(/\n/g,' '),r.vendor,num(r.amount),r.egpProject,...FUNDS.map(f=>r.fund===f?'✓':''),regNote(r)])];
 }
@@ -1093,7 +1118,7 @@ function regHtml(fy,book){
   const br=s=>esc(D(s)).replace(/\n/g,'<br>');
   if(book==='contract') return `<div class="ttl"><b>${D(REG_TITLE.contract)}</b><br><b>${D(fyT)}</b></div>
   <table class="rp"><thead><tr><th style="width:4.5%"><b>ลำดับ</b></th><th style="width:9.5%"><b>สัญญาเลขที่ (ลว.)</b></th><th style="width:22%"><b>รายการ</b></th><th style="width:14%"><b>ผู้ขาย/ผู้รับจ้าง</b></th><th style="width:9%"><b>วงเงินในสัญญา</b></th><th style="width:17%"><b>หลักประกันสัญญา</b></th><th style="width:7.5%"><b>วันที่ตรวจรับ</b></th><th style="width:7.5%"><b>วันครบกำหนด</b></th><th style="width:9%"><b>การปฏิบัติ</b></th></tr></thead><tbody>
-  ${list.map((r,i)=>`<tr><td class="c">${D(i+1)}</td><td class="c">${D(regNoFy(r))}<br>${D(r.date?'ลว. '+fmtThS(r.date):'')}</td><td>${br(r.title)}</td><td>${esc(r.vendor)}</td><td class="r">${D(money(r.amount))}</td><td>${br(secText(r))}</td><td class="c">${D(fmtShort(r.inspectDate))}</td><td class="c">${D(fmtShort(r.dueDate))}</td><td>${br(conAction(r))}</td></tr>`).join('')||'<tr><td colspan="9" class="c">-</td></tr>'}
+  ${list.map((r,i)=>`<tr><td class="c">${D(i+1)}</td><td class="c">${D(regNoFy(r))}<br>${D(r.date?'ลว. '+fmtThS(r.date):'')}</td><td>${br(r.title)}</td><td>${esc(r.vendor)}</td><td class="r">${D(money(r.amount))}</td><td>${br(secText(r))}</td><td class="c">${D(inspText(r))}</td><td class="c">${D(fmtShort(r.dueDate))}</td><td>${br(conAction(r))}</td></tr>`).join('')||'<tr><td colspan="9" class="c">-</td></tr>'}
   </tbody></table>`;
   return `<div class="ttl"><b>${D(REG_TITLE.po)}</b><br><b>${D(fyT)}</b></div>
   <table class="rp"><thead><tr><th rowspan="2" style="width:7%"><b>เลขที่</b></th><th rowspan="2" style="width:8.5%"><b>วัน เดือน ปี</b></th><th rowspan="2" style="width:26%"><b>รายการซื้อ/จ้าง/เช่า</b></th><th rowspan="2" style="width:16%"><b>ผู้ขาย/ผู้รับจ้าง/ผู้ให้เช่า</b></th><th rowspan="2" style="width:9%"><b>จำนวนเงิน</b></th><th rowspan="2" style="width:9.5%"><b>เลขที่โครงการ</b></th><th colspan="4"><b>ประเภทเงิน</b></th><th rowspan="2" style="width:8%"><b>หมายเหตุ</b></th></tr>
@@ -1461,7 +1486,7 @@ function regSheet(fy,book){
     const cols=[6,16,37,24,13,33,13,13,26];
     const out=[[T(REG_TITLE.contract,'title')],[T('ประจำปีงบประมาณ '+fy,'title')],null,
       [H('ลำดับ'),H('สัญญาเลขที่ (ลว.)'),H('รายการ'),H('ผู้ขาย/ผู้รับจ้าง'),H('วงเงินในสัญญา'),H('หลักประกันสัญญา'),H('วันที่ตรวจรับ'),H('วันครบกำหนด'),H('การปฏิบัติ')]];
-    list.forEach((r,i)=>out.push([T(String(i+1),'tdc'),T(regNoFy(r)+(r.date?'\nลว. '+fmtThS(r.date):''),'tdc'),T(r.title,'td'),T(r.vendor,'td'),N(r.amount,'num'),T(secText(r),'td'),T(fmtShort(r.inspectDate),'tdc'),T(fmtShort(r.dueDate),'tdc'),T(conAction(r),'td')]));
+    list.forEach((r,i)=>out.push([T(String(i+1),'tdc'),T(regNoFy(r)+(r.date?'\nลว. '+fmtThS(r.date):''),'tdc'),T(r.title,'td'),T(r.vendor,'td'),N(r.amount,'num'),T(secText(r),'td'),T(inspText(r),'tdc'),T(fmtShort(r.dueDate),'tdc'),T(conAction(r),'td')]));
     return Object.assign({name:'ทะเบียนคุมสัญญา '+fy,cols,rows:out,merges:['A1:I1','A2:I2'],printTitles:[4,4],heights:{0:23.25,1:23.25,2:9.75,3:24}},base,{minHFrom:4});
   }
   const cols=[10.5,12.5,42,25,13,15,10,7.5,7.5,7.5,13];
