@@ -36,7 +36,7 @@ h3{font-size:16px;margin:18px 0 8px}
 .btn.sm{padding:2px 9px;font-size:13px}
 .btn.danger{color:var(--bad)}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-input.money{text-align:right}
+input.money{text-align:right}#spTbl tr.sel td{background:#e8f3ec;font-weight:600}
 input[type=text],input[type=number],input[type=date],select,textarea{border:1px solid var(--line);border-radius:6px;padding:5px 8px;background:#fff;min-width:0}
 textarea{width:100%;resize:vertical}
 table.t{width:100%;border-collapse:collapse;background:#fff}
@@ -550,6 +550,7 @@ function render(){
   renderTabs();renderFy();
   const v=document.getElementById('view');
   v.innerHTML=({dash:vDash,check:vCheck,plan:vPlan,drug:vDrug,eq:vEq,spend:vSpend,report:vReport,set:vSet})[TAB]();
+  if(TAB==='spend')spFilter();
 }
 
 /* ================= view: dashboard ================= */
@@ -881,12 +882,21 @@ function vSpend(){
   return `<div class="row" style="margin-bottom:10px"><h2 class="grow" style="margin:0">ตัดยอดการใช้งบตามแผน ปีงบประมาณ ${FY}</h2>
    <button class="btn pri" data-act="importJson">นำเข้าไฟล์ข้อมูลงาน (.json)</button><button class="btn" data-act="newPurchase">+ บันทึกเอง</button></div>
   <p class="small muted">นำเข้าไฟล์ .json ที่ใช้ออกชุดเอกสารในระบบเอกสารพัสดุ ระบบจะจับคู่โครงการจากรหัสหรือชื่อโครงการ แล้วตัดยอดให้ทั้งทะเบียนคุม สรุปค่าใช้จ่าย และรายงานผล ในครั้งเดียว</p>
-  <div class="card"><table class="t"><tr><th>โครงการในแผน</th><th class="n">งบตามแผน</th><th class="n">ใช้ไป</th><th class="n">คงเหลือ</th><th style="width:18%"></th></tr>
-  ${ps.map(p=>{const b=projBudget(p),u=projUsed(p);const pct=b?u/b*100:0;return `<tr><td><span class="link" data-act="selProj" data-id="${p.id}">${esc(p.name)}</span></td><td class="n">${money(b)}</td><td class="n">${money(u)}</td><td class="n" style="${b-u<0?'color:var(--bad)':''}">${money(b-u)}</td><td><div class="bar"><i class="${pct>100?'over':''}" style="width:${Math.min(100,pct)}%"></i></div></td></tr>`}).join('')||'<tr><td colspan="5" class="empty">ยังไม่มีโครงการในแผน</td></tr>'}
+  <div class="card"><div class="row" style="margin-bottom:8px;gap:8px;flex-wrap:wrap"><input type="search" id="spQ" value="${esc(UI.spendQ||'')}" placeholder="ค้นหาโครงการ — พิมพ์ชื่อ รหัส ผู้รับผิดชอบ หรือรายการ แล้วกด Enter เพื่อเปิด" style="flex:1;min-width:260px" autocomplete="off"><span class="small muted" id="spCnt"></span></div>
+  <table class="t" id="spTbl"><tr><th>โครงการในแผน</th><th class="n">งบตามแผน</th><th class="n">ใช้ไป</th><th class="n">คงเหลือ</th><th style="width:18%"></th></tr>
+  ${ps.map(p=>{const b=projBudget(p),u=projUsed(p);const pct=b?u/b*100:0;return `<tr data-sq="${esc(spHay(p))}"${p.id===UI.resProject?' class="sel"':''}><td><span class="link" data-act="selProj" data-id="${p.id}">${esc(p.name)}</span></td><td class="n">${money(b)}</td><td class="n">${money(u)}</td><td class="n" style="${b-u<0?'color:var(--bad)':''}">${money(b-u)}</td><td><div class="bar"><i class="${pct>100?'over':''}" style="width:${Math.min(100,pct)}%"></i></div></td></tr>`}).join('')||'<tr><td colspan="5" class="empty">ยังไม่มีโครงการในแผน</td></tr>'}
   </table></div>
   ${sel?projLedger(sel):''}
   <div class="card"><h3 style="margin-top:0">รายการล่าสุด</h3>${recent.length?purchaseTable(recent,true):'<div class="empty">ยังไม่มี</div>'}</div>`;
 }
+function spHay(p){return thNorm([p.name,p.code,p.unit,ownerText?ownerText(p):p.owner,...activeItems(p).map(i=>i.name)].join(' ')).toLowerCase()}
+function spFilter(){const q=document.getElementById('spQ');if(!q)return;const ts=thNorm(q.value).toLowerCase().split(' ').filter(Boolean);let n=0,tot=0;
+  document.querySelectorAll('#spTbl tr[data-sq]').forEach(tr=>{tot++;const ok=ts.every(t=>tr.dataset.sq.includes(t));tr.style.display=ok?'':'none';if(ok)n++});
+  const c=document.getElementById('spCnt');if(c)c.textContent=ts.length?`พบ ${n} จาก ${tot} โครงการ`:`${tot} โครงการ`;return n}
+document.addEventListener('input',e=>{if(e.target.id==='spQ'){UI.spendQ=e.target.value;spFilter()}});
+document.addEventListener('keydown',e=>{if(e.target.id==='spQ'&&e.key==='Enter'){const v=[...document.querySelectorAll('#spTbl tr[data-sq]')].filter(tr=>tr.style.display!=='none');
+  if(v.length===1)v[0].querySelector('[data-act=selProj]').click();else toast(v.length?`พบ ${v.length} โครงการ — พิมพ์เพิ่มให้เหลือโครงการเดียว หรือคลิกชื่อโครงการ`:'ไม่พบโครงการ')}
+  if(e.target.id==='spQ'&&e.key==='Escape'){e.target.value='';UI.spendQ='';spFilter()}});
 function projLedger(p){
   return `<div class="card" id="ledger"><div class="row"><h3 class="grow" style="margin:0">${esc(p.name)}</h3><button class="btn sm" data-act="newPurchase" data-pid="${p.id}">+ บันทึกการใช้งบ</button><button class="btn sm" data-act="selProj" data-id="">ปิด</button></div>
   ${activeItems(p).map((i,k)=>{const ps=S.purchases.filter(x=>x.itemId===i.id).sort((a,b)=>(a.date||'').localeCompare(b.date||''));const u=usedOf(i.id);
