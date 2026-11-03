@@ -83,6 +83,79 @@ const TABLE_SCHEMAS = {
 let currentTable = 'procurement_news';
 let editingId = null;
 
+// ---------- อัปโหลดไฟล์ขึ้น Supabase Storage (bucket: documents) ----------
+// ชนิดไฟล์ที่อนุญาต (ไม่รวม HTML/SVG/EXE เพื่อความปลอดภัย) และขนาดสูงสุด
+const UPLOAD_BUCKET = 'documents';
+const UPLOAD_MAX_MB = 10;
+const UPLOAD_TYPES = {
+  pdf: 'application/pdf',
+  doc: 'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ppt: 'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  png: 'image/png',
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg'
+};
+
+function randomHex(bytes) {
+  const arr = new Uint8Array(bytes);
+  crypto.getRandomValues(arr);
+  return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function uploadControlHtml(fieldName) {
+  const accept = Object.keys(UPLOAD_TYPES).map(e => '.' + e).join(',');
+  return `<div style="margin-top:0.4rem;">
+    <input type="file" id="up_${fieldName}" accept="${accept}">
+    <div id="upStatus_${fieldName}" style="font-size:0.82rem; margin-top:0.25rem;"></div>
+    <div style="font-size:0.78rem; color: var(--ink-soft); margin-top:0.15rem;">หรือเลือกไฟล์เพื่ออัปโหลด (PDF, Word, Excel, PowerPoint, รูปภาพ ไม่เกิน ${UPLOAD_MAX_MB} MB) ระบบจะใส่ลิงก์ให้อัตโนมัติ</div>
+  </div>`;
+}
+
+async function handleUpload(inputEl, fieldName) {
+  const status = document.getElementById('upStatus_' + fieldName);
+  const target = document.getElementById('f_' + fieldName);
+  const file = inputEl.files && inputEl.files[0];
+  if (!file) return;
+  status.style.color = '';
+  const ext = (file.name.split('.').pop() || '').toLowerCase();
+  if (!UPLOAD_TYPES[ext]) {
+    status.style.color = 'var(--stamp, #b3261e)';
+    status.textContent = 'ชนิดไฟล์ไม่ได้รับอนุญาต (ใช้ได้: ' + Object.keys(UPLOAD_TYPES).join(', ') + ')';
+    inputEl.value = '';
+    return;
+  }
+  if (file.size > UPLOAD_MAX_MB * 1024 * 1024) {
+    status.style.color = 'var(--stamp, #b3261e)';
+    status.textContent = 'ไฟล์ใหญ่เกิน ' + UPLOAD_MAX_MB + ' MB';
+    inputEl.value = '';
+    return;
+  }
+  // ชื่อไฟล์บนเซิร์ฟเวอร์สร้างใหม่ (ไม่ใช้ชื่อเดิม) กันชื่อซ้ำ/อักขระแปลก และเดาลิงก์ไม่ได้
+  const path = currentTable + '/' + new Date().toISOString().slice(0, 10) + '-' + randomHex(8) + '.' + ext;
+  inputEl.disabled = true;
+  status.textContent = 'กำลังอัปโหลด...';
+  const { error } = await supabaseClient.storage.from(UPLOAD_BUCKET)
+    .upload(path, file, { contentType: UPLOAD_TYPES[ext], upsert: false, cacheControl: '3600' });
+  inputEl.disabled = false;
+  inputEl.value = '';
+  if (error) {
+    status.style.color = 'var(--stamp, #b3261e)';
+    status.textContent = 'อัปโหลดไม่สำเร็จ: ' + error.message;
+    return;
+  }
+  const { data } = supabaseClient.storage.from(UPLOAD_BUCKET).getPublicUrl(path);
+  target.value = data.publicUrl;
+  // ช่อง "ประเภทไฟล์" ของหน้าดาวน์โหลด: เติมให้อัตโนมัติถ้ายังว่าง
+  const codeEl = document.getElementById('f_code');
+  if (currentTable === 'downloads' && codeEl && !codeEl.value) codeEl.value = ext.toUpperCase();
+  status.style.color = 'var(--sage-ink, #1b6e3c)';
+  status.textContent = 'อัปโหลดแล้ว ✓ ใส่ลิงก์ให้เรียบร้อย (กดบันทึกรายการด้านล่างเพื่อยืนยัน)';
+}
+
 function esc(str) {
   const div = document.createElement('div');
   div.textContent = str == null ? '' : String(str);
@@ -169,6 +242,7 @@ function renderFormCard() {
       inputHtml = `<textarea id="f_${f.name}"></textarea>`;
     } else {
       inputHtml = `<input type="${f.type}" id="f_${f.name}">`;
+      if (f.name === 'doc_url') inputHtml += uploadControlHtml(f.name);
     }
     return `<div class="field${fullClass}"><label>${esc(f.label)}${f.required ? ' *' : ''}</label>${inputHtml}</div>`;
   }).join('');
@@ -184,6 +258,8 @@ function renderFormCard() {
   `;
 
   document.getElementById('saveBtn').addEventListener('click', saveRow);
+  const upInput = document.getElementById('up_doc_url');
+  if (upInput) upInput.addEventListener('change', () => handleUpload(upInput, 'doc_url'));
   const cancelBtn = document.getElementById('cancelEditBtn');
   if (cancelBtn) cancelBtn.addEventListener('click', () => { editingId = null; renderFormCard(); });
 }

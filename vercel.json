@@ -120,6 +120,10 @@
       "source": "/((?!(?:plan|po)(?:/|$)).*)",
       "headers": [
         {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://kdjhlcpzahpwnwqabflm.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'"
+        },
+        {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
         },
@@ -144,10 +148,6 @@
     {
       "source": "/admin.html",
       "headers": [
-        {
-          "key": "Content-Security-Policy",
-          "value": "frame-ancestors 'self'"
-        },
         {
           "key": "X-Robots-Tag",
           "value": "noindex, nofollow"
