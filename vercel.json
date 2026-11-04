@@ -117,7 +117,7 @@
       ]
     },
     {
-      "source": "/((?!(?:plan|po)(?:/|$)).*)",
+      "source": "/((?!(?:plan|po|tracker)(?:/|$)).*)",
       "headers": [
         {
           "key": "Content-Security-Policy",
