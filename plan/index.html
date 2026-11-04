@@ -173,7 +173,7 @@ const CLOUD=(()=>{
       if(!email||!pw){$('gMsg').textContent='กรอกอีเมลและรหัสผ่าน';return}
       $('gLogin').disabled=true;const {error}=await sb.auth.signInWithPassword({email,password:pw});$('gLogin').disabled=false;
       if(error){$('gMsg').textContent=/Invalid login/i.test(error.message)?'อีเมลหรือรหัสผ่านไม่ถูกต้อง':'เข้าสู่ระบบไม่สำเร็จ: '+error.message;return}
-      if(pw===DEF_PW){try{sessionStorage.setItem('mustChangePw','1')}catch(e){}}
+      if(pw===DEF_PW){try{sessionStorage.setItem('mustChangePw','1')}catch(e){}try{await sb.auth.updateUser({data:{must_change_pw:true}})}catch(e){}}
       afterLogin()};
     $('gLogin').onclick=go;$('gPw').onkeydown=e=>{if(e.key==='Enter')go()};
     $('gForgot').onclick=async()=>{const email=$('gEmail').value.trim().toLowerCase();if(!email){$('gMsg').textContent='พิมพ์อีเมลองค์กรก่อน แล้วกด "ลืมรหัสผ่าน"';return}
@@ -190,7 +190,7 @@ const CLOUD=(()=>{
     $('pSave').onclick=async()=>{const n=$('pNew').value,n2=$('pNew2').value,msg=t=>$('pMsg').textContent=t;
       if(n.length<8)return msg('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัว');if(n===DEF_PW)return msg('ห้ามใช้รหัสตั้งต้น');if(n!==n2)return msg('ยืนยันรหัสผ่านไม่ตรงกัน');
       if($('pCur')){const cur=$('pCur').value;if(cur===n)return msg('รหัสใหม่ต้องไม่ซ้ำรหัสเดิม');const {error}=await sb.auth.signInWithPassword({email:me,password:cur});if(error)return msg('รหัสผ่านปัจจุบันไม่ถูกต้อง')}
-      const {error}=await sb.auth.updateUser({password:n});if(error)return msg(/different from the old/i.test(error.message)?'รหัสใหม่ต้องไม่ซ้ำรหัสเดิม':'เปลี่ยนรหัสไม่สำเร็จ: '+error.message);
+      const {error}=await sb.auth.updateUser({password:n,data:{must_change_pw:false}});if(error)return msg(/different from the old/i.test(error.message)?'รหัสใหม่ต้องไม่ซ้ำรหัสเดิม':'เปลี่ยนรหัสไม่สำเร็จ: '+error.message);
       try{sessionStorage.removeItem('mustChangePw')}catch(e){}closeGate();toast('เปลี่ยนรหัสผ่านแล้ว');if(!started)afterLogin()}}
   function privacyView(){
     gate(`<h3 style="margin-top:0">ประกาศความเป็นส่วนตัว (ย่อ)</h3><div class="small" style="line-height:1.7">
@@ -206,7 +206,7 @@ const CLOUD=(()=>{
   function apply(row){VER=row?row.version:0;lastBy=row?row.updated_by||'':'';lastAt=row?row.updated_at||'':'';load(row?row.data:null)}
   async function afterLogin(){
     const {data:{user}}=await sb.auth.getUser();if(!user)return loginView();me=(user.email||'').toLowerCase();
-    let must=false;try{must=sessionStorage.getItem('mustChangePw')==='1'}catch(e){}if(must)return pwView(true);
+    let must=false;try{must=sessionStorage.getItem('mustChangePw')==='1'}catch(e){}if((user.user_metadata||{}).must_change_pw===true)must=true;if(must)return pwView(true);
     const {data:mem}=await sb.rpc('is_plan_member');if(!mem){await sb.auth.signOut();return loginView('บัญชี '+me+' ยังไม่ได้รับสิทธิ์ใช้ระบบนี้ (เฉพาะเจ้าหน้าที่พัสดุ) ติดต่อผู้ดูแลระบบ')}
     let ack=false;try{ack=localStorage.getItem('planPrivacyAck:'+me)==='1'}catch(e){}if(!ack)return privacyView();
     let row;try{row=await fetchRow()}catch(e){return loginView('อ่านข้อมูลไม่ได้ ('+(e.message||e)+')')}

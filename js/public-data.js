@@ -116,7 +116,7 @@ async function renderSystems() {
     const hasLink = sys.login_url && sys.login_url.trim();
     const linkHtml = hasLink
       ? `<a class="btn btn-ghost" href="${escapeHtml(sys.login_url)}">เข้าสู่ระบบ →</a>`
-      : `<a class="btn btn-ghost" href="#" aria-disabled="true" onclick="return false;">เข้าสู่ระบบ →</a>`;
+      : `<span class="btn btn-ghost" aria-disabled="true">เข้าสู่ระบบ →</span>`;
     return `
       <div class="system-card">
         <div class="top">
