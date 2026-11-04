@@ -1,0 +1,1562 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>แดชบอร์ดติดตามงานจัดซื้อจัดจ้าง</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#F1F3F7; --surface:#FFFFFF; --ink:#1B2230; --muted:#6B7280;
+    --border:#E1E4EA; --accent:#2647D9; --accent-bg:#E8ECFC;
+    --teal:#0F8C6B; --amber:#B4740E; --amber-bg:#FBEFDA;
+    --red:#C0362C; --red-bg:#FBE7E5; --gray-bg:#EBEDF1; --radius:10px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Sarabun',sans-serif;background:var(--bg);color:var(--ink);padding:28px 20px 60px;}
+  .wrap{max-width:1220px;margin:0 auto;}
+  .top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+  h1{font-size:23px;font-weight:700;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:13.5px;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .btn{border:none;border-radius:8px;padding:9px 15px;font-family:'Sarabun',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;transition:opacity .15s;}
+  .btn:hover{opacity:.88;}
+  .btn-primary{background:var(--accent);color:#fff;}
+  .btn-ghost{background:var(--surface);color:var(--ink);border:1px solid var(--border);}
+  .btn-sm{padding:5px 10px;font-size:12.5px;border-radius:6px;}
+  .btn-text{background:transparent;border:none;font-size:12.5px;cursor:pointer;padding:3px 6px;}
+  .btn-text.danger{color:var(--red);}
+  .btn-text.edit{color:var(--accent);}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;}
+  .card h2{font-size:15px;font-weight:600;margin:0 0 14px;display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .card h2 .left{display:flex;align-items:center;gap:8px;}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:inline-block;}
+
+  .grid{display:grid;gap:10px;}
+  .form-grid{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+  label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:4px;}
+  input[type=text],input[type=date],select,textarea{
+    width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:7px;
+    font-family:'Sarabun',sans-serif;font-size:13.5px;background:#fff;color:var(--ink);
+  }
+  input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+  .form-actions{grid-column:1/-1;display:flex;gap:8px;margin-top:4px;}
+
+  .banner{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:8px;margin-bottom:14px;font-size:13.5px;}
+  .banner.warn{background:var(--amber-bg);color:var(--amber);}
+  .banner.danger{background:var(--red-bg);color:var(--red);}
+  .banner b{font-weight:700;}
+
+  .filters{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;}
+  .filters .f-item{min-width:135px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;color:var(--muted);font-weight:600;font-size:11.5px;padding:8px 9px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  td{padding:9px 9px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr.overdue td:first-child{box-shadow:inset 3px 0 0 var(--red);}
+  tr.soon td:first-child{box-shadow:inset 3px 0 0 var(--amber);}
+  .title-cell{font-weight:600;}
+  .docnum{font-size:11px;color:var(--muted);font-family:'IBM Plex Mono',monospace;}
+  .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11.5px;font-weight:600;white-space:nowrap;}
+  .badge-high{background:var(--red-bg);color:var(--red);}
+  .badge-mid{background:var(--amber-bg);color:var(--amber);}
+  .badge-low{background:var(--gray-bg);color:var(--muted);}
+  .status-pill{display:inline-block;padding:4px 10px;border-radius:20px;font-size:12px;font-weight:600;}
+  .due-tag{font-size:11px;margin-top:2px;font-weight:600;}
+  .due-tag.overdue{color:var(--red);}
+  .due-tag.soon{color:var(--amber);}
+  .empty{color:var(--muted);font-size:14px;padding:20px;text-align:center;}
+  .row-actions{white-space:nowrap;}
+
+  .tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+  .tab{padding:6px 12px;border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--muted);}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  .bar-row{display:grid;grid-template-columns:180px 1fr 40px;align-items:center;gap:10px;margin-bottom:9px;}
+  .bar-row .lbl{font-size:12.5px;color:var(--ink);}
+  .bar-track{background:var(--gray-bg);border-radius:6px;height:13px;overflow:hidden;}
+  .bar-fill{height:100%;border-radius:6px;}
+  .bar-row .num{font-size:12px;color:var(--muted);text-align:right;font-family:'IBM Plex Mono',monospace;}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px;}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;cursor:pointer;transition:box-shadow .15s,border-color .15s;}
+  .stat:hover{box-shadow:0 4px 14px rgba(20,24,33,.08);border-color:var(--accent);}
+  .stat .n{font-size:21px;font-weight:700;font-family:'IBM Plex Mono',monospace;}
+  .stat .l{font-size:11.5px;color:var(--muted);margin-top:2px;}
+
+  .add-inline{display:flex;gap:6px;margin-top:8px;}
+  .add-inline input{flex:1;}
+
+  .tag-picker{position:relative;border:1px solid var(--border);border-radius:7px;padding:6px 8px;background:#fff;}
+  .tag-picker:focus-within{outline:2px solid var(--accent);outline-offset:1px;}
+  .tag-chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .tag-chips:not(:empty){margin-bottom:6px;}
+  .tag-chip{background:var(--accent-bg);color:var(--accent);border-radius:20px;padding:3px 6px 3px 11px;font-size:12.5px;font-weight:600;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;max-width:100%;}
+  .tag-chip span.txt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px;}
+  .tag-chip .rm{cursor:pointer;font-weight:700;opacity:.65;line-height:1;padding:0 1px;}
+  .tag-chip .rm:hover{opacity:1;}
+  .tag-picker input{border:none;outline:none;padding:4px 2px;font-size:13.5px;width:100%;font-family:'Sarabun',sans-serif;background:transparent;}
+  .tag-dropdown{position:absolute;left:0;right:0;top:100%;background:#fff;border:1px solid var(--border);border-radius:8px;margin-top:4px;max-height:190px;overflow-y:auto;box-shadow:0 8px 20px rgba(20,24,33,.14);z-index:60;display:none;}
+  .tag-dropdown.open{display:block;}
+  .tag-dropdown-item{padding:8px 12px;font-size:13px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .tag-dropdown-item:hover{background:var(--gray-bg);}
+  .tag-dropdown-item.add-new{color:var(--accent);font-weight:600;}
+  .tag-dropdown-item.empty{color:var(--muted);cursor:default;}
+  .tag-dropdown-item.empty:hover{background:none;}
+
+  .history-list{max-height:220px;overflow-y:auto;}
+  .history-item{display:flex;justify-content:space-between;font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--border);gap:10px;}
+  .history-item:last-child{border-bottom:none;}
+  .history-item .when{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);white-space:nowrap;}
+
+  .settings-tabs{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap;}
+  .setting-list{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto;}
+  .setting-row{display:flex;align-items:center;gap:6px;}
+  .setting-row .order-btns{display:flex;flex-direction:column;gap:1px;}
+  .setting-row .order-btns button{border:none;background:var(--gray-bg);width:20px;height:14px;font-size:9px;cursor:pointer;border-radius:2px;}
+  .setting-row input[type=text]{flex:1;}
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(20,24,33,.45);display:none;align-items:flex-start;justify-content:center;padding:32px 16px;z-index:50;overflow-y:auto;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--surface);border-radius:14px;max-width:720px;width:100%;padding:24px;margin-bottom:32px;}
+  .modal h3{margin:0 0 16px;font-size:17px;font-weight:700;}
+  .modal-section{margin-top:18px;}
+  .modal-section h4{font-size:12.5px;color:var(--muted);text-transform:none;margin:0 0 10px;font-weight:600;}
+  .stage-grid{display:grid;grid-template-columns:1fr 150px;gap:8px 12px;align-items:center;}
+  .stage-grid .stage-name{font-size:13px;}
+  .stage-grid .stage-name.current{font-weight:700;color:var(--accent);}
+  .modal-foot{display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding-top:16px;border-top:1px solid var(--border);}
+  .close-x{background:none;border:none;font-size:20px;cursor:pointer;color:var(--muted);float:right;line-height:1;}
+  .duration-box{background:var(--accent-bg);border-radius:8px;padding:10px 14px;font-size:13px;margin-top:10px;}
+
+  @media (max-width:700px){
+    .top{flex-direction:column;align-items:flex-start;}
+    table{font-size:12px;}
+    .modal{padding:16px;}
+    .stage-grid{grid-template-columns:1fr 130px;}
+  }
+  body.viewer #addCard{display:none}
+  body.viewer .btn-text.danger, body.viewer .btn-text.edit, body.viewer .top .btn-primary, body.viewer .top button[onclick*="importBackup"], body.viewer .top button[onclick*="importFile"], body.viewer .top button[onclick*="openSettings"]{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="cloudBar" style="display:flex;gap:10px;align-items:center;justify-content:flex-end;flex-wrap:wrap;font-size:12.5px;color:#6B7280;margin-bottom:8px"><span id="cloudBox" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"></span></div>
+  <div class="top">
+    <div>
+      <h1 id="siteTitle">แดชบอร์ดติดตามงานจัดซื้อจัดจ้าง</h1>
+      <p class="sub" id="siteSubtitle">คีย์ข้อมูล อัพเดตสถานะ ดูรายงานหลายมิติ และแจ้งเตือนกำหนดส่ง — บันทึกอัตโนมัติในเบราว์เซอร์นี้</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="exportBackupJSON()">💾 สำรองข้อมูล (JSON)</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('importBackupFile').click()">กู้คืนจากไฟล์สำรอง</button>
+      <input type="file" id="importBackupFile" accept=".json,application/json" style="display:none;" onchange="importBackupJSON(this.files[0])">
+      <button class="btn btn-ghost" onclick="exportExcel()">Export Excel</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">นำเข้าจาก Excel</button>
+      <input type="file" id="importFile" accept=".xlsx,.xls" style="display:none;" onchange="importExcel(this.files[0])">
+      <button class="btn btn-ghost" onclick="openSettings()">⚙ ตั้งค่า</button>
+    </div>
+  </div>
+
+  <datalist id="titleOptions"></datalist>
+  <div id="alertBanners"></div>
+  <div class="stat-grid" id="statGrid"></div>
+
+  <div class="card" id="addCard">
+    <h2><div class="left"><span class="dot"></span>เพิ่มงานใหม่</div></h2>
+    <div class="grid form-grid">
+      <div><label>เลขที่เอกสาร</label><input type="text" id="f-docnum" placeholder="เช่น จ.001/2569"></div>
+      <div><label>ชื่องาน / เรื่อง</label><input type="text" id="f-title" placeholder="พิมพ์ใหม่ หรือเลือกจากรายการเดิม" list="titleOptions"></div>
+      <div>
+        <label>โปรเจกต์ / ประเภทงาน</label>
+        <select id="f-project"></select>
+      </div>
+      <div>
+        <label>ผู้รับผิดชอบ</label>
+        <select id="f-assignee"></select>
+      </div>
+      <div><label>ความสำคัญ</label>
+        <select id="f-priority"><option value="สูง">สูง</option><option value="กลาง" selected>กลาง</option><option value="ต่ำ">ต่ำ</option></select>
+      </div>
+      <div><label>วันที่รับงาน</label><input type="date" id="f-received" onchange="suggestFiscalYear(); recalcDueDays('f')"></div>
+      <div><label>กำหนดส่ง</label><input type="date" id="f-due" onchange="recalcDueDays('f')"></div>
+      <div><label>หรือระบุจำนวนวัน</label><input type="number" min="0" id="f-duedays" placeholder="เช่น 15" oninput="applyDueDays('f')"></div>
+      <div><label>ปีงบประมาณ</label><select id="f-fiscalyear" onchange="onFiscalYearChange('f')"></select></div>
+      <div><label>ยอดเงิน (บาท)</label><input type="text" inputmode="decimal" id="f-amount" placeholder="0.00"></div>
+      <div style="grid-column:1/-1;">
+        <label>แท็ก</label>
+        <div class="tag-picker" id="tp-f">
+          <div class="tag-chips" id="tp-f-chips"></div>
+          <input type="text" id="tp-f-input" placeholder="พิมพ์เพื่อค้นหา หรือกด Enter เพื่อเพิ่มแท็กใหม่..." autocomplete="off">
+          <div class="tag-dropdown" id="tp-f-dropdown"></div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addTask()">บันทึกงาน</button>
+        <span class="sub" style="align-self:center;">เพิ่ม/แก้ไข/ลบ โปรเจกต์ ผู้รับผิดชอบ และสถานะ ได้ที่ปุ่ม "⚙ ตั้งค่า" ด้านบน</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="taskListCard">
+    <h2><div class="left"><span class="dot"></span>รายการงาน</div></h2>
+    <div class="filters" id="filters"></div>
+    <div style="margin-top:14px;overflow-x:auto;">
+      <table id="taskTable"></table>
+    </div>
+  </div>
+
+  <div class="card" id="reportCard">
+    <h2><div class="left"><span class="dot"></span>รายงานหลายมิติ</div></h2>
+    <div class="tabs" id="reportTabs"></div>
+    <div id="reportBody"></div>
+  </div>
+
+  <div class="card">
+    <h2><div class="left"><span class="dot"></span>ประวัติการเปลี่ยนสถานะล่าสุด</div></h2>
+    <div class="history-list" id="historyList"></div>
+  </div>
+
+</div>
+
+<div class="overlay" id="taskOverlay">
+  <div class="modal" id="taskModal"></div>
+</div>
+
+<div class="overlay" id="settingsOverlay">
+  <div class="modal" id="settingsModal" style="max-width:640px;">
+    <button class="close-x" onclick="closeSettings()">&times;</button>
+    <h3>ตั้งค่า</h3>
+    <div class="settings-tabs" id="settingsTabs"></div>
+    <div id="settingsBody"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="../js/supabase-config.js"></script>
+<script>
+/* ===== ONLINE: Supabase login + ข้อมูลร่วม (admin แก้ได้ / viewer ดูอย่างเดียว) ===== */
+const ONLINE=true;
+const CLOUD=(()=>{
+  const DEF_PW='123456789';
+  const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  let VER=0,pending=false,saving=false,timer=null,lastBy='',lastAt='',me='',role='',pollT=null,started=false,blocked=false,base=null;
+  const g=id=>document.getElementById(id);
+  const MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const fmtT=iso=>{ if(!iso) return ''; const d=new Date(iso); return `${d.getDate()} ${MON[d.getMonth()]} ${String(d.getFullYear()+543).slice(-2)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')} น.`; };
+  const isAdmin=()=>role==='admin';
+  function status(t,warn){ const el=g('cloudSt'); if(el){ el.textContent=t; el.style.color=warn?'#B4740E':''; } }
+  function showStatus(){ if(!isAdmin()){ status(`👁 ดูอย่างเดียว${lastAt?' · ข้อมูลล่าสุด '+fmtT(lastAt):''}`); return; }
+    status(pending||saving?'☁ กำลังบันทึก…':`☁ บันทึกแล้ว${lastAt?' '+fmtT(lastAt):''}${lastBy?' · '+lastBy.split('@')[0]:''}`); }
+  function toast(t){ const d=document.createElement('div'); d.textContent=t; d.style.cssText='position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1B2230;color:#fff;padding:10px 16px;border-radius:8px;font-size:13.5px;z-index:400'; document.body.appendChild(d); setTimeout(()=>d.remove(),3500); }
+
+  /* ---------- หน้าจอเข้าสู่ระบบ / รหัสผ่าน / ประกาศความเป็นส่วนตัว ---------- */
+  function gate(html){
+    let el=g('gate'); if(!el){ el=document.createElement('div'); el.id='gate'; document.body.appendChild(el); }
+    el.innerHTML=`<div style="position:fixed;inset:0;z-index:300;background:#F1F3F7;overflow:auto"><div style="max-width:440px;margin:8vh auto 0;background:#fff;border:1px solid #E1E4EA;border-radius:10px;padding:22px"><h2 style="margin:0 0 12px;font-size:17px">ระบบติดตามงานพัสดุ วพบ.สุรินทร์</h2><div class="gatebox">${html}</div></div></div>`;
+    el.querySelectorAll('input[type=password]').forEach(addEye);
+    el.querySelectorAll('label').forEach(l=>{l.style.display='block';l.style.marginTop='8px';l.style.fontSize='13.5px'});
+    el.querySelectorAll('input').forEach(i=>{i.style.cssText+=';padding:8px;border:1px solid #E1E4EA;border-radius:6px;font-size:14px;display:block;margin-top:3px;width:100%;box-sizing:border-box'});
+    el.querySelectorAll('.row').forEach(r=>r.style.cssText='display:flex;gap:8px;align-items:center;margin-top:12px');
+  }
+  function closeGate(){ const el=g('gate'); if(el) el.remove(); }
+  function addEye(inp){ if(inp.dataset.eye) return; inp.dataset.eye=1; const w=document.createElement('div'); w.style.cssText='display:flex;gap:6px;align-items:center'; inp.before(w); w.appendChild(inp); inp.style.marginTop='3px';
+    const b=document.createElement('button'); b.type='button'; b.className='btn btn-ghost btn-sm'; b.textContent='👁'; b.title='แสดง/ซ่อนรหัสผ่าน'; b.onclick=()=>{ inp.type=inp.type==='password'?'text':'password'; }; w.appendChild(b); }
+  function loginView(msg){
+    gate(`<p style="margin:0;font-size:13px;color:#6B7280">สำหรับเจ้าหน้าที่ที่ได้รับสิทธิ์เท่านั้น · เข้าระบบด้วยอีเมลองค์กร</p>
+      <label>อีเมลองค์กร<input type="email" id="gEmail" autocomplete="username" placeholder="ชื่อ@bcnsurin.ac.th"></label>
+      <label>รหัสผ่าน<input type="password" id="gPw" autocomplete="current-password"></label>
+      <div id="gMsg" style="color:#C0362C;min-height:1.4em;margin-top:6px;font-size:13px"></div>
+      <div class="row"><button class="btn btn-primary" id="gLogin">เข้าสู่ระบบ</button><span style="margin-left:auto"></span><a href="#" id="gForgot" style="font-size:13px">ลืมรหัสผ่าน</a></div>`);
+    if(msg) g('gMsg').textContent=msg;
+    const go=async()=>{ const email=g('gEmail').value.trim().toLowerCase(), pw=g('gPw').value; g('gMsg').textContent='';
+      if(!email||!pw){ g('gMsg').textContent='กรอกอีเมลและรหัสผ่าน'; return; }
+      g('gLogin').disabled=true; const {error}=await sb.auth.signInWithPassword({email,password:pw}); g('gLogin').disabled=false;
+      if(error){ g('gMsg').textContent=/Invalid login/i.test(error.message)?'อีเมลหรือรหัสผ่านไม่ถูกต้อง':'เข้าสู่ระบบไม่สำเร็จ: '+error.message; return; }
+      if(pw===DEF_PW){ try{ sessionStorage.setItem('mustChangePw','1'); }catch(e){} }
+      afterLogin(); };
+    g('gLogin').onclick=go; g('gPw').onkeydown=e=>{ if(e.key==='Enter') go(); };
+    g('gForgot').onclick=async e=>{ e.preventDefault(); const email=g('gEmail').value.trim().toLowerCase(), m=g('gMsg');
+      if(!email){ m.textContent='พิมพ์อีเมลองค์กรก่อน แล้วกด "ลืมรหัสผ่าน"'; return; }
+      const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+      m.style.color=error?'#C0362C':'#0F8C6B'; m.textContent=error?'ส่งลิงก์ไม่สำเร็จ: '+error.message:'ถ้าอีเมลนี้มีบัญชีในระบบ จะได้รับลิงก์ตั้งรหัสใหม่ทางอีเมลองค์กร (ตรวจกล่องจดหมายขยะด้วย)'; };
+  }
+  function pwView(forced,recovery){
+    gate(`<h3 style="margin:0">${recovery?'ตั้งรหัสผ่านใหม่':forced?'กรุณาเปลี่ยนรหัสผ่านตั้งต้นก่อนใช้งาน':'เปลี่ยนรหัสผ่าน'}</h3>
+      ${forced||recovery?'':`<label>รหัสผ่านปัจจุบัน<input type="password" id="pCur" autocomplete="current-password"></label>`}
+      <label>รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)<input type="password" id="pNew" autocomplete="new-password"></label>
+      <label>ยืนยันรหัสผ่านใหม่<input type="password" id="pNew2" autocomplete="new-password"></label>
+      <div id="pMsg" style="color:#C0362C;min-height:1.4em;margin-top:6px;font-size:13px"></div>
+      <div class="row"><button class="btn btn-primary" id="pSave">บันทึกรหัสผ่านใหม่</button><span style="margin-left:auto"></span>${forced||recovery?'<button class="btn btn-ghost" id="pOut">ออกจากระบบ</button>':'<button class="btn btn-ghost" id="pCancel">ยกเลิก</button>'}</div>`);
+    if(g('pOut')) g('pOut').onclick=logout; if(g('pCancel')) g('pCancel').onclick=closeGate;
+    g('pSave').onclick=async()=>{ const n=g('pNew').value,n2=g('pNew2').value,msg=t=>g('pMsg').textContent=t;
+      if(n.length<8) return msg('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัว'); if(n===DEF_PW) return msg('ห้ามใช้รหัสตั้งต้น'); if(n!==n2) return msg('ยืนยันรหัสผ่านไม่ตรงกัน');
+      if(g('pCur')){ const cur=g('pCur').value; if(cur===n) return msg('รหัสใหม่ต้องไม่ซ้ำรหัสเดิม'); const {error}=await sb.auth.signInWithPassword({email:me,password:cur}); if(error) return msg('รหัสผ่านปัจจุบันไม่ถูกต้อง'); }
+      const {error}=await sb.auth.updateUser({password:n}); if(error) return msg(/different from the old/i.test(error.message)?'รหัสใหม่ต้องไม่ซ้ำรหัสเดิม':'เปลี่ยนรหัสไม่สำเร็จ: '+error.message);
+      try{ sessionStorage.removeItem('mustChangePw'); }catch(e){} closeGate(); toast('เปลี่ยนรหัสผ่านแล้ว'); if(!started) afterLogin(); };
+  }
+  function privacyView(){
+    gate(`<h3 style="margin:0">ประกาศความเป็นส่วนตัว (ย่อ)</h3><div style="font-size:13px;line-height:1.7;margin-top:8px">
+      ระบบนี้เก็บข้อมูลเท่าที่จำเป็นต่องานติดตามเอกสารจัดซื้อจัดจ้าง ได้แก่ เลขที่เอกสาร ชื่อเรื่อง ชื่อผู้รับผิดชอบงาน วันที่ดำเนินการ และอีเมลองค์กรของผู้ใช้งาน
+      เพื่อปฏิบัติภารกิจของรัฐและหน้าที่ตามกฎหมายว่าด้วยการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ (พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล ม.24(4) และ (6))
+      ข้อมูลเก็บที่ Supabase (ศูนย์ข้อมูลสิงคโปร์) และหน้าเว็บให้บริการโดย Vercel เข้าถึงได้เฉพาะผู้ได้รับสิทธิ์ เก็บไว้ตามระยะเวลาที่ระเบียบกำหนด (ไม่น้อยกว่า 5 ปีงบประมาณ)
+      ไม่เปิดเผยต่อบุคคลภายนอก เว้นแต่ตามกฎหมาย ผู้มีข้อมูลขอเข้าถึง แก้ไข หรือคัดค้านได้ที่ส่วนพัสดุและทรัพย์สิน วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</div>
+      <div class="row"><button class="btn btn-primary" id="pvOk">รับทราบ</button></div>`);
+    g('pvOk').onclick=()=>{ try{ localStorage.setItem('trkPrivacyAck:'+me,'1'); }catch(e){} closeGate(); afterLogin(); };
+  }
+
+  /* ---------- ข้อมูล ---------- */
+  async function fetchRow(){ const {data,error}=await sb.from('tracker_state').select('data,version,updated_by,updated_at').eq('id','main').maybeSingle(); if(error) throw error; return data; }
+  function apply(row){
+    VER=row?row.version:0; lastBy=row?row.updated_by||'':''; lastAt=row?row.updated_at||'':'';
+    DATA=row&&row.data?row.data:null; if(DATA){ migrateData(); } base=JSON.stringify(DATA);
+  }
+  function applyRoleUI(){
+    document.body.classList.toggle('viewer',!isAdmin());
+    const n=g('cloudWho'); if(n) n.textContent=me+(isAdmin()?'':' (ดูอย่างเดียว)');
+  }
+  async function afterLogin(){
+    const {data:{user}}=await sb.auth.getUser(); if(!user) return loginView(); me=(user.email||'').toLowerCase();
+    let must=false; try{ must=sessionStorage.getItem('mustChangePw')==='1'; }catch(e){} if(must) return pwView(true);
+    const {data:r,error:e1}=await sb.rpc('tracker_my_role'); if(e1||!r){ await sb.auth.signOut(); return loginView(e1?'ตรวจสิทธิ์ไม่ได้ ('+e1.message+')':'บัญชี '+me+' ยังไม่ได้รับสิทธิ์ใช้ระบบนี้ ติดต่อผู้ดูแลระบบ'); }
+    role=r;
+    let ack=false; try{ ack=localStorage.getItem('trkPrivacyAck:'+me)==='1'; }catch(e){} if(!ack) return privacyView();
+    let row; try{ row=await fetchRow(); }catch(e){ return loginView('อ่านข้อมูลไม่ได้ ('+(e.message||e)+')'); }
+    apply(row);
+    if(!DATA){
+      if(!isAdmin()){ closeGate(); started=true; applyRoleUI(); $main(false); status('ยังไม่มีข้อมูลในระบบ — รอผู้ดูแลนำข้อมูลเข้า'); return; }
+      DATA=seedBlank(); base=null; VER=0; started=true; closeGate(); applyRoleUI(); $main(true); showStatus();
+      toast('ยังไม่มีข้อมูลในระบบออนไลน์ — กด "กู้คืนจากไฟล์สำรอง" เพื่อนำข้อมูลจากรุ่นในเครื่องขึ้นระบบ'); return;
+    }
+    closeGate(); started=true; applyRoleUI(); $main(true); showStatus();
+    clearInterval(pollT); pollT=setInterval(poll,20000);
+  }
+  function $main(){ renderFormOptions(); initTagPicker('f',[],(g('f-fiscalyear')||{}).value||''); renderAll(); }
+  function dirty(){ if(!started||!isAdmin()) return; pending=true; showStatus(); clearTimeout(timer); timer=setTimeout(push,1000); }
+  // รวมข้อมูลกรณีบันทึกพร้อมกัน: งานเดียวกันใช้ฉบับที่แก้ล่าสุด; หมวดตั้งค่าที่เราแก้ใช้ของเรา
+  function mergeInto(theirs,mine){
+    const baseO=base?JSON.parse(base):{};
+    const out=Object.assign({},theirs);
+    const map=new Map((theirs.tasks||[]).map(t=>[t.id,t]));
+    (mine.tasks||[]).forEach(t=>{ const o=map.get(t.id); if(!o||(t.updatedAt||'')>(o.updatedAt||'')) map.set(t.id,t); });
+    const baseIds=new Set((baseO.tasks||[]).map(t=>t.id)), mineIds=new Set((mine.tasks||[]).map(t=>t.id));
+    baseIds.forEach(id=>{ if(!mineIds.has(id)) map.delete(id); }); // เราลบงานนี้
+    out.tasks=[...map.values()];
+    ['statuses','projects','users','fiscalYears','tagList','titleList','siteText'].forEach(k=>{
+      if(JSON.stringify(mine[k])!==JSON.stringify(baseO[k])) out[k]=mine[k]; });
+    const seen=new Set(); out.history=[...(mine.history||[]),...(theirs.history||[])].filter(h=>{ const s=JSON.stringify(h); if(seen.has(s)) return false; seen.add(s); return true; });
+    return out;
+  }
+  async function push(){
+    if(saving||blocked){ if(!blocked) timer=setTimeout(push,800); return; }
+    saving=true; pending=false; showStatus();
+    const snap=JSON.parse(JSON.stringify(DATA));
+    const {data,error}=await sb.rpc('save_tracker_state',{p_data:snap,p_version:VER}); saving=false;
+    if(error){ if(/conflict/i.test(error.message)) return conflict(snap); if(/forbidden/i.test(error.message)){ status('⛔ บัญชีนี้ไม่มีสิทธิ์แก้ไข',true); return; } pending=true; status('☁ บันทึกไม่สำเร็จ — จะลองใหม่',true); timer=setTimeout(push,5000); return; }
+    VER=data.version; lastBy=me; lastAt=data.updated_at; base=JSON.stringify(snap); showStatus();
+  }
+  async function conflict(mine){
+    blocked=true; let row; try{ row=await fetchRow(); }catch(e){ blocked=false; pending=true; timer=setTimeout(push,3000); return; }
+    DATA=mergeInto(row.data||mine,mine); migrateData(); VER=row.version; base=JSON.stringify(row.data||{}); blocked=false;
+    renderAll(); toast(`รวมข้อมูลกับที่ ${(row.updated_by||'').split('@')[0]} บันทึกไว้แล้ว`);
+    pending=true; push();
+  }
+  async function poll(){
+    if(!started||pending||saving||blocked||document.hidden) return;
+    const {data}=await sb.from('tracker_state').select('version').eq('id','main').maybeSingle();
+    if(data&&data.version>VER){ const open=['taskOverlay','settingsOverlay'].some(i=>{const e=g(i);return e&&e.classList.contains('open')||e&&e.style.display==='flex'});
+      if(open) return; const row=await fetchRow(); if(pending||saving) return; apply(row); $main(); showStatus(); toast(`โหลดข้อมูลล่าสุดที่ ${(row.updated_by||'').split('@')[0]} บันทึกแล้ว`); }
+  }
+  async function logout(){ if(pending||saving){ clearTimeout(timer); await push(); } clearInterval(pollT); await sb.auth.signOut(); started=false; DATA=null; try{ sessionStorage.removeItem('mustChangePw'); }catch(e){} location.reload(); }
+  window.addEventListener('beforeunload',e=>{ if(pending||saving){ e.preventDefault(); e.returnValue=''; } });
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&started) poll(); });
+  async function boot(){
+    const box=g('cloudBox');
+    if(box){ box.innerHTML=`<span id="cloudWho"></span><span id="cloudSt" style="opacity:.9"></span><button class="btn btn-ghost btn-sm" id="cPw">เปลี่ยนรหัสผ่าน</button><button class="btn btn-ghost btn-sm" id="cOut">ออกจากระบบ</button>`;
+      g('cPw').onclick=()=>pwView(false); g('cOut').onclick=logout; }
+    sb.auth.onAuthStateChange(ev=>{ if(ev==='PASSWORD_RECOVERY') pwView(false,true); });
+    if(/type=recovery/.test(location.hash)) return;
+    const {data:{session}}=await sb.auth.getSession(); if(session) afterLogin(); else loginView();
+  }
+  return {boot,dirty,push,isAdmin,toast,mergeInto,_set:(b)=>{base=b;}};
+})();
+
+</script>
+<script>
+const STORAGE_KEY = 'dashboard-data-v2';
+let DATA = null;
+let filters = { project:'', assignee:'', status:'', priority:'', tag:'', due:'', fiscalYear:'', q:'' };
+let reportTab = 'status';
+let settingsTab = 'general';
+let settingsTagsYearFilter = '';
+let settingsTagsSearch = '';
+let editingTaskId = null;
+
+function uid(p){ return p + '_' + Math.random().toString(36).slice(2,9); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function daysBetween(a,b){ return Math.round((new Date(b) - new Date(a)) / 86400000); }
+function fmtMoney(n){ return (Number(n)||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fiscalYear(dateStr){
+  if(!dateStr) return null;
+  const d = new Date(dateStr);
+  const beYear = d.getFullYear() + 543;
+  return (d.getMonth()+1) >= 10 ? beYear+1 : beYear; // ปีงบประมาณไทย: ต.ค. - ก.ย.
+}
+const THAI_MONTHS = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function monthKey(dateStr){ const d = new Date(dateStr); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function monthLabel(dateStr){ const d = new Date(dateStr); return `${THAI_MONTHS[d.getMonth()]} ${d.getFullYear()+543}`; }
+// แท็กแต่ละรายการเก็บเป็น { id, name, fiscalYearIds:[] } — fiscalYearIds ว่าง = ใช้ได้ทุกปีงบประมาณ (แท็กทั่วไป)
+// ถ้าระบุปีไว้ แท็กนั้นจะโผล่เป็นตัวเลือกเฉพาะตอนเลือกปีงบประมาณนั้น (หรือปีที่ถูกเพิ่มเข้ามาภายหลังจากการใช้ซ้ำ) ช่วยให้รายการแท็กไม่ยาวรกเมื่อข้ามปี
+function tagRecordByName(name){
+  const n = String(name||'').trim().toLowerCase();
+  return (DATA.tagList||[]).find(tg=>tg.name.toLowerCase()===n);
+}
+// คืนชื่อแท็กทั้งหมด กรองตามปีงบประมาณถ้าระบุ fiscalYearId (undefined = ไม่กรอง คืนทุกแท็ก)
+function allKnownTags(fiscalYearId){
+  const list = DATA.tagList||[];
+  const filtered = fiscalYearId===undefined ? list
+    : list.filter(tg=> !tg.fiscalYearIds || tg.fiscalYearIds.length===0 || tg.fiscalYearIds.includes(fiscalYearId));
+  const names = filtered.map(tg=>tg.name);
+  // เผื่อกรณีข้อมูลเก่ามีแท็กติดอยู่ในงานแต่ยังไม่มีใน tagList (ความปลอดภัยเพิ่มเติม ไม่กรองตามปี)
+  if(fiscalYearId===undefined) names.push(...DATA.tasks.flatMap(t=>t.tags));
+  return [...new Set(names)].sort((a,b)=>a.localeCompare(b,'th'));
+}
+function allKnownTitles(){ return [...new Set([...(DATA.titleList||[]), ...DATA.tasks.map(t=>t.title)])].sort((a,b)=>a.localeCompare(b,'th')); }
+function syncTitleList(title){ if(!title) return; if(!DATA.titleList) DATA.titleList=[]; if(!DATA.titleList.includes(title)) DATA.titleList.push(title); }
+
+// ---------- Tag picker widget (chips + searchable dropdown, used by add-form 'f' and edit-modal 'm') ----------
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+const tagPickerState = { f:{tags:[],currentMatches:[],fiscalYearId:undefined}, m:{tags:[],currentMatches:[],fiscalYearId:undefined} };
+function initTagPicker(key, tags, fiscalYearId){
+  tagPickerState[key] = { tags: (tags||[]).slice(), currentMatches: [], fiscalYearId };
+  const input = document.getElementById('tp-'+key+'-input');
+  input.value = '';
+  input.oninput = ()=> renderTagDropdown(key);
+  input.onfocus = ()=> renderTagDropdown(key);
+  input.onkeydown = (e)=>{
+    if(e.key==='Enter' || e.key===','){
+      e.preventDefault();
+      if(input.value.trim()) addNewTagFromInput(key);
+    } else if(e.key==='Backspace' && !input.value && tagPickerState[key].tags.length){
+      removeTagFromPicker(key, tagPickerState[key].tags.length-1);
+    } else if(e.key==='Escape'){
+      document.getElementById('tp-'+key+'-dropdown').classList.remove('open');
+    }
+  };
+  renderTagChips(key);
+}
+function renderTagChips(key){
+  const wrap = document.getElementById('tp-'+key+'-chips');
+  if(!wrap) return;
+  const tags = tagPickerState[key].tags;
+  wrap.innerHTML = tags.map((t,i)=>`<span class="tag-chip"><span class="txt" title="${escapeHtml(t)}">${escapeHtml(t)}</span><span class="rm" onclick="removeTagFromPicker('${key}',${i})">&times;</span></span>`).join('');
+}
+function renderTagDropdown(key){
+  const dd = document.getElementById('tp-'+key+'-dropdown');
+  const input = document.getElementById('tp-'+key+'-input');
+  if(!dd || !input) return;
+  const filter = input.value.trim();
+  const selected = tagPickerState[key].tags;
+  const fyId = tagPickerState[key].fiscalYearId;
+  const all = allKnownTags(fyId).filter(t=>!selected.some(s=>s.toLowerCase()===t.toLowerCase()));
+  const matches = filter ? all.filter(t=>t.toLowerCase().includes(filter.toLowerCase())) : all;
+  tagPickerState[key].currentMatches = matches;
+  const exists = all.some(t=>t.toLowerCase()===filter.toLowerCase()) || selected.some(t=>t.toLowerCase()===filter.toLowerCase());
+  let html = matches.map((t,i)=>`<div class="tag-dropdown-item" onmousedown="event.preventDefault(); selectTagMatch('${key}', ${i})">${escapeHtml(t)}</div>`).join('');
+  if(filter && !exists){
+    const fy = fyId!==undefined ? fiscalYearById(fyId) : null;
+    const hint = fy ? ` (ปีงบ ${escapeHtml(fy.name)})` : '';
+    html += `<div class="tag-dropdown-item add-new" onmousedown="event.preventDefault(); addNewTagFromInput('${key}')">+ เพิ่มแท็กใหม่ "${escapeHtml(filter)}"${hint}</div>`;
+  }
+  if(!html){
+    const fy = fyId!==undefined ? fiscalYearById(fyId) : null;
+    html = `<div class="tag-dropdown-item empty">${filter?'ไม่พบแท็กที่ตรงกัน':(fy?`ยังไม่มีแท็กของปีงบ ${escapeHtml(fy.name)} — พิมพ์เพื่อเพิ่มใหม่`:'ไม่มีแท็กอื่นให้เลือกแล้ว')}</div>`;
+  }
+  dd.innerHTML = html;
+  dd.classList.add('open');
+}
+// เรียกเมื่อเปลี่ยนปีงบประมาณในฟอร์มเพิ่มงาน (f) หรือแก้ไขงาน (m) เพื่อให้รายการแท็กที่แนะนำกรองตามปีนั้น
+function onFiscalYearChange(key){
+  const sel = document.getElementById((key==='f'?'f':'m')+'-fiscalyear');
+  if(!sel || !tagPickerState[key]) return;
+  tagPickerState[key].fiscalYearId = sel.value || '';
+  const dd = document.getElementById('tp-'+key+'-dropdown');
+  if(dd && dd.classList.contains('open')) renderTagDropdown(key); // อัปเดตรายการแนะนำทันทีถ้ากำลังเปิดอยู่
+}
+function selectTagMatch(key, idx){
+  const tag = (tagPickerState[key].currentMatches||[])[idx];
+  if(tag) addTagToPicker(key, tag);
+}
+function addNewTagFromInput(key){
+  const input = document.getElementById('tp-'+key+'-input');
+  if(input.value.trim()) addTagToPicker(key, input.value);
+}
+function addTagToPicker(key, tag){
+  tag = String(tag).trim();
+  if(!tag) return;
+  const st = tagPickerState[key];
+  if(!st.tags.some(t=>t.toLowerCase()===tag.toLowerCase())) st.tags.push(tag);
+  const input = document.getElementById('tp-'+key+'-input');
+  input.value = '';
+  renderTagChips(key);
+  renderTagDropdown(key);
+  input.focus();
+}
+function removeTagFromPicker(key, idx){
+  tagPickerState[key].tags.splice(idx,1);
+  renderTagChips(key);
+  renderTagDropdown(key);
+}
+document.addEventListener('click', function(e){
+  document.querySelectorAll('.tag-dropdown.open').forEach(dd=>{
+    const picker = dd.closest('.tag-picker');
+    if(picker && !picker.contains(e.target)) dd.classList.remove('open');
+  });
+});
+
+function defaultStatusNames(){
+  return ['รอดำเนินการ','แต่งตั้งคณะกรรมการ','รายงาน Spec/TOR','รายงานขอความเห็นชอบ','รายงานผลการพิจารณา',
+    'ประกาศผู้ชนะ','ทำสัญญา/ใบสั่งซื้อ/ใบสั่งจ้าง/ใบสั่งเช่า','ลงนามสัญญา','ส่งมอบพัสดุ','ตรวจรับพัสดุ','ส่งเบิกจ่ายเงิน','เสร็จสิ้น'];
+}
+
+function seedData(){
+  const names = defaultStatusNames();
+  const statuses = names.map((name,i)=>({ id: uid('s'), name, order:i+1, terminal: ['ส่งเบิกจ่ายเงิน','เสร็จสิ้น'].includes(name) }));
+  const projects = [ { id:'p1', name:'จัดซื้อครุภัณฑ์' }, { id:'p2', name:'จ้างเหมาบริการ' } ];
+  const users = [ { id:'u1', name:'อรุณ' }, { id:'u2', name:'พิมพ์ใจ' }, { id:'u3', name:'ธนกร' } ];
+  const now = Date.now(); const day = 86400000;
+  const iso = (ms)=> new Date(ms).toISOString().slice(0,10);
+
+  const t1Dates = {};
+  t1Dates[statuses[0].id] = iso(now-20*day);
+  t1Dates[statuses[1].id] = iso(now-17*day);
+  t1Dates[statuses[2].id] = iso(now-12*day);
+
+  const t2Dates = {};
+  statuses.slice(0,10).forEach((s,i)=>{ t2Dates[s.id] = iso(now-(30-i*2)*day); });
+
+  const history = [];
+  function pushHist(taskId, fromId, toId, when){
+    history.push({ id:uid('h'), taskId, fromStatusId:fromId, toStatusId:toId, changedBy:'u1', changedAt: when });
+  }
+  pushHist('t1', statuses[0].id, statuses[1].id, now-17*day);
+  pushHist('t1', statuses[1].id, statuses[2].id, now-12*day);
+  for(let i=0;i<9;i++){ pushHist('t2', statuses[i].id, statuses[i+1].id, now-(28-i*2)*day); }
+  pushHist('t3', statuses[0].id, statuses[statuses.length-1].id, now-2*day);
+
+  const tasks = [
+    { id:'t1', docNumber:'จ.014/2569', title:'จัดซื้อครุภัณฑ์คอมพิวเตอร์ 20 ชุด', projectId:'p1', assigneeId:'u1',
+      currentStatusId: statuses[2].id, priority:'สูง', receivedDate: iso(now-20*day), dueDate: iso(now+4*day),
+      tags:['งบ 2569'], amount: 285000, statusDates: t1Dates, createdAt: now-20*day, updatedAt: now-12*day },
+    { id:'t2', docNumber:'จ.009/2569', title:'จ้างเหมาทำความสะอาดอาคาร', projectId:'p2', assigneeId:'u2',
+      currentStatusId: statuses[9].id, priority:'กลาง', receivedDate: iso(now-30*day), dueDate: iso(now-1*day),
+      tags:['ต่อเนื่อง'], amount: 96000, statusDates: t2Dates, createdAt: now-30*day, updatedAt: now-10*day },
+    { id:'t3', docNumber:'จ.021/2569', title:'จัดซื้อวัสดุสำนักงานประจำไตรมาส', projectId:'p1', assigneeId:'u3',
+      currentStatusId: statuses[statuses.length-1].id, priority:'ต่ำ', receivedDate: iso(now-3*day), dueDate: iso(now-2*day),
+      tags:[], amount: 8500, statusDates: { [statuses[0].id]: iso(now-3*day), [statuses[statuses.length-1].id]: iso(now-2*day) },
+      createdAt: now-3*day, updatedAt: now-2*day },
+  ];
+  const titleList = [...new Set(tasks.map(t=>t.title))];
+  const siteText = { title:'แดชบอร์ดติดตามงานจัดซื้อจัดจ้าง', subtitle:'คีย์ข้อมูล อัพเดตสถานะ ดูรายงานหลายมิติ และแจ้งเตือนกำหนดส่ง — บันทึกอัตโนมัติในเบราว์เซอร์นี้' };
+  // สร้างรายการปีงบประมาณเริ่มต้นจากวันที่ของงานตัวอย่าง บวกปีงบประมาณปัจจุบันและปีถัดไป
+  const fyNames = [...new Set([
+    ...tasks.map(t=>String(fiscalYear(t.receivedDate))),
+    String(fiscalYear(iso(now))), String(fiscalYear(iso(now))+1)
+  ])].sort();
+  const fiscalYears = fyNames.map(name=>({ id: uid('f'), name }));
+  tasks.forEach(t=>{
+    const fy = fiscalYears.find(f=>f.name===String(fiscalYear(t.receivedDate)));
+    t.fiscalYearId = fy ? fy.id : '';
+  });
+  // แท็กตัวอย่าง: ผูกกับปีงบประมาณของงานที่ใช้แท็กนั้น (ตัวอย่างการจัดเก็บแท็กแยกตามปี)
+  const tagList = [];
+  tasks.forEach(t=>{
+    t.tags.forEach(name=>{
+      if(!tagList.some(tg=>tg.name===name)) tagList.push({ id: uid('tg'), name, fiscalYearIds: t.fiscalYearId ? [t.fiscalYearId] : [] });
+    });
+  });
+  return { statuses, projects, users, tasks, history, tagList, titleList, fiscalYears, siteText, migratedTerminalDefaults: true };
+}
+
+async function loadData_offline(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){ DATA = JSON.parse(raw); const changed = migrateData(); if(changed) await saveData(); return; }
+  }catch(e){ console.error('โหลดข้อมูลไม่สำเร็จ', e); }
+  DATA = seedData();
+  await saveData();
+}
+function migrateData(){
+  let changed = false;
+  // รองรับข้อมูลเก่าที่ยังไม่มีฟิลด์ tagList / amount
+  if(!DATA.tagList){ DATA.tagList = [...new Set(DATA.tasks.flatMap(t=>t.tags))]; changed = true; }
+  // รองรับข้อมูลเก่าที่ tagList ยังเป็น array ของสตริงล้วน (ก่อนมีการผูกแท็กกับปีงบประมาณ)
+  // แปลงเป็น { id, name, fiscalYearIds:[] } — ตั้งค่าเริ่มต้นเป็น "ทุกปี" (ไม่จำกัดปี) เพื่อไม่ให้แท็กเดิมหายไปจากตัวเลือก
+  if(DATA.tagList.length && typeof DATA.tagList[0]==='string'){
+    DATA.tagList = DATA.tagList.map(name=>({ id: uid('tg'), name, fiscalYearIds: [] }));
+    changed = true;
+  }
+  DATA.tagList.forEach(tg=>{ if(!tg.id){ tg.id = uid('tg'); changed = true; } if(!Array.isArray(tg.fiscalYearIds)){ tg.fiscalYearIds = []; changed = true; } });
+  // เผื่อแท็กที่ติดอยู่ในงานแต่ยังไม่เคยลงทะเบียนใน tagList ให้เพิ่มเข้าไป (ผูกกับปีงบประมาณของงานนั้นถ้ามี)
+  DATA.tasks.forEach(t=>{
+    (t.tags||[]).forEach(tg=>{
+      if(!tagRecordByName(tg)){ DATA.tagList.push({ id: uid('tg'), name: tg, fiscalYearIds: t.fiscalYearId ? [t.fiscalYearId] : [] }); changed = true; }
+    });
+  });
+  if(!DATA.titleList){ DATA.titleList = [...new Set(DATA.tasks.map(t=>t.title))]; changed = true; }
+  if(!DATA.siteText){ DATA.siteText = { title:'แดชบอร์ดติดตามงานจัดซื้อจัดจ้าง', subtitle:'คีย์ข้อมูล อัพเดตสถานะ ดูรายงานหลายมิติ และแจ้งเตือนกำหนดส่ง' }; changed = true; }
+  DATA.tasks.forEach(t=>{ if(typeof t.amount !== 'number'){ t.amount = Number(t.amount)||0; changed = true; } });
+  // รองรับข้อมูลเก่าที่ยังไม่มีรายการปีงบประมาณ (fiscalYears) — สร้างจากวันที่รับงานของงานเดิม
+  if(!DATA.fiscalYears){ DATA.fiscalYears = []; changed = true; }
+  const ensureFY = (name)=>{
+    if(!name) return '';
+    let fy = DATA.fiscalYears.find(f=>f.name===name);
+    if(!fy){ fy = { id: uid('f'), name }; DATA.fiscalYears.push(fy); changed = true; }
+    return fy.id;
+  };
+  const currentFYName = String(fiscalYear(todayStr()));
+  DATA.tasks.forEach(t=>{
+    if(!t.fiscalYearId){ t.fiscalYearId = ensureFY(String(fiscalYear(t.receivedDate) || currentFYName)); changed = true; }
+  });
+  ensureFY(currentFYName); // ให้เลือกปีงบประมาณปัจจุบันได้เสมอแม้ยังไม่มีงาน
+  // ตั้งค่าเริ่มต้นของ "สถานะที่ถือว่าเสร็จสิ้น" (terminal) — ทำครั้งเดียวตอนอัปเกรดข้อมูลเก่า จากนั้นผู้ใช้ปรับเองได้ที่ตั้งค่า > สถานะ
+  if(!DATA.migratedTerminalDefaults){
+    DATA.statuses.forEach(s=>{ if(typeof s.terminal !== 'boolean'){ s.terminal = false; changed = true; } });
+    if(!DATA.statuses.some(s=>s.terminal)){
+      const st = sortedStatuses();
+      if(st.length){ st[st.length-1].terminal = true; changed = true; } // ของเดิม: สถานะลำดับสุดท้ายคือจุดจบงาน
+    }
+    // ผู้ใช้แจ้งว่า "ส่งเบิกจ่ายเงิน" หรือ "ออกเลขครุภัณฑ์" ถึงจุดใดจุดหนึ่งก็ถือว่าจบงานได้เช่นกัน
+    DATA.statuses.forEach(s=>{
+      if(['ส่งเบิกจ่ายเงิน','ออกเลขครุภัณฑ์'].includes(s.name.trim())){ s.terminal = true; changed = true; }
+    });
+    DATA.migratedTerminalDefaults = true;
+    changed = true;
+  }
+  return changed;
+}
+async function saveData(){
+  if(!CLOUD.isAdmin()){ CLOUD.toast('บัญชีนี้ดูได้อย่างเดียว — ไม่บันทึกการแก้ไข'); return; }
+  CLOUD.dirty();
+}
+function seedBlank(){ const d=seedData(); d.tasks=[]; d.history=[]; d.projects=[]; d.users=[]; d.tagList=[]; d.titleList=[]; return d; }
+
+function statusById(id){ return DATA.statuses.find(s=>s.id===id); }
+function projectById(id){ return DATA.projects.find(p=>p.id===id); }
+function userById(id){ return DATA.users.find(u=>u.id===id); }
+function fiscalYearById(id){ return DATA.fiscalYears.find(f=>f.id===id); }
+function sortedFiscalYears(){ return DATA.fiscalYears.slice().sort((a,b)=> (parseInt(a.name)||0) - (parseInt(b.name)||0) || a.name.localeCompare(b.name,'th')); }
+function sortedStatuses(){ return DATA.statuses.slice().sort((a,b)=>a.order-b.order); }
+// งานถือว่า "เสร็จสิ้น" เมื่อสถานะปัจจุบันเป็นสถานะที่ตั้งค่าไว้ว่า "ถือว่าเสร็จสิ้น" (terminal) — ตั้งได้มากกว่า 1 สถานะ
+// เช่น บางงานจบที่ "ส่งเบิกจ่ายเงิน" บางงาน (ครุภัณฑ์) จบที่ "ออกเลขครุภัณฑ์" — ถึงจุดใดจุดหนึ่งก็ถือว่าจบงานได้
+// ถ้ายังไม่มีการตั้งค่า terminal ไว้เลยสักสถานะ (ข้อมูลเก่า) จะถือว่าสถานะลำดับสุดท้ายคือจุดจบงานเหมือนเดิม
+function isFinalStatus(statusId){
+  const s = statusById(statusId);
+  if(!s) return false;
+  if(s.terminal) return true;
+  if(!DATA.statuses.some(x=>x.terminal)){
+    const st = sortedStatuses();
+    return st.length>0 && st[st.length-1].id===statusId;
+  }
+  return false;
+}
+// หาสถานะที่ "ควรจะเป็นจริง" จากวันที่ที่กรอกไว้ในแต่ละขั้นตอน (statusDatesMap: {statusId: 'YYYY-MM-DD'})
+// 1) ถ้ามีสถานะที่ตั้งเป็น "ถือว่าเสร็จสิ้น" และมีวันที่กรอกไว้แล้ว ให้ถือว่างานจบที่สถานะนั้น (ถ้าเข้าเงื่อนไขหลายสถานะ เลือกอันที่มีวันที่ล่าสุด)
+// 2) ถ้าไม่เข้าเงื่อนไขข้อ 1 ให้เลื่อนไปสถานะล่าสุด (ตามลำดับ) ที่มีวันที่กรอกไว้ แต่จะไม่ดึงสถานะให้ถอยหลังจากที่เลือกไว้เดิม
+function computeEffectiveStatus(statusDatesMap, chosenStatusId){
+  const st = sortedStatuses();
+  const chosenIdx = st.findIndex(s=>s.id===chosenStatusId);
+  const chosen = st[chosenIdx];
+  // ถ้าผู้ใช้เลือกสถานะที่ "ถือว่าเสร็จสิ้น" ไว้เองแล้วอย่างชัดเจน ให้เคารพตัวเลือกนั้นเสมอ
+  // ไม่เปรียบเทียบวันที่ข้ามสถานะเสร็จสิ้นอื่น ๆ (กันปัญหากรอกวันที่เก่าค้างไว้ในช่องอื่นแล้วไปแย่งผลลัพธ์)
+  if(chosen && chosen.terminal) return chosenStatusId;
+  // ถ้ายังเลือกอยู่ที่สถานะที่ยังไม่ถือว่าเสร็จสิ้น แต่มีการกรอกวันที่ของขั้นตอนถัดไป (ไม่ว่าจะเป็นสถานะเสร็จสิ้นหรือไม่) ไว้แล้ว
+  // ให้เลื่อนสถานะปัจจุบันไปข้างหน้าตามขั้นตอนล่าสุดที่กรอกวันที่ไว้ให้อัตโนมัติ (ไม่เลื่อนถอยหลัง)
+  const filledIdxs = st.map((s,i)=> statusDatesMap[s.id] ? i : -1).filter(i=>i>=0);
+  const furthestIdx = filledIdxs.length ? Math.max(...filledIdxs) : -1;
+  if(furthestIdx > chosenIdx) return st[furthestIdx].id;
+  return chosenStatusId;
+}
+
+function statusColor(statusId){
+  const st = sortedStatuses();
+  const idx = st.findIndex(s=>s.id===statusId);
+  if(idx<0) return '#6B7280';
+  const t = st.length<=1 ? 1 : idx/(st.length-1);
+  const hue = 224 - t*90;
+  return `hsl(${hue.toFixed(0)},55%,42%)`;
+}
+
+function priorityBadgeClass(p){ return p==='สูง' ? 'badge-high' : p==='กลาง' ? 'badge-mid' : 'badge-low'; }
+
+function dueState(task){
+  if(isFinalStatus(task.currentStatusId) || !task.dueDate) return null;
+  const d = daysBetween(todayStr(), task.dueDate);
+  if(d < 0) return 'overdue';
+  if(d <= 5) return 'soon';
+  return null;
+}
+
+function populateSelect(sel, items){
+  // จำค่าที่เลือกไว้ก่อนรีเฟรชรายการ แล้วตั้งกลับให้เหมือนเดิมถ้ายังมีอยู่ในรายการ
+  // (กันไม่ให้ดรอปดาวน์เด้งกลับไปเลือกตัวเลือกแรกสุดเงียบ ๆ ทุกครั้งที่บันทึกงาน ซึ่งทำให้เผลอบันทึกผู้รับผิดชอบผิดคนได้
+  // เช่น เลือก "พรทิพย์" ไว้ แต่พอบันทึกงานเสร็จแล้วเพิ่มงานถัดไปโดยไม่ได้เลือกซ้ำ กลับไปตกเป็นคนแรกในรายชื่อแทน)
+  const prevVal = sel.value;
+  sel.innerHTML = items.map(it=>`<option value="${it.id}">${it.name}</option>`).join('');
+  if(prevVal && items.some(it=>it.id===prevVal)) sel.value = prevVal;
+}
+function renderFormOptions(){
+  populateSelect(document.getElementById('f-project'), DATA.projects);
+  populateSelect(document.getElementById('f-assignee'), DATA.users);
+  const fySel = document.getElementById('f-fiscalyear');
+  fySel.innerHTML = '<option value="">ไม่ระบุ</option>' + sortedFiscalYears().map(f=>`<option value="${f.id}">${f.name}</option>`).join('');
+  document.getElementById('titleOptions').innerHTML = allKnownTitles().map(t=>`<option value="${t}">`).join('');
+  document.getElementById('siteTitle').textContent = DATA.siteText?.title || 'แดชบอร์ดติดตามงานจัดซื้อจัดจ้าง';
+  document.getElementById('siteSubtitle').textContent = DATA.siteText?.subtitle || '';
+  suggestFiscalYear();
+}
+function suggestFiscalYear(){
+  const received = document.getElementById('f-received').value;
+  const targetName = String(fiscalYear(received || todayStr()));
+  const fy = DATA.fiscalYears.find(f=>f.name===targetName);
+  if(fy) document.getElementById('f-fiscalyear').value = fy.id;
+  if(tagPickerState.f) tagPickerState.f.fiscalYearId = document.getElementById('f-fiscalyear').value || '';
+}
+
+async function addTask(){
+  const docNumber = document.getElementById('f-docnum').value.trim();
+  const title = document.getElementById('f-title').value.trim();
+  const projectId = document.getElementById('f-project').value;
+  const assigneeId = document.getElementById('f-assignee').value;
+  const priority = document.getElementById('f-priority').value;
+  const received = document.getElementById('f-received').value;
+  const due = document.getElementById('f-due').value;
+  const fiscalYearId = document.getElementById('f-fiscalyear').value;
+  const amount = parseFloat(document.getElementById('f-amount').value) || 0;
+  const tags = tagPickerState.f.tags.slice();
+  if(!title || !projectId || !assigneeId){ alert('กรุณากรอกชื่องาน โปรเจกต์ และผู้รับผิดชอบให้ครบ'); return; }
+  const now = Date.now();
+  const firstStatus = sortedStatuses()[0];
+  const receivedDate = received || todayStr();
+  const statusDates = { [firstStatus.id]: receivedDate };
+  const task = {
+    id: uid('t'), docNumber, title, projectId, assigneeId, currentStatusId: firstStatus.id,
+    priority, receivedDate, dueDate: due || '', tags, amount, fiscalYearId,
+    statusDates, createdAt: now, updatedAt: now
+  };
+  DATA.tasks.push(task);
+  syncTagList(tags, fiscalYearId);
+  syncTitleList(title);
+  await saveData();
+  ['f-docnum','f-title','f-due','f-duedays','f-received','f-amount'].forEach(id=>document.getElementById(id).value='');
+  renderAll();
+  initTagPicker('f', [], document.getElementById('f-fiscalyear').value || '');
+}
+
+// ---------- Due date <-> number-of-days helper ----------
+function recalcDueDays(prefix){
+  const received = document.getElementById(prefix+'-received').value;
+  const due = document.getElementById(prefix+'-due').value;
+  const daysInput = document.getElementById(prefix+'-duedays');
+  if(!daysInput) return;
+  if(received && due){
+    const d = daysBetween(received, due);
+    daysInput.value = d>=0 ? d : '';
+  }
+}
+function applyDueDays(prefix){
+  const daysInput = document.getElementById(prefix+'-duedays');
+  const days = parseInt(daysInput.value, 10);
+  if(isNaN(days) || days<0) return;
+  const received = document.getElementById(prefix+'-received').value || todayStr();
+  const base = new Date(received);
+  base.setDate(base.getDate() + days);
+  document.getElementById(prefix+'-due').value = base.toISOString().slice(0,10);
+}
+// บันทึกแท็กเข้าทะเบียนแท็ก พร้อมผูกกับปีงบประมาณที่ใช้งานอยู่ (ถ้ามี)
+// ถ้าแท็กชื่อนี้มีอยู่แล้วแบบผูกปีอื่น จะ "ขยาย" ให้ครอบคลุมปีนี้เพิ่มด้วย (รองรับโครงการที่ใช้ต่อเนื่องข้ามปี)
+function syncTagList(tags, fiscalYearId){
+  if(!DATA.tagList) DATA.tagList = [];
+  tags.forEach(tg=>{
+    if(!tg) return;
+    let rec = tagRecordByName(tg);
+    if(!rec){
+      rec = { id: uid('tg'), name: tg, fiscalYearIds: fiscalYearId ? [fiscalYearId] : [] };
+      DATA.tagList.push(rec);
+    } else if(fiscalYearId && rec.fiscalYearIds && rec.fiscalYearIds.length>0 && !rec.fiscalYearIds.includes(fiscalYearId)){
+      rec.fiscalYearIds.push(fiscalYearId);
+    }
+  });
+}
+
+async function quickUpdateStatus(taskId, newStatusId){
+  const task = DATA.tasks.find(t=>t.id===taskId);
+  if(!task || task.currentStatusId===newStatusId) return;
+  const fromStatusId = task.currentStatusId;
+  task.currentStatusId = newStatusId;
+  task.updatedAt = Date.now();
+  if(!task.statusDates[newStatusId]) task.statusDates[newStatusId] = todayStr();
+  DATA.history.push({ id:uid('h'), taskId, fromStatusId, toStatusId:newStatusId, changedBy:task.assigneeId, changedAt: Date.now() });
+  await saveData();
+  renderAll();
+}
+
+async function deleteTask(taskId){
+  if(!confirm('ลบงานนี้หรือไม่? ไม่สามารถกู้คืนได้')) return;
+  DATA.tasks = DATA.tasks.filter(t=>t.id!==taskId);
+  DATA.history = DATA.history.filter(h=>h.taskId!==taskId);
+  await saveData();
+  closeModal();
+  renderAll();
+}
+
+function getFilteredTasks(){
+  return DATA.tasks.filter(t=>{
+    if(filters.q){
+      const q = filters.q.trim().toLowerCase();
+      const hay = ((t.docNumber||'') + ' ' + (t.title||'')).toLowerCase();
+      if(q && !hay.includes(q)) return false;
+    }
+    if(filters.project && t.projectId!==filters.project) return false;
+    if(filters.assignee && t.assigneeId!==filters.assignee) return false;
+    if(filters.status && t.currentStatusId!==filters.status) return false;
+    if(filters.priority && t.priority!==filters.priority) return false;
+    if(filters.tag && !t.tags.includes(filters.tag)) return false;
+    if(filters.fiscalYear && (t.fiscalYearId||'')!==filters.fiscalYear) return false;
+    if(filters.due){
+      const ds = dueState(t);
+      if(filters.due==='done' && !isFinalStatus(t.currentStatusId)) return false;
+      if(filters.due!=='done' && filters.due!==(ds||'') ) return false;
+    }
+    return true;
+  });
+}
+
+function renderFilters(){
+  const el = document.getElementById('filters');
+  // ถ้าเลือกปีงบประมาณไว้ในตัวกรอง ให้แสดงเฉพาะแท็กของปีนั้น (+ แท็กที่ตั้งเป็น "ทุกปี") เพื่อค้นหาง่ายขึ้น
+  const allTags = allKnownTags(filters.fiscalYear || undefined);
+  const allFY = sortedFiscalYears();
+  el.innerHTML = `
+    <div class="f-item" style="min-width:230px;flex:1 1 230px;">
+      <label>ค้นหาจากเลขที่เอกสาร / ชื่องาน</label>
+      <input type="text" id="searchQ" placeholder="พิมพ์เลขที่เอกสาร หรือชื่องาน..." value="${escapeHtml(filters.q||'')}" oninput="filters.q=this.value; renderTaskTable();">
+    </div>
+    <div class="f-item"><label>โปรเจกต์</label><select onchange="filters.project=this.value; renderAll()">
+      <option value="">ทั้งหมด</option>${DATA.projects.map(p=>`<option value="${p.id}" ${filters.project===p.id?'selected':''}>${p.name}</option>`).join('')}</select></div>
+    <div class="f-item"><label>ผู้รับผิดชอบ</label><select onchange="filters.assignee=this.value; renderAll()">
+      <option value="">ทั้งหมด</option>${DATA.users.map(u=>`<option value="${u.id}" ${filters.assignee===u.id?'selected':''}>${u.name}</option>`).join('')}</select></div>
+    <div class="f-item"><label>สถานะ</label><select onchange="filters.status=this.value; renderAll()">
+      <option value="">ทั้งหมด</option>${sortedStatuses().map(s=>`<option value="${s.id}" ${filters.status===s.id?'selected':''}>${s.name}</option>`).join('')}</select></div>
+    <div class="f-item"><label>ความสำคัญ</label><select onchange="filters.priority=this.value; renderAll()">
+      <option value="">ทั้งหมด</option><option ${filters.priority==='สูง'?'selected':''}>สูง</option><option ${filters.priority==='กลาง'?'selected':''}>กลาง</option><option ${filters.priority==='ต่ำ'?'selected':''}>ต่ำ</option></select></div>
+    <div class="f-item"><label>กำหนดส่ง</label><select onchange="filters.due=this.value; renderAll()">
+      <option value="">ทั้งหมด</option>
+      <option value="overdue" ${filters.due==='overdue'?'selected':''}>เกินกำหนด</option>
+      <option value="soon" ${filters.due==='soon'?'selected':''}>ใกล้ครบกำหนด (≤5 วัน)</option>
+      <option value="done" ${filters.due==='done'?'selected':''}>เสร็จสิ้นแล้ว</option>
+    </select></div>
+    <div class="f-item"><label>แท็ก</label><select onchange="filters.tag=this.value; renderAll()">
+      <option value="">ทั้งหมด</option>${allTags.map(t=>`<option value="${t}" ${filters.tag===t?'selected':''}>${t}</option>`).join('')}</select></div>
+    <div class="f-item"><label>ปีงบประมาณ</label><select onchange="filters.fiscalYear=this.value; onFilterFiscalYearChange(); renderAll()">
+      <option value="">ทั้งหมด</option>${allFY.map(f=>`<option value="${f.id}" ${filters.fiscalYear===f.id?'selected':''}>${f.name}</option>`).join('')}</select></div>
+    <button class="btn btn-ghost btn-sm" onclick="filters={project:'',assignee:'',status:'',priority:'',tag:'',due:'',fiscalYear:'',q:''}; renderAll()">ล้างตัวกรอง</button>
+  `;
+}
+
+// เมื่อเปลี่ยนตัวกรองปีงบประมาณ ถ้าแท็กที่เลือกไว้ไม่อยู่ในปีนั้นแล้ว ให้ล้างตัวกรองแท็กทิ้งเพื่อไม่ให้ค้างเป็นค่าที่มองไม่เห็นในดรอปดาวน์
+function onFilterFiscalYearChange(){
+  if(!filters.tag) return;
+  const available = allKnownTags(filters.fiscalYear || undefined);
+  if(!available.includes(filters.tag)) filters.tag = '';
+}
+function backupReminderHtml(){
+  const lastTs = Number(localStorage.getItem('dashboard-last-backup-ts')||0);
+  const days = lastTs ? Math.floor((Date.now()-lastTs)/86400000) : null;
+  if(!DATA.tasks.length) return '';
+  if(days===null){
+    return `<div class="banner warn"><span>💾</span><div><b>ยังไม่เคยสำรองข้อมูลเป็นไฟล์เลย</b> — ข้อมูลตอนนี้เก็บอยู่ในเบราว์เซอร์เท่านั้น ถ้าเบราว์เซอร์ล้างข้อมูล (เช่น ตั้งค่า "ล้างข้อมูลเมื่อปิดเบราว์เซอร์" หรือเคลียร์แคช) ข้อมูลจะหายและกู้คืนไม่ได้ กด "สำรองข้อมูล (JSON)" มุมขวาบนเพื่อเก็บไฟล์สำรองไว้ในเครื่องตอนนี้เลย</div></div>`;
+  }
+  if(days>=3){
+    return `<div class="banner warn"><span>💾</span><div><b>ไม่ได้สำรองข้อมูลมา ${days} วันแล้ว</b> — แนะนำให้กด "สำรองข้อมูล (JSON)" เก็บไว้เป็นระยะ กันข้อมูลหายหากเบราว์เซอร์ล้างแคช</div></div>`;
+  }
+  return '';
+}
+function renderAlerts(){
+  const el = document.getElementById('alertBanners');
+  const overdue = DATA.tasks.filter(t=>dueState(t)==='overdue');
+  const soon = DATA.tasks.filter(t=>dueState(t)==='soon');
+  let html = '';
+  html += backupReminderHtml();
+  if(overdue.length) html += `<div class="banner danger"><span>⚠</span><div><b>เกินกำหนดส่ง ${overdue.length} งาน</b> — ${overdue.map(t=>t.title).join(', ')}</div></div>`;
+  if(soon.length) html += `<div class="banner warn"><span>⏰</span><div><b>ใกล้ครบกำหนดภายใน 5 วัน ${soon.length} งาน</b> — ${soon.map(t=>t.title).join(', ')}</div></div>`;
+  el.innerHTML = html;
+}
+
+function renderStatGrid(){
+  const el = document.getElementById('statGrid');
+  const tasks = DATA.tasks;
+  const done = tasks.filter(t=>isFinalStatus(t.currentStatusId));
+  const overdue = tasks.filter(t=>dueState(t)==='overdue').length;
+  const soon = tasks.filter(t=>dueState(t)==='soon').length;
+  const durations = done.map(t=>{
+    const start = t.receivedDate; const end = t.statusDates[t.currentStatusId];
+    return (start && end) ? daysBetween(start,end) : null;
+  }).filter(d=>d!==null);
+  const avgDur = durations.length ? Math.round(durations.reduce((a,b)=>a+b,0)/durations.length) : null;
+  const totalAmount = tasks.reduce((a,t)=>a+(Number(t.amount)||0),0);
+  el.innerHTML = `
+    <div class="stat" onclick="statCardClick('all')" title="ดูงานทั้งหมด"><div class="n">${tasks.length}</div><div class="l">งานทั้งหมด</div></div>
+    <div class="stat" onclick="statCardClick('done')" title="ดูรายชื่องานที่เสร็จสิ้นแล้ว"><div class="n">${done.length}</div><div class="l">เสร็จสิ้นแล้ว</div></div>
+    <div class="stat" onclick="statCardClick('overdue')" title="ดูรายชื่องานที่เกินกำหนด"><div class="n" style="color:${overdue>0?'var(--red)':'var(--ink)'}">${overdue}</div><div class="l">เกินกำหนด</div></div>
+    <div class="stat" onclick="statCardClick('soon')" title="ดูรายชื่องานที่ใกล้ครบกำหนด"><div class="n" style="color:${soon>0?'var(--amber)':'var(--ink)'}">${soon}</div><div class="l">ใกล้ครบกำหนด</div></div>
+    <div class="stat" onclick="statCardClick('done')" title="ดูรายชื่องานที่ใช้คำนวณค่าเฉลี่ย"><div class="n">${avgDur!==null?avgDur:'-'}</div><div class="l">เฉลี่ยวัน/งาน (เสร็จแล้ว)</div></div>
+    <div class="stat" onclick="statCardClick('amount')" title="ดูรายละเอียดยอดเงินในรายงาน"><div class="n" style="font-size:16px;">${fmtMoney(totalAmount)}</div><div class="l">ยอดเงินรวม (บาท)</div></div>
+  `;
+}
+function statCardClick(kind){
+  filters = { project:'', assignee:'', status:'', priority:'', tag:'', due:'', fiscalYear:'', q:'' };
+  if(kind==='done') filters.due = 'done';
+  else if(kind==='overdue') filters.due = 'overdue';
+  else if(kind==='soon') filters.due = 'soon';
+  if(kind==='amount'){
+    reportTab = 'amount';
+    renderAll();
+    document.getElementById('reportCard').scrollIntoView({behavior:'smooth', block:'start'});
+    return;
+  }
+  renderAll();
+  document.getElementById('taskListCard').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function renderTaskTable(){
+  const el = document.getElementById('taskTable');
+  const tasks = getFilteredTasks().sort((a,b)=>b.updatedAt-a.updatedAt);
+  if(tasks.length===0){ el.innerHTML = `<tr><td class="empty">ไม่พบงานตามตัวกรองที่เลือก</td></tr>`; return; }
+  const rows = tasks.map(t=>{
+    const proj = projectById(t.projectId), user = userById(t.assigneeId), st = statusById(t.currentStatusId);
+    const ds = dueState(t);
+    const rowClass = ds==='overdue' ? 'overdue' : ds==='soon' ? 'soon' : '';
+    const dueTag = ds==='overdue' ? `<div class="due-tag overdue">เกินกำหนด ${Math.abs(daysBetween(todayStr(),t.dueDate))} วัน</div>`
+      : ds==='soon' ? `<div class="due-tag soon">เหลือ ${daysBetween(todayStr(),t.dueDate)} วัน</div>` : '';
+    return `<tr class="${rowClass}">
+      <td><div class="title-cell">${t.title}</div><div class="docnum">${t.docNumber||'-'}</div></td>
+      <td>${proj?proj.name:'-'}</td>
+      <td>${user?user.name:'-'}</td>
+      <td><span class="badge ${priorityBadgeClass(t.priority)}">${t.priority}</span></td>
+      <td>
+        <select class="status-sel" style="border:1px solid var(--border);border-radius:6px;padding:5px 6px;font-size:12px;color:${statusColor(t.currentStatusId)};font-weight:600;" onchange="quickUpdateStatus('${t.id}', this.value)">
+          ${sortedStatuses().map(s=>`<option value="${s.id}" ${s.id===t.currentStatusId?'selected':''}>${s.name}</option>`).join('')}
+        </select>
+      </td>
+      <td class="mono" style="font-size:12px;">${t.dueDate||'-'}${dueTag}</td>
+      <td class="mono" style="font-size:12px;text-align:right;">${fmtMoney(t.amount)}</td>
+      <td class="row-actions">
+        <button class="btn-text edit" onclick="openModal('${t.id}')">ดู/แก้ไข</button>
+        <button class="btn-text danger" onclick="deleteTask('${t.id}')">ลบ</button>
+      </td>
+    </tr>`;
+  }).join('');
+  el.innerHTML = `<thead><tr><th>เลขที่เอกสาร / ชื่องาน</th><th>โปรเจกต์</th><th>ผู้รับผิดชอบ</th><th>ความสำคัญ</th><th>สถานะ</th><th>กำหนดส่ง</th><th>ยอดเงิน</th><th></th></tr></thead><tbody>${rows}</tbody>`;
+}
+
+function renderReportTabs(){
+  const tabs = [
+    {id:'status',label:'ตามสถานะ'},{id:'assignee',label:'ตามผู้รับผิดชอบ'},{id:'project',label:'ตามโปรเจกต์'},
+    {id:'priority',label:'ตามความสำคัญ'},{id:'due',label:'ตามกำหนดส่ง'},
+    {id:'stagetime',label:'เวลาเฉลี่ยต่อสถานะ'},{id:'totaltime',label:'ระยะเวลารวมต่องาน'},
+    {id:'amount',label:'ยอดเงิน'},{id:'fiscalyear',label:'ตามปีงบประมาณ'},{id:'monthly',label:'รายเดือน'},
+  ];
+  document.getElementById('reportTabs').innerHTML = tabs.map(tb=>`<div class="tab ${reportTab===tb.id?'active':''}" onclick="reportTab='${tb.id}'; renderReportBody()">${tb.label}</div>`).join('');
+}
+function barList(entries){
+  const max = Math.max(1, ...entries.map(e=>e.count));
+  return entries.map(e=>`<div class="bar-row"><div class="lbl">${e.label}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${(e.count/max*100).toFixed(0)}%;background:${e.color||'var(--accent)'}"></div></div>
+    <div class="num">${e.count}</div></div>`).join('');
+}
+function barListMoney(entries){
+  const max = Math.max(1, ...entries.map(e=>e.count));
+  return entries.map(e=>`<div class="bar-row"><div class="lbl">${e.label}</div>
+    <div class="bar-track"><div class="bar-fill" style="width:${(e.count/max*100).toFixed(0)}%;background:${e.color||'var(--accent)'}"></div></div>
+    <div class="num">${fmtMoney(e.count)}</div></div>`).join('');
+}
+function renderReportBody(){
+  renderReportTabs();
+  const el = document.getElementById('reportBody');
+  const tasks = getFilteredTasks();
+  if(tasks.length===0){ el.innerHTML = '<div class="empty">ไม่มีข้อมูลให้แสดงตามตัวกรองปัจจุบัน</div>'; return; }
+
+  if(reportTab==='status'){
+    el.innerHTML = barList(sortedStatuses().map(s=>({label:s.name, count:tasks.filter(t=>t.currentStatusId===s.id).length, color:statusColor(s.id)})));
+  } else if(reportTab==='assignee'){
+    el.innerHTML = barList(DATA.users.map(u=>({label:u.name, count:tasks.filter(t=>t.assigneeId===u.id).length})));
+  } else if(reportTab==='project'){
+    el.innerHTML = barList(DATA.projects.map(p=>({label:p.name, count:tasks.filter(t=>t.projectId===p.id).length})));
+  } else if(reportTab==='priority'){
+    el.innerHTML = barList(['สูง','กลาง','ต่ำ'].map(p=>({label:p, count:tasks.filter(t=>t.priority===p).length})));
+  } else if(reportTab==='due'){
+    const overdue = tasks.filter(t=>dueState(t)==='overdue').length;
+    const soon = tasks.filter(t=>dueState(t)==='soon').length;
+    const done = tasks.filter(t=>isFinalStatus(t.currentStatusId)).length;
+    const normal = tasks.length - overdue - soon - done;
+    el.innerHTML = barList([
+      {label:'เกินกำหนด', count:overdue, color:'#C0362C'},
+      {label:'ใกล้ครบกำหนด (≤5 วัน)', count:soon, color:'#B4740E'},
+      {label:'ปกติ', count:normal, color:'#2647D9'},
+      {label:'เสร็จสิ้นแล้ว', count:done, color:'#0F8C6B'},
+    ]);
+  } else if(reportTab==='stagetime'){
+    const st = sortedStatuses();
+    const gaps = {}; st.forEach(s=>gaps[s.id]=[]);
+    tasks.forEach(t=>{
+      for(let i=0;i<st.length-1;i++){
+        const d1 = t.statusDates[st[i].id], d2 = t.statusDates[st[i+1].id];
+        if(d1 && d2) gaps[st[i].id].push(daysBetween(d1,d2));
+      }
+    });
+    el.innerHTML = `<p class="sub" style="margin:0 0 12px;">จำนวนวันเฉลี่ยจากสถานะนั้นถึงสถานะถัดไป (คำนวณจากวันที่บันทึกไว้ในแต่ละงาน)</p>` +
+      barList(st.slice(0,-1).map(s=>{ const arr=gaps[s.id]; const avg = arr.length? Math.round(arr.reduce((a,b)=>a+b,0)/arr.length*10)/10 : 0; return {label:s.name, count:avg, color:statusColor(s.id)}; }));
+  } else if(reportTab==='totaltime'){
+    const rows = tasks.filter(t=>isFinalStatus(t.currentStatusId) && t.receivedDate && t.statusDates[t.currentStatusId])
+      .map(t=>({label:t.title, count: daysBetween(t.receivedDate, t.statusDates[t.currentStatusId])}));
+    if(rows.length===0){ el.innerHTML = '<div class="empty">ยังไม่มีงานที่เสร็จสิ้นและมีวันที่ครบถ้วนพอจะคำนวณ</div>'; return; }
+    el.innerHTML = `<p class="sub" style="margin:0 0 12px;">จำนวนวันรวมตั้งแต่วันที่รับงานจนถึงวันที่เข้าสถานะสุดท้าย</p>` + barList(rows);
+  } else if(reportTab==='amount'){
+    const totalAmt = tasks.reduce((a,t)=>a+(Number(t.amount)||0),0);
+    el.innerHTML = `<div class="duration-box" style="margin-bottom:16px;">ยอดเงินรวมทั้งหมด (ตามตัวกรองปัจจุบัน): <b>${fmtMoney(totalAmt)} บาท</b></div>`
+      + `<p class="sub" style="margin:0 0 8px;font-weight:600;">ยอดเงินตามโปรเจกต์</p>`
+      + barListMoney(DATA.projects.map(p=>({label:p.name, count: tasks.filter(t=>t.projectId===p.id).reduce((a,t)=>a+(Number(t.amount)||0),0)})))
+      + `<p class="sub" style="margin:16px 0 8px;font-weight:600;">ยอดเงินตามสถานะ</p>`
+      + barListMoney(sortedStatuses().map(s=>({label:s.name, count: tasks.filter(t=>t.currentStatusId===s.id).reduce((a,t)=>a+(Number(t.amount)||0),0), color:statusColor(s.id)})))
+      + `<p class="sub" style="margin:16px 0 8px;font-weight:600;">ยอดเงินตามผู้รับผิดชอบ</p>`
+      + barListMoney(DATA.users.map(u=>({label:u.name, count: tasks.filter(t=>t.assigneeId===u.id).reduce((a,t)=>a+(Number(t.amount)||0),0)})));
+  } else if(reportTab==='fiscalyear'){
+    const fys = sortedFiscalYears();
+    const groups = fys.map(f=>({ id:f.id, label:'ปีงบประมาณ '+f.name }));
+    if(tasks.some(t=>!t.fiscalYearId)) groups.push({ id:'', label:'ไม่ระบุปีงบประมาณ' });
+    if(groups.length===0){ el.innerHTML = '<div class="empty">ยังไม่มีปีงบประมาณในระบบ — เพิ่มได้ที่ปุ่ม "⚙ ตั้งค่า"</div>'; return; }
+    el.innerHTML = `<p class="sub" style="margin:0 0 8px;font-weight:600;">จำนวนงานตามปีงบประมาณ</p>`
+      + barList(groups.map(g=>({label:g.label, count: tasks.filter(t=>(t.fiscalYearId||'')===g.id).length})))
+      + `<p class="sub" style="margin:16px 0 8px;font-weight:600;">ยอดเงินตามปีงบประมาณ</p>`
+      + barListMoney(groups.map(g=>({label:g.label, count: tasks.filter(t=>(t.fiscalYearId||'')===g.id).reduce((a,t)=>a+(Number(t.amount)||0),0)})));
+  } else if(reportTab==='monthly'){
+    const withDate = tasks.filter(t=>t.receivedDate);
+    if(withDate.length===0){ el.innerHTML = '<div class="empty">ยังไม่มีข้อมูลวันที่รับงานเพียงพอสำหรับแยกรายเดือน</div>'; return; }
+    const keys = [...new Set(withDate.map(t=>monthKey(t.receivedDate)))].sort();
+    const labelOf = (k)=> monthLabel(withDate.find(t=>monthKey(t.receivedDate)===k).receivedDate);
+    el.innerHTML = `<p class="sub" style="margin:0 0 8px;font-weight:600;">จำนวนงานตามเดือนที่รับงาน</p>`
+      + barList(keys.map(k=>({label:labelOf(k), count: withDate.filter(t=>monthKey(t.receivedDate)===k).length})))
+      + `<p class="sub" style="margin:16px 0 8px;font-weight:600;">ยอดเงินตามเดือนที่รับงาน</p>`
+      + barListMoney(keys.map(k=>({label:labelOf(k), count: withDate.filter(t=>monthKey(t.receivedDate)===k).reduce((a,t)=>a+(Number(t.amount)||0),0)})));
+  }
+}
+
+function renderHistory(){
+  const el = document.getElementById('historyList');
+  const items = DATA.history.slice().sort((a,b)=>b.changedAt-a.changedAt).slice(0,15);
+  if(items.length===0){ el.innerHTML = '<div class="empty">ยังไม่มีประวัติการเปลี่ยนสถานะ</div>'; return; }
+  el.innerHTML = items.map(h=>{
+    const task = DATA.tasks.find(t=>t.id===h.taskId), from = statusById(h.fromStatusId), to = statusById(h.toStatusId), who = userById(h.changedBy);
+    const d = new Date(h.changedAt);
+    return `<div class="history-item"><div><strong>${task?task.title:'(ถูกลบแล้ว)'}</strong> — ${from?from.name:'-'} → ${to?to.name:'-'} โดย ${who?who.name:'-'}</div><div class="when">${d.toLocaleDateString('th-TH')}</div></div>`;
+  }).join('');
+}
+
+// ---------- Settings ----------
+function openSettings(){ settingsTagsSearch=''; renderSettingsBody(); document.getElementById('settingsOverlay').classList.add('open'); }
+function closeSettings(){ document.getElementById('settingsOverlay').classList.remove('open'); }
+function renderSettingsTabs(){
+  const tabs = [{id:'general',label:'ทั่วไป'},{id:'statuses',label:'สถานะ'},{id:'projects',label:'โปรเจกต์'},{id:'users',label:'ผู้รับผิดชอบ'},{id:'fiscalYears',label:'ปีงบประมาณ'},{id:'tags',label:'แท็ก'}];
+  document.getElementById('settingsTabs').innerHTML = tabs.map(tb=>`<div class="tab ${settingsTab===tb.id?'active':''}" onclick="settingsTab='${tb.id}'; renderSettingsBody()">${tb.label}</div>`).join('');
+}
+async function saveSiteText(){
+  if(!DATA.siteText) DATA.siteText = {};
+  DATA.siteText.title = document.getElementById('set-site-title').value.trim() || 'แดชบอร์ดติดตามงานจัดซื้อจัดจ้าง';
+  DATA.siteText.subtitle = document.getElementById('set-site-subtitle').value.trim();
+  await saveData();
+  renderFormOptions();
+}
+async function resetToSampleData(){
+  if(!confirm('ล้างข้อมูลทั้งหมดและเริ่มด้วยข้อมูลตัวอย่างใหม่หรือไม่? การกระทำนี้ไม่สามารถย้อนกลับได้')) return;
+  DATA = seedData();
+  await saveData();
+  filters = { project:'', assignee:'', status:'', priority:'', tag:'', due:'', fiscalYear:'', q:'' };
+  renderFormOptions();
+  renderAll();
+  alert('เริ่มข้อมูลตัวอย่างใหม่เรียบร้อยแล้ว');
+}
+function renderSettingsBody(){
+  renderSettingsTabs();
+  const el = document.getElementById('settingsBody');
+  if(settingsTab==='general'){
+    el.innerHTML = `
+      <div class="grid" style="gap:12px;">
+        <div><label>ชื่อแดชบอร์ด (หัวข้อหลัก)</label><input type="text" id="set-site-title" value="${DATA.siteText?.title||''}"></div>
+        <div><label>คำอธิบายใต้หัวข้อ</label><input type="text" id="set-site-subtitle" value="${DATA.siteText?.subtitle||''}"></div>
+        <div><button class="btn btn-primary btn-sm" onclick="saveSiteText()">บันทึกข้อความหน้าเว็บ</button></div>
+      </div>
+      <div style="margin-top:22px;padding-top:16px;border-top:1px solid var(--border);">
+        <p class="sub" style="margin:0 0 8px;">ล้างงานทั้งหมดที่มีอยู่ และแทนที่ด้วยข้อมูลตัวอย่างสำหรับทดลองใช้งาน — ใช้เมื่อต้องการเริ่มต้นระบบใหม่เท่านั้น</p>
+      </div>`;
+  } else if(settingsTab==='statuses'){
+    const st = sortedStatuses();
+    el.innerHTML = `
+      <p class="sub" style="margin:0 0 10px;">ติ๊ก "ถือว่าเสร็จสิ้น" ที่สถานะใดก็ได้ที่ถือว่างานจบแล้วเมื่อถึงจุดนั้น — ตั้งได้มากกว่า 1 สถานะ เพื่อรองรับงานที่จบได้หลายทาง (เช่น งานทั่วไปจบที่ "ส่งเบิกจ่ายเงิน" ส่วนงานครุภัณฑ์จบที่ "ออกเลขครุภัณฑ์")</p>
+      <div class="setting-list">` + st.map((s,i)=>`
+      <div class="setting-row">
+        <div class="order-btns"><button onclick="moveStatus('${s.id}',-1)" ${i===0?'disabled':''}>▲</button><button onclick="moveStatus('${s.id}',1)" ${i===st.length-1?'disabled':''}>▼</button></div>
+        <input type="text" value="${s.name}" onchange="renameStatus('${s.id}', this.value)">
+        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);white-space:nowrap;flex:none;">
+          <input type="checkbox" ${s.terminal?'checked':''} onchange="toggleStatusTerminal('${s.id}', this.checked)"> ถือว่าเสร็จสิ้น
+        </label>
+        <button class="btn-text danger" onclick="deleteStatus('${s.id}')">ลบ</button>
+      </div>`).join('') + `</div>
+      <div class="add-inline"><input type="text" id="new-status-name" placeholder="เพิ่มสถานะใหม่..."><button class="btn btn-ghost btn-sm" onclick="addStatus()">เพิ่ม</button></div>`;
+  } else if(settingsTab==='projects'){
+    el.innerHTML = `
+      <p class="sub" style="margin:0 0 10px;">กำหนดระยะเวลาดำเนินการโดยประมาณของแต่ละโปรเจกต์ไว้เป็นข้อมูลอ้างอิงกันลืม (ยังไม่ได้ใช้คำนวณหรือผูกกับกำหนดส่งของงานจริงโดยอัตโนมัติ)</p>
+      <div class="setting-list">` + DATA.projects.map(p=>`
+      <div class="setting-row">
+        <input type="text" value="${p.name}" onchange="renameItem('projects','${p.id}', this.value)">
+        <input type="number" min="0" step="1" value="${p.durationDays ?? ''}" placeholder="ระยะเวลา (วัน)" style="width:130px;flex:none;" onchange="setProjectDuration('${p.id}', this.value)">
+        <button class="btn-text danger" onclick="deleteItem('projects','${p.id}')">ลบ</button>
+      </div>`).join('') + `</div>
+      <div class="add-inline">
+        <input type="text" id="new-project-name2" placeholder="เพิ่มโปรเจกต์ใหม่...">
+        <input type="number" min="0" step="1" id="new-project-duration2" placeholder="ระยะเวลา (วัน)" style="width:130px;flex:none;">
+        <button class="btn btn-ghost btn-sm" onclick="addProject()">เพิ่ม</button>
+      </div>`;
+  } else if(settingsTab==='users'){
+    el.innerHTML = `<div class="setting-list">` + DATA.users.map(u=>`
+      <div class="setting-row"><input type="text" value="${u.name}" onchange="renameItem('users','${u.id}', this.value)"><button class="btn-text danger" onclick="deleteItem('users','${u.id}')">ลบ</button></div>`).join('') + `</div>
+      <div class="add-inline"><input type="text" id="new-user-name2" placeholder="เพิ่มผู้รับผิดชอบใหม่..."><button class="btn btn-ghost btn-sm" onclick="addItem('users','new-user-name2')">เพิ่ม</button></div>`;
+  } else if(settingsTab==='fiscalYears'){
+    const fys = sortedFiscalYears();
+    el.innerHTML = (fys.length===0 ? '<div class="empty">ยังไม่มีปีงบประมาณในระบบ</div>' :
+      `<div class="setting-list">` + fys.map(f=>`
+      <div class="setting-row"><input type="text" value="${f.name}" onchange="renameItem('fiscalYears','${f.id}', this.value)"><button class="btn-text danger" onclick="deleteItem('fiscalYears','${f.id}')">ลบ</button></div>`).join('') + `</div>`)
+      + `<div class="add-inline"><input type="text" id="new-fiscalYear-name2" placeholder="เช่น 2569"><button class="btn btn-ghost btn-sm" onclick="addItem('fiscalYears','new-fiscalYear-name2')">เพิ่ม</button></div>`;
+  } else if(settingsTab==='tags'){
+    const fys = sortedFiscalYears();
+    const scopeFilter = settingsTagsYearFilter || '';
+    const searchQ = (settingsTagsSearch||'').trim().toLowerCase();
+    const records = (DATA.tagList||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'th'));
+    let visible = !scopeFilter ? records : records.filter(tg=> !tg.fiscalYearIds || tg.fiscalYearIds.length===0 || tg.fiscalYearIds.includes(scopeFilter));
+    if(searchQ) visible = visible.filter(tg=> tg.name.toLowerCase().includes(searchQ));
+    const scopeOptions = (tg)=>{
+      const opts = [`<option value="" ${(!tg.fiscalYearIds||tg.fiscalYearIds.length===0)?'selected':''}>ทุกปี</option>`]
+        .concat(fys.map(f=>`<option value="${f.id}" ${tg.fiscalYearIds&&tg.fiscalYearIds.length===1&&tg.fiscalYearIds[0]===f.id?'selected':''}>เฉพาะปี ${f.name}</option>`));
+      return opts.join('');
+    };
+    el.innerHTML = `
+      <p class="sub" style="margin:0 0 10px;">ผูกแท็กกับปีงบประมาณ เพื่อให้ตอนเพิ่ม/แก้ไขงานเห็นเฉพาะแท็กของปีนั้น ค้นหาง่ายขึ้นเมื่อรายการแท็กเยอะข้ามหลายปี — แท็กที่ตั้งเป็น "ทุกปี" จะแสดงเป็นตัวเลือกทุกครั้งเสมอ</p>
+      <div class="grid form-grid" style="margin-bottom:10px;">
+        <div><label>🔍 ค้นหาแท็ก</label><input type="text" id="settings-tag-search" placeholder="พิมพ์ชื่อแท็กที่ต้องการค้นหา..." value="${escapeHtml(settingsTagsSearch)}" oninput="settingsTagsSearch=this.value; renderTagsSettingsListOnly()"></div>
+        <div><label>กรองแสดงตามปีงบประมาณ</label>
+          <select onchange="settingsTagsYearFilter=this.value; renderSettingsBody()">
+            <option value="">ทั้งหมด</option>${fys.map(f=>`<option value="${f.id}" ${scopeFilter===f.id?'selected':''}>ปี ${f.name}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div id="settingsTagsListWrap">
+        ${visible.length===0 ? `<div class="empty">${records.length===0?'ยังไม่มีแท็กในระบบ':'ไม่พบแท็กที่ตรงกับเงื่อนไขนี้'}</div>` :
+          `<div class="setting-list">` + visible.map(tg=>`
+          <div class="setting-row">
+            <span style="color:var(--accent);font-size:13px;" title="แก้ไขชื่อแท็กได้ที่ช่องนี้">✎</span>
+            <input type="text" value="${escapeHtml(tg.name)}" onchange="renameTag('${tg.id}', this.value)" title="คลิกเพื่อแก้ไขชื่อแท็ก แล้วกด Enter หรือคลิกที่อื่นเพื่อบันทึก">
+            <select style="width:150px;flex:none;" onchange="setTagScope('${tg.id}', this.value)">${scopeOptions(tg)}</select>
+            <button class="btn-text danger" onclick="deleteTag('${tg.id}')">ลบ</button>
+          </div>`).join('') + `</div>`}
+      </div>
+      <div class="add-inline">
+        <input type="text" id="new-tag-name2" placeholder="เพิ่มแท็กใหม่...">
+        <select id="new-tag-year2" style="width:150px;flex:none;">
+          <option value="">ทุกปี</option>${fys.map(f=>`<option value="${f.id}">เฉพาะปี ${f.name}</option>`).join('')}
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="addTag()">เพิ่ม</button>
+      </div>`;
+  }
+}
+async function renameStatus(id, name){ const s=statusById(id); if(!s||!name.trim()) return; s.name=name.trim(); await saveData(); renderAll(); }
+async function addStatus(){ const inp=document.getElementById('new-status-name'); const name=inp.value.trim(); if(!name) return;
+  const maxOrder = Math.max(0,...DATA.statuses.map(s=>s.order)); DATA.statuses.push({id:uid('s'),name,order:maxOrder+1,terminal:false}); inp.value=''; await saveData(); renderAll(); }
+// ตั้ง/ยกเลิกว่าสถานะนี้ "ถือว่าเสร็จสิ้น" เมื่อถึง — ตั้งได้มากกว่า 1 สถานะ (งานจบได้หลายทาง เช่น จบที่ส่งเบิกจ่ายเงิน หรือจบที่ออกเลขครุภัณฑ์)
+async function toggleStatusTerminal(id, checked){ const s=statusById(id); if(!s) return; s.terminal = !!checked; await saveData(); renderAll(); }
+async function deleteStatus(id){ if(DATA.statuses.length<=1){ alert('ต้องมีอย่างน้อย 1 สถานะ'); return; }
+  if(!confirm('ลบสถานะนี้หรือไม่? งานที่อยู่ในสถานะนี้จะไม่ถูกลบ แต่ควรย้ายสถานะก่อน')) return;
+  DATA.statuses = DATA.statuses.filter(s=>s.id!==id); await saveData(); renderAll(); }
+async function moveStatus(id, dir){ const st = sortedStatuses(); const idx = st.findIndex(s=>s.id===id); const swapIdx = idx+dir;
+  if(swapIdx<0||swapIdx>=st.length) return; const a=st[idx], b=st[swapIdx]; const tmp=a.order; a.order=b.order; b.order=tmp; await saveData(); renderAll(); }
+
+async function renameItem(coll, id, name){ const item = DATA[coll].find(x=>x.id===id); if(!item||!name.trim()) return; item.name=name.trim(); await saveData(); renderAll(); }
+// ระยะเวลาดำเนินการโดยประมาณของโปรเจกต์ (วัน) — เก็บไว้เป็นข้อมูลอ้างอิงกันลืมเท่านั้น ยังไม่ได้ผูกกับการคำนวณกำหนดส่งของงาน
+async function setProjectDuration(id, days){
+  const p = DATA.projects.find(x=>x.id===id); if(!p) return;
+  const n = parseInt(days,10);
+  p.durationDays = (days==='' || isNaN(n) || n<0) ? null : n;
+  await saveData(); renderAll();
+}
+async function addProject(){
+  const inp = document.getElementById('new-project-name2');
+  const durInp = document.getElementById('new-project-duration2');
+  const name = inp.value.trim(); if(!name) return;
+  const n = parseInt(durInp.value,10);
+  const durationDays = (durInp.value==='' || isNaN(n) || n<0) ? null : n;
+  DATA.projects.push({ id: uid('p'), name, durationDays });
+  inp.value=''; durInp.value='';
+  await saveData(); renderAll();
+}
+async function addItem(coll, inputId){ const inp=document.getElementById(inputId); const name=inp.value.trim(); if(!name) return; DATA[coll].push({id:uid(coll[0]), name}); inp.value=''; await saveData(); renderAll(); }
+async function deleteItem(coll, id){
+  const fieldMap = {projects:'projectId', users:'assigneeId', fiscalYears:'fiscalYearId'};
+  const field = fieldMap[coll];
+  const used = field ? DATA.tasks.some(t=> t[field]===id) : false;
+  if(used && !confirm('มีงานที่ใช้รายการนี้อยู่ ลบต่อหรือไม่? (งานเดิมจะยังแสดงค้างไว้)')) return;
+  DATA[coll] = DATA[coll].filter(x=>x.id!==id); await saveData(); renderAll(); }
+// รีเรนเดอร์เฉพาะรายการแท็กในหน้าตั้งค่า (ไม่แตะช่องค้นหา) เพื่อไม่ให้เคอร์เซอร์กระโดดขณะพิมพ์ค้นหา
+function renderTagsSettingsListOnly(){
+  const wrap = document.getElementById('settingsTagsListWrap');
+  if(!wrap) return;
+  const fys = sortedFiscalYears();
+  const scopeFilter = settingsTagsYearFilter || '';
+  const searchQ = (settingsTagsSearch||'').trim().toLowerCase();
+  const records = (DATA.tagList||[]).slice().sort((a,b)=>a.name.localeCompare(b.name,'th'));
+  let visible = !scopeFilter ? records : records.filter(tg=> !tg.fiscalYearIds || tg.fiscalYearIds.length===0 || tg.fiscalYearIds.includes(scopeFilter));
+  if(searchQ) visible = visible.filter(tg=> tg.name.toLowerCase().includes(searchQ));
+  const scopeOptions = (tg)=>{
+    const opts = [`<option value="" ${(!tg.fiscalYearIds||tg.fiscalYearIds.length===0)?'selected':''}>ทุกปี</option>`]
+      .concat(fys.map(f=>`<option value="${f.id}" ${tg.fiscalYearIds&&tg.fiscalYearIds.length===1&&tg.fiscalYearIds[0]===f.id?'selected':''}>เฉพาะปี ${f.name}</option>`));
+    return opts.join('');
+  };
+  wrap.innerHTML = visible.length===0 ? `<div class="empty">${records.length===0?'ยังไม่มีแท็กในระบบ':'ไม่พบแท็กที่ตรงกับเงื่อนไขนี้'}</div>` :
+    `<div class="setting-list">` + visible.map(tg=>`
+    <div class="setting-row">
+      <span style="color:var(--accent);font-size:13px;" title="แก้ไขชื่อแท็กได้ที่ช่องนี้">✎</span>
+      <input type="text" value="${escapeHtml(tg.name)}" onchange="renameTag('${tg.id}', this.value)" title="คลิกเพื่อแก้ไขชื่อแท็ก แล้วกด Enter หรือคลิกที่อื่นเพื่อบันทึก">
+      <select style="width:150px;flex:none;" onchange="setTagScope('${tg.id}', this.value)">${scopeOptions(tg)}</select>
+      <button class="btn-text danger" onclick="deleteTag('${tg.id}')">ลบ</button>
+    </div>`).join('') + `</div>`;
+}
+async function renameTag(tagId, newName){ newName=newName.trim(); if(!newName) return;
+  const rec = DATA.tagList.find(tg=>tg.id===tagId); if(!rec || rec.name===newName) return;
+  const oldName = rec.name;
+  DATA.tasks.forEach(t=>{ t.tags = t.tags.map(tg=> tg===oldName?newName:tg); });
+  rec.name = newName;
+  await saveData(); renderAll(); }
+async function deleteTag(tagId){
+  const rec = DATA.tagList.find(tg=>tg.id===tagId); if(!rec) return;
+  if(!confirm(`ลบแท็ก "${rec.name}" ออกจากทุกงานและออกจากระบบหรือไม่?`)) return;
+  DATA.tasks.forEach(t=>{ t.tags = t.tags.filter(tg=>tg!==rec.name); });
+  DATA.tagList = DATA.tagList.filter(tg=>tg.id!==tagId);
+  await saveData(); renderAll(); }
+// ตั้งขอบเขตปีงบประมาณของแท็ก: '' = ทุกปี, หรือ id ปีงบประมาณเดียวที่ให้ใช้เฉพาะปีนั้น
+async function setTagScope(tagId, fiscalYearId){
+  const rec = DATA.tagList.find(tg=>tg.id===tagId); if(!rec) return;
+  rec.fiscalYearIds = fiscalYearId ? [fiscalYearId] : [];
+  await saveData(); renderAll();
+}
+async function addTag(){
+  const inp = document.getElementById('new-tag-name2');
+  const yearSel = document.getElementById('new-tag-year2');
+  const name = inp.value.trim(); if(!name) return;
+  if(!DATA.tagList) DATA.tagList = [];
+  if(tagRecordByName(name)){ alert('มีแท็กนี้อยู่แล้ว'); return; }
+  const fiscalYearId = yearSel ? yearSel.value : '';
+  DATA.tagList.push({ id: uid('tg'), name, fiscalYearIds: fiscalYearId ? [fiscalYearId] : [] });
+  inp.value=''; await saveData(); renderAll();
+}
+
+// ---------- Task modal (view / edit / delete + per-status dates) ----------
+function openModal(taskId){
+  editingTaskId = taskId;
+  renderModal();
+  document.getElementById('taskOverlay').classList.add('open');
+}
+function closeModal(){ document.getElementById('taskOverlay').classList.remove('open'); editingTaskId=null; }
+
+function onModalStatusChange(newStatusId){
+  const st = sortedStatuses();
+  // ถ้าเปลี่ยนไปเป็นสถานะแรก ให้ผูกกับวันที่รับงานเสมอ (ช่องนั้นถูกล็อกไว้)
+  if(st.length && newStatusId===st[0].id){
+    const received = document.getElementById('m-received').value;
+    const dateInput = document.getElementById('stage-'+newStatusId);
+    if(dateInput) dateInput.value = received || todayStr();
+  } else {
+    const dateInput = document.getElementById('stage-'+newStatusId);
+    if(dateInput && !dateInput.value) dateInput.value = todayStr();
+  }
+  document.querySelectorAll('#taskModal .stage-name').forEach(el=>el.classList.remove('current'));
+  const label = document.querySelector(`#taskModal .stage-name[data-status-id="${newStatusId}"]`);
+  if(label) label.classList.add('current');
+}
+// กันลืม: ถ้ากรอกวันที่ของขั้นตอนหลัง ๆ (เช่น "เสร็จสิ้น") โดยตรง ให้เลื่อนช่อง "สถานะปัจจุบัน" ตามให้อัตโนมัติ
+// (จะเลื่อนไปข้างหน้าเท่านั้น ไม่ดึงสถานะถอยหลัง เผื่อกรอกวันที่ย้อนหลังของขั้นตอนที่ผ่านมาแล้ว)
+function onStageDateChange(statusId){
+  const st = sortedStatuses();
+  const datesMap = {};
+  st.forEach(s=>{ const inp=document.getElementById('stage-'+s.id); if(inp && inp.value) datesMap[s.id]=inp.value; });
+  const statusSel = document.getElementById('m-status');
+  const effective = computeEffectiveStatus(datesMap, statusSel.value);
+  if(effective !== statusSel.value){
+    statusSel.value = effective;
+    onModalStatusChange(effective);
+  }
+}
+
+function renderModal(){
+  const t = DATA.tasks.find(x=>x.id===editingTaskId);
+  if(!t){ closeModal(); return; }
+  const st = sortedStatuses();
+  const startDate = t.receivedDate || Object.values(t.statusDates).sort()[0] || '';
+  const endDate = isFinalStatus(t.currentStatusId) ? (t.statusDates[t.currentStatusId]||'') : '';
+  const totalDays = (startDate && endDate) ? daysBetween(startDate, endDate) : (startDate ? daysBetween(startDate, todayStr()) : null);
+
+  document.getElementById('taskModal').innerHTML = `
+    <button class="close-x" onclick="closeModal()">&times;</button>
+    <h3>${t.title}</h3>
+    <div class="grid form-grid">
+      <div><label>เลขที่เอกสาร</label><input type="text" id="m-docnum" value="${t.docNumber||''}"></div>
+      <div><label>ชื่องาน / เรื่อง</label><input type="text" id="m-title" value="${t.title}" list="titleOptions"></div>
+      <div><label>โปรเจกต์</label><select id="m-project">${DATA.projects.map(p=>`<option value="${p.id}" ${p.id===t.projectId?'selected':''}>${p.name}</option>`).join('')}</select></div>
+      <div><label>ผู้รับผิดชอบ</label><select id="m-assignee">${DATA.users.map(u=>`<option value="${u.id}" ${u.id===t.assigneeId?'selected':''}>${u.name}</option>`).join('')}</select></div>
+      <div><label>ความสำคัญ</label><select id="m-priority">${['สูง','กลาง','ต่ำ'].map(p=>`<option ${p===t.priority?'selected':''}>${p}</option>`).join('')}</select></div>
+      <div><label>สถานะปัจจุบัน</label><select id="m-status" onchange="onModalStatusChange(this.value)">${st.map(s=>`<option value="${s.id}" ${s.id===t.currentStatusId?'selected':''}>${s.name}</option>`).join('')}</select></div>
+      <div><label>วันที่รับงาน</label><input type="date" id="m-received" value="${t.receivedDate||''}" oninput="document.getElementById('stage-${st[0].id}').value=this.value; recalcDueDays('m')"></div>
+      <div><label>กำหนดส่ง</label><input type="date" id="m-due" value="${t.dueDate||''}" onchange="recalcDueDays('m')"></div>
+      <div><label>หรือระบุจำนวนวัน</label><input type="number" min="0" id="m-duedays" value="${t.receivedDate&&t.dueDate?Math.max(0,daysBetween(t.receivedDate,t.dueDate)):''}" placeholder="เช่น 15" oninput="applyDueDays('m')"></div>
+      <div><label>ปีงบประมาณ</label><select id="m-fiscalyear" onchange="onFiscalYearChange('m')">${sortedFiscalYears().map(f=>`<option value="${f.id}" ${f.id===t.fiscalYearId?'selected':''}>${f.name}</option>`).join('')}<option value="" ${!t.fiscalYearId?'selected':''}>ไม่ระบุ</option></select></div>
+      <div><label>ยอดเงิน (บาท)</label><input type="text" inputmode="decimal" id="m-amount" value="${t.amount||0}"></div>
+      <div style="grid-column:1/-1;">
+        <label>แท็ก</label>
+        <div class="tag-picker" id="tp-m">
+          <div class="tag-chips" id="tp-m-chips"></div>
+          <input type="text" id="tp-m-input" placeholder="พิมพ์เพื่อค้นหา หรือกด Enter เพื่อเพิ่มแท็กใหม่..." autocomplete="off">
+          <div class="tag-dropdown" id="tp-m-dropdown"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <h4>วันที่ของแต่ละสถานะ</h4>
+      <div class="stage-grid">
+        ${st.map((s,i)=>`
+          <div class="stage-name ${s.id===t.currentStatusId?'current':''}" data-status-id="${s.id}">${s.name}${i===0?' <span class="sub" style="font-size:11px;">(= วันที่รับงาน)</span>':''}</div>
+          <input type="date" id="stage-${s.id}" value="${t.statusDates[s.id]||''}" ${i===0?'disabled':`onchange="onStageDateChange('${s.id}')"`}>
+        `).join('')}
+      </div>
+      <div class="duration-box">
+        ${totalDays!==null
+          ? (endDate ? `รวมวันดำเนินการตั้งแต่ต้นจนจบ: <b>${totalDays} วัน</b> (${startDate} → ${endDate})`
+                     : `ดำเนินการมาแล้ว <b>${totalDays} วัน</b> นับจากวันที่รับงาน (ยังไม่เสร็จสิ้น)`)
+          : 'ยังไม่มีข้อมูลวันที่เพียงพอสำหรับคำนวณระยะเวลา'}
+      </div>
+    </div>
+
+    <div class="modal-foot">
+      <button class="btn btn-ghost" style="color:var(--red);" onclick="deleteTask('${t.id}')">ลบงานนี้</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="closeModal()">ยกเลิก</button>
+        <button class="btn btn-primary" onclick="saveModal()">บันทึกการแก้ไข</button>
+      </div>
+    </div>
+  `;
+  initTagPicker('m', t.tags, t.fiscalYearId || '');
+}
+
+async function saveModal(){
+  const t = DATA.tasks.find(x=>x.id===editingTaskId);
+  if(!t) return;
+  t.docNumber = document.getElementById('m-docnum').value.trim();
+  t.title = document.getElementById('m-title').value.trim() || t.title;
+  t.projectId = document.getElementById('m-project').value;
+  t.assigneeId = document.getElementById('m-assignee').value;
+  t.priority = document.getElementById('m-priority').value;
+  t.receivedDate = document.getElementById('m-received').value;
+  t.dueDate = document.getElementById('m-due').value;
+  t.amount = parseFloat(document.getElementById('m-amount').value) || 0;
+  t.fiscalYearId = document.getElementById('m-fiscalyear').value;
+  t.tags = tagPickerState.m.tags.slice();
+  syncTagList(t.tags, t.fiscalYearId);
+  syncTitleList(t.title);
+
+  const st = sortedStatuses();
+  const newStatusDates = {};
+  st.forEach((s,i)=>{
+    // สถานะแรกผูกกับ "วันที่รับงาน" เสมอ เพื่อไม่ให้วันที่ไม่ตรงกัน
+    const val = i===0 ? t.receivedDate : document.getElementById('stage-'+s.id).value;
+    if(val) newStatusDates[s.id] = val;
+  });
+
+  // กันลืม: ถ้ากรอกวันที่ของขั้นตอนที่ "ถือว่าเสร็จสิ้น" ไว้แล้ว (เช่น ส่งเบิกจ่ายเงิน หรือ ออกเลขครุภัณฑ์) หรือขั้นตอนหลัง ๆ
+  // แต่ลืมเปลี่ยนช่อง "สถานะปัจจุบัน" ให้ตรงกัน ระบบจะปรับสถานะปัจจุบันให้ถูกต้องให้อัตโนมัติ (จะไม่ดึงสถานะให้ถอยหลัง)
+  let newStatus = computeEffectiveStatus(newStatusDates, document.getElementById('m-status').value);
+
+  if(newStatus !== t.currentStatusId){
+    DATA.history.push({ id:uid('h'), taskId:t.id, fromStatusId:t.currentStatusId, toStatusId:newStatus, changedBy:t.assigneeId, changedAt: Date.now() });
+    t.currentStatusId = newStatus;
+  }
+  t.statusDates = newStatusDates;
+  t.updatedAt = Date.now();
+  await saveData();
+  closeModal();
+  renderAll();
+}
+
+// ---------- ไฟล์สำรองข้อมูล (JSON) — สำรองข้อมูลทั้งหมดของระบบ (แยกจาก localStorage โดยสิ้นเชิง) ----------
+function exportBackupJSON(){
+  const blob = new Blob([JSON.stringify(DATA, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `task-dashboard-backup-${todayStr()}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  localStorage.setItem('dashboard-last-backup-ts', String(Date.now()));
+  renderAlerts();
+}
+async function importBackupJSON(file){
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const parsed = JSON.parse(text);
+    if(!parsed || !Array.isArray(parsed.tasks) || !Array.isArray(parsed.statuses)){
+      alert('ไฟล์นี้ไม่ใช่ไฟล์สำรองข้อมูลของระบบนี้ (รูปแบบไม่ตรง)');
+      return;
+    }
+    if(!confirm(`ไฟล์สำรองนี้มีงานทั้งหมด ${parsed.tasks.length} รายการ\n\nการกู้คืนจะเขียนทับข้อมูลปัจจุบันทั้งหมดในเบราว์เซอร์นี้ ต้องการดำเนินการต่อหรือไม่?`)) return;
+    DATA = parsed;
+    migrateData();
+    await saveData();
+    localStorage.setItem('dashboard-last-backup-ts', String(Date.now()));
+    editingTaskId = null;
+    renderFormOptions();
+    renderAll();
+    document.getElementById('importBackupFile').value = '';
+    alert(`กู้คืนข้อมูลสำเร็จ (${parsed.tasks.length} รายการ)`);
+  }catch(e){
+    console.error(e);
+    alert('นำเข้าไฟล์สำรองไม่สำเร็จ กรุณาตรวจสอบว่าเป็นไฟล์ .json ที่ถูกต้อง');
+  }
+}
+
+// ---------- Excel export ----------
+function exportExcel(){
+  const tasks = getFilteredTasks();
+  const st = sortedStatuses();
+  const rows = tasks.map(t=>{
+    const row = {
+      'เลขที่เอกสาร': t.docNumber||'', 'ชื่องาน': t.title,
+      'โปรเจกต์': projectById(t.projectId)?.name||'', 'ผู้รับผิดชอบ': userById(t.assigneeId)?.name||'',
+      'ความสำคัญ': t.priority, 'สถานะปัจจุบัน': statusById(t.currentStatusId)?.name||'',
+      'วันที่รับงาน': t.receivedDate||'', 'กำหนดส่ง': t.dueDate||'', 'ยอดเงิน': Number(t.amount)||0,
+      'ปีงบประมาณ': fiscalYearById(t.fiscalYearId)?.name||'', 'แท็ก': t.tags.join(', '),
+    };
+    st.forEach(s=>{ row['วันที่: '+s.name] = t.statusDates[s.id] || ''; });
+    return row;
+  });
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'งาน');
+  XLSX.writeFile(wb, `task-dashboard-${todayStr()}.xlsx`);
+}
+
+// ---------- Excel import ----------
+function excelDateToStr(v){
+  if(v===undefined || v===null || v==='') return '';
+  if(v instanceof Date) return v.toISOString().slice(0,10);
+  const s = String(v).trim();
+  if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  const n = Number(s);
+  if(!isNaN(n) && n>20000 && n<80000){ // serial excel date fallback
+    const d = new Date(Math.round((n-25569)*86400*1000));
+    return d.toISOString().slice(0,10);
+  }
+  const d2 = new Date(s);
+  return isNaN(d2.getTime()) ? '' : d2.toISOString().slice(0,10);
+}
+function resolveOrCreate(coll, name){
+  name = (name||'').trim();
+  if(!name) return '';
+  let item = DATA[coll].find(x=>x.name.trim().toLowerCase()===name.toLowerCase());
+  if(!item){ item = { id: uid(coll[0]), name }; if(coll==='statuses'){ const maxOrder = Math.max(0,...DATA.statuses.map(s=>s.order)); item.order = maxOrder+1; } DATA[coll].push(item); }
+  return item.id;
+}
+async function importExcel(file){
+  if(!file) return;
+  try{
+    const buf = await file.arrayBuffer();
+    const wb = XLSX.read(buf, {type:'array', cellDates:true});
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+    if(rows.length===0){ alert('ไม่พบข้อมูลในไฟล์ที่เลือก'); return; }
+    const statusCols = Object.keys(rows[0]).filter(k=>k.startsWith('วันที่: '));
+    let count = 0;
+    rows.forEach(row=>{
+      const title = String(row['ชื่องาน']||'').trim();
+      if(!title) return;
+      const projectId = resolveOrCreate('projects', row['โปรเจกต์']);
+      const assigneeId = resolveOrCreate('users', row['ผู้รับผิดชอบ']);
+      const priorityRaw = String(row['ความสำคัญ']||'').trim();
+      const priority = ['สูง','กลาง','ต่ำ'].includes(priorityRaw) ? priorityRaw : 'กลาง';
+      const statusName = String(row['สถานะปัจจุบัน']||'').trim();
+      const currentStatusId = statusName ? resolveOrCreate('statuses', statusName) : sortedStatuses()[0].id;
+      const receivedDate = excelDateToStr(row['วันที่รับงาน']);
+      const dueDate = excelDateToStr(row['กำหนดส่ง']);
+      const amount = Number(row['ยอดเงิน'])||0;
+      const fyName = String(row['ปีงบประมาณ']||'').trim();
+      const fiscalYearId = fyName ? resolveOrCreate('fiscalYears', fyName) : '';
+      const tags = String(row['แท็ก']||'').split(',').map(s=>s.trim()).filter(Boolean);
+      const statusDates = {};
+      statusCols.forEach(col=>{
+        const sName = col.replace('วันที่: ','').trim();
+        const val = excelDateToStr(row[col]);
+        if(val){ const sid = resolveOrCreate('statuses', sName); statusDates[sid] = val; }
+      });
+      if(receivedDate) statusDates[sortedStatuses()[0].id] = statusDates[sortedStatuses()[0].id] || receivedDate;
+      if(currentStatusId && receivedDate && !statusDates[currentStatusId]) statusDates[currentStatusId] = receivedDate;
+      const now = Date.now();
+      const task = {
+        id: uid('t'), docNumber: String(row['เลขที่เอกสาร']||'').trim(), title, projectId, assigneeId,
+        currentStatusId: currentStatusId || sortedStatuses()[0].id, priority, receivedDate, dueDate,
+        tags, amount, fiscalYearId, statusDates, createdAt: now, updatedAt: now
+      };
+      DATA.tasks.push(task);
+      syncTagList(tags, fiscalYearId);
+      syncTitleList(title);
+      count++;
+    });
+    await saveData();
+    renderFormOptions();
+    renderAll();
+    document.getElementById('importFile').value = '';
+    alert(`นำเข้าสำเร็จ ${count} รายการ`);
+  }catch(e){
+    console.error(e);
+    alert('นำเข้าไฟล์ไม่สำเร็จ กรุณาตรวจสอบว่าเป็นไฟล์ Excel ที่มีหัวคอลัมน์ตรงกับที่ส่งออกจากระบบนี้');
+  }
+}
+
+function renderAll(){
+  renderFormOptions();
+  renderAlerts(); renderStatGrid(); renderFilters(); renderTaskTable();
+  renderReportBody(); renderHistory(); renderSettingsBody();
+  if(editingTaskId) renderModal();
+}
+
+document.getElementById('taskOverlay').addEventListener('click', (e)=>{ if(e.target.id==='taskOverlay') closeModal(); });
+document.getElementById('settingsOverlay').addEventListener('click', (e)=>{ if(e.target.id==='settingsOverlay') closeSettings(); });
+
+CLOUD.boot();
+</script>
+</body>
+</html>
