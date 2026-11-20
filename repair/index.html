@@ -1,0 +1,1580 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ระบบทะเบียนคุมการแจ้งซ่อม</title>
+<style>
+:root{--bg:#f4f5f2;--card:#fff;--ink:#1f2a24;--mute:#5d6b63;--line:#d9ddd6;--acc:#1f6b4f;--acc2:#e8f2ec;--warn:#b45309;--bad:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Sarabun","TH Sarabun New","Leelawadee UI","Tahoma",sans-serif}
+header{background:#173d2f;color:#fff;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header h1{margin:0;font-size:20px;letter-spacing:.2px}
+header small{display:block;opacity:.8;font-size:13px}
+header label{font-size:13px;opacity:.9}
+header select{margin-left:6px}
+nav{display:flex;gap:2px;padding:0 20px;background:#173d2f;flex-wrap:wrap}
+nav button{background:transparent;border:0;color:#cfe3d8;padding:10px 16px;font:inherit;cursor:pointer;border-radius:8px 8px 0 0}
+nav button.on{background:var(--bg);color:var(--ink);font-weight:600}
+main{padding:18px 20px 60px;max-width:1500px;margin:0 auto}
+section{display:none}section.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
+.row>label{display:flex;flex-direction:column;font-size:13px;color:var(--mute);gap:3px}
+input,select,textarea{font:inherit;color:var(--ink);border:1px solid #c5cbc3;border-radius:6px;padding:5px 8px;background:#fff}
+input:focus,select:focus,textarea:focus{outline:2px solid #8cc5aa;border-color:var(--acc)}
+textarea{width:100%;min-height:52px;resize:vertical}
+button{font:inherit;cursor:pointer;border-radius:6px;border:1px solid #b9c2bb;background:#fff;padding:5px 12px}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+button.pri:hover{background:#185a42}
+button.sm{padding:2px 8px;font-size:13px}
+button.danger{color:var(--bad);border-color:#e5b3b3}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);border-radius:20px;padding:4px 12px;background:#fff;cursor:pointer;font-size:14px}
+.chip b{margin-left:4px}
+.chip.on{outline:2px solid var(--acc)}
+table{border-collapse:collapse;width:100%;background:#fff}
+th,td{border:1px solid var(--line);padding:5px 7px;vertical-align:top;text-align:left;font-size:14px}
+th{background:#eef1ec;font-weight:600;white-space:nowrap;position:sticky;top:0}
+td.num,th.num{text-align:right;white-space:nowrap}
+tr.click:hover td{background:#f6faf7;cursor:pointer}
+.badge{display:inline-block;border-radius:12px;padding:1px 9px;font-size:12.5px;color:#fff;white-space:nowrap}
+.late{color:var(--bad);font-weight:600}
+.mute{color:var(--mute);font-size:13px}
+.tablewrap{overflow:auto;max-height:68vh;border:1px solid var(--line);border-radius:8px}
+dialog{border:0;border-radius:12px;padding:0;width:min(1100px,96vw);max-height:94vh}
+dialog::backdrop{background:rgba(20,30,25,.45)}
+.dh{position:sticky;top:0;background:#173d2f;color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center;z-index:2}
+.dh h2{margin:0;font-size:17px}
+.db{padding:14px 16px}
+.df{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 16px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 12px;padding:8px 12px 12px}
+legend{font-weight:600;color:var(--acc);padding:0 6px}
+.g{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px 12px}
+.g label{display:flex;flex-direction:column;font-size:13px;color:var(--mute);gap:3px}
+.g label.w2{grid-column:span 2}.g label.w3{grid-column:span 3}.g label.full{grid-column:1/-1}
+@media(max-width:700px){.g label.w2,.g label.w3{grid-column:1/-1}}
+.parts td{padding:3px}.parts input,.parts select{width:100%;padding:3px 5px}
+.sugwrap{position:relative}
+.sug{position:absolute;left:0;top:100%;z-index:30;background:#fff;border:1px solid #9fb7a8;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.18);max-height:340px;overflow:auto;width:min(720px,88vw);display:none;color:var(--ink)}
+.sug div.it{padding:6px 10px;border-bottom:1px solid #eef1ec;cursor:pointer;font-size:13.5px;line-height:1.4}
+.sug div.it:hover,.sug div.it.on{background:#e8f2ec}
+.sug .cd{font-weight:600}.sug .sm2{color:var(--mute);font-size:12.5px}
+.sug .hd{padding:6px 10px;font-size:12.5px;color:var(--mute);background:#f6f8f5;position:sticky;top:0}
+.dispflag{color:var(--bad);font-weight:600}
+.hint{background:#fff8e6;border:1px solid #f1d8a0;border-radius:8px;padding:8px 12px;font-size:13.5px}
+.err{background:#fdecec;border-color:#efb4b4}
+.log{font-size:13px;color:var(--mute);margin:0;padding-left:18px}
+.kpi{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-bottom:12px}
+.kpi div{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 14px}
+.kpi b{display:block;font-size:22px}
+.kpi span{font-size:13px;color:var(--mute)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#173d2f;color:#fff;padding:8px 18px;border-radius:20px;display:none;z-index:99}
+.star{color:var(--bad);font-weight:700}
+.thd{font-size:12.5px;color:var(--acc)}
+h3{margin:4px 0 10px;font-size:16px}
+@media print{header,nav,.noprint{display:none!important}main{padding:0}.card{border:0}}
+
+.who{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}
+.who button{background:transparent;color:#fff;border-color:rgba(255,255,255,.5)}
+.gov{position:fixed;inset:0;z-index:500;background:#eef2ee;overflow:auto}
+.gbox{max-width:440px;margin:8vh auto 0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:0 0 16px}
+.gbox h2{margin:0;padding:14px 18px;font-size:17px;border-bottom:1px solid var(--line)}
+.gbody{padding:14px 18px}
+.wf{display:flex;flex-direction:column;font-size:13px;color:var(--mute);gap:3px}
+.wf input{width:100%}
+.grow{display:flex;align-items:center;gap:10px;margin-top:10px}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>ระบบทะเบียนคุมการแจ้งซ่อม</h1><small>ส่วนพัสดุและทรัพย์สิน หน่วยบริหารทั่วไป งานบริหารและยุทธศาสตร์ วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</small></div>
+  <div class="who"><span id="backupState" class="mute" style="color:#ffe7a6"></span><span id="cloudBox"></span></div>
+</header>
+<nav id="tabs">
+  <button data-v="reg" class="on">ทะเบียนคุม</button>
+  <button data-v="asset">ประวัติซ่อมรายครุภัณฑ์</button>
+  <button data-v="assets">ทะเบียนครุภัณฑ์</button>
+  <button data-v="report">รายงานสรุป</button>
+  <button data-v="settings">ตั้งค่า</button>
+  <button data-v="data">สำรอง / กู้คืนข้อมูล</button>
+</nav>
+<main>
+<!-- ทะเบียนคุม -->
+<section id="v-reg" class="on">
+  <div class="card">
+    <div class="row">
+      <button class="pri" id="btnNew">+ รับเรื่องแจ้งซ่อมใหม่</button>
+      <label>ปีงบประมาณ<select id="fFy"></select></label>
+      <label>งาน/หน่วยงาน<select id="fUnit"><option value="">ทั้งหมด</option></select></label>
+      <label>ค้นหาใบซ่อม (ทุกปีงบประมาณ)<input id="fQ" type="search" placeholder="เลขพัสดุ เลขช่าง รายการ หมายเลขครุภัณฑ์ ผู้ส่งซ่อม…" style="width:300px"></label>
+      <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="fLate"> เฉพาะที่ค้างเกินกำหนด</label>
+      <span style="flex:1"></span>
+      <button id="btnXlsx">ส่งออกทะเบียน Excel</button>
+    </div>
+    <div class="chips" id="stChips" style="margin-top:12px"></div>
+  </div>
+  <div class="tablewrap"><table id="regTable"></table></div>
+  <p class="mute" id="regCount"></p>
+</section>
+
+<!-- ประวัติรายครุภัณฑ์ -->
+<section id="v-asset">
+  <div class="card row">
+    <label>ประเภท<select id="aType"><option value="asset">ครุภัณฑ์</option><option value="nonasset">ไม่ใช่ครุภัณฑ์ (อาคาร สถานที่ วัสดุ)</option></select></label>
+    <label>ค้นหา<input id="aQ" placeholder="หมายเลขครุภัณฑ์ ชื่อรายการ หรือสถานที่" style="width:280px"></label>
+    <label>แสดง<select id="aMin"><option value="1">ทุกรายการ</option><option value="2">ซ่อมตั้งแต่ 2 ครั้ง</option><option value="3">ซ่อมตั้งแต่ 3 ครั้ง (ซ่อมบ่อย)</option></select></label>
+    <span class="mute" id="aNote"></span>
+  </div>
+  <div class="tablewrap"><table id="assetTable"></table></div>
+</section>
+
+<!-- รายงาน -->
+<section id="v-assets">
+  <div class="card">
+    <div class="row">
+      <button class="pri" id="aaNew">+ เพิ่มครุภัณฑ์</button>
+      <label>ค้นหา<input id="aaQ" type="search" placeholder="เลข ชื่อ ยี่ห้อ รุ่น ที่ตั้ง เช่น ปรับอากาศ อาคาร 4" style="width:300px"></label>
+      <label>ประเภท<select id="aaCat"><option value="">ทุกประเภท</option></select></label>
+      <label>อาคาร<select id="aaBld"><option value="">ทุกอาคาร</option></select></label>
+      <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="aaHide"> ซ่อนที่แทงชำรุดแล้ว</label>
+      <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="aaRep"> เฉพาะที่เคยส่งซ่อม</label>
+      <label style="flex-direction:row;align-items:center;gap:6px"><input type="checkbox" id="aaMine"> เฉพาะที่เพิ่มเอง</label>
+      <span style="flex:1"></span>
+      <button id="aaXlsx">ส่งออก Excel</button>
+    </div>
+    <p class="mute" id="aaSum" style="margin:10px 0 0"></p>
+  </div>
+  <div class="tablewrap"><table id="aaTable"></table></div>
+  <p style="text-align:center"><button id="aaMore" style="display:none"></button></p>
+</section>
+
+<section id="v-report">
+  <div class="card row noprint">
+    <label>ปีงบประมาณ<select id="rFy"></select></label>
+    <label>ตั้งแต่วันที่ (พัสดุรับ)<input type="date" id="rFrom"></label>
+    <label>ถึงวันที่<input type="date" id="rTo"></label>
+    <button id="rClear" class="sm">ทั้งปีงบประมาณ</button>
+    <button id="btnRepXlsx">ส่งออก Excel (ทะเบียน + สรุป + รายงานหลายมิติ)</button>
+    <button onclick="window.print()">พิมพ์ / PDF</button>
+  </div>
+  <div id="repBody"></div>
+</section>
+
+<!-- ตั้งค่า -->
+<section id="v-settings">
+  <div class="card">
+    <h3>ผู้ลงนามในใบส่งซ่อม</h3>
+    <div class="g" id="signerBox"></div>
+    <p class="mute">ชื่อเลือกจากรายชื่อบุคลากร (20 ส.ค. 69) ตำแหน่งขึ้นอัตโนมัติ ส่วน "ชื่อตำแหน่งในหัวข้อ" ใช้พิมพ์หัวข้อความเห็นในใบส่งซ่อม</p>
+  </div>
+  <div class="card">
+    <h3>ค่าทั่วไป</h3>
+    <div class="g">
+      <label>แจ้งเตือนเมื่อค้างเกิน (วัน)<input type="number" id="sOver" min="1"></label>
+      <label>แจ้งเตือนเมื่อค่าซ่อมสะสมเกิน (% ของราคาครุภัณฑ์)<input type="number" id="sCostPct" min="1" max="1000"></label>
+      <label class="w2">ทะเบียนครุภัณฑ์ในระบบ<span id="assetDbInfo" style="color:var(--ink);padding-top:6px"></span></label>
+    </div>
+  </div>
+  <div class="card">
+    <h3>รายการตัวเลือก (แก้ได้ บรรทัดละ 1 รายการ)</h3>
+    <div class="g">
+      <label>งาน<textarea id="sUnits" rows="7"></textarea></label>
+      <label>หน่วย<textarea id="sDepts" rows="7"></textarea></label>
+      <label>ส่วน<textarea id="sSections" rows="7"></textarea></label>
+      <label>อาคาร<textarea id="sBuildings" rows="7"></textarea></label>
+      <label>หน่วยนับ<textarea id="sUoms" rows="7"></textarea></label>
+    </div>
+  </div>
+  <div class="card">
+    <h3>วัสดุในคลังพัสดุ (ใช้เลือกเมื่อช่างเบิกวัสดุ)</h3>
+    <div class="row" style="margin-bottom:8px"><label>ค้นหา<input id="stQ" placeholder="รหัส หรือชื่อวัสดุ" style="width:240px"></label><span class="mute">ราคาต่อหน่วยตามบัญชีวัสดุ (ปีงบ 2569) · คงเหลือเป็นยอดตามบัญชีวัสดุ ณ วันที่ระบุ ไม่ได้ตัดยอดอัตโนมัติจากงานซ่อม</span></div>
+    <div class="tablewrap" style="max-height:420px"><table id="stockTable"></table></div>
+    <p><button id="btnAddStock">+ เพิ่มวัสดุ</button></p>
+  </div>
+  <div class="card">
+    <h3>ร้านค้า / ผู้รับจ้าง</h3>
+    <div class="tablewrap" style="max-height:none"><table id="vendorTable"></table></div>
+    <p><button id="btnAddVendor">+ เพิ่มร้านค้า</button></p>
+  </div>
+  <p><button class="pri" id="btnSaveSettings">บันทึกการตั้งค่า</button></p>
+</section>
+
+<!-- สำรองข้อมูล -->
+<section id="v-data">
+  <div class="card">
+    <h3>สำรองข้อมูล</h3>
+    <p>ข้อมูลเก็บในฐานข้อมูลออนไลน์ใช้ร่วมกันทุกเครื่อง ปุ่มนี้ดาวน์โหลดสำเนาเป็นไฟล์ .json (มีชื่อบุคคลและข้อมูลร้านค้า) ให้เก็บใน Drive ส่วนตัวของงานพัสดุ และลบออกจากโฟลเดอร์ Downloads หลังใช้ ระบบสำรองอัตโนมัติรายคืนตั้งแยกต่างหาก</p>
+    <button class="pri" id="btnBackup">ดาวน์โหลดไฟล์สำรอง (.json)</button>
+    <p class="mute" id="lastBackup"></p>
+  </div>
+  <div class="card">
+    <h3>ข้อมูลอ้างอิง (รายชื่อบุคลากร / ทะเบียนครุภัณฑ์)</h3>
+    <p>นำเข้าครั้งแรกครั้งเดียว จากไฟล์ repair-ref.json ที่เก็บไว้ในเครื่อง/Drive (เฉพาะผู้ดูแลระบบ) ข้อมูลนี้เก็บในฐานข้อมูล ไม่อยู่ในโค้ดบน GitHub</p>
+    <div class="row">
+      <label>ไฟล์ข้อมูลอ้างอิง<input type="file" id="refFile" accept=".json,application/json"></label>
+      <button id="btnRef">นำเข้า</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>กู้คืนข้อมูล</h3>
+    <div class="row">
+      <label>ไฟล์สำรอง<input type="file" id="restoreFile" accept=".json,application/json"></label>
+      <label>วิธีกู้คืน<select id="restoreMode"><option value="merge">รวมกับข้อมูลเดิม (ใช้ฉบับที่แก้ล่าสุด)</option><option value="replace">แทนที่ข้อมูลทั้งหมด</option></select></label>
+      <button id="btnRestore">กู้คืน</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>ข้อมูลในระบบ</h3>
+    <p class="mute" id="dataInfo"></p>
+  </div>
+</section>
+</main>
+
+<!-- ฟอร์มบันทึก -->
+<dialog id="dlg">
+<form method="dialog" id="frm" autocomplete="off">
+  <div class="dh"><h2 id="dlgTitle">รับเรื่องแจ้งซ่อม</h2><button type="button" class="sm" data-close>ปิด</button></div>
+  <div class="db">
+    <div id="frmErr" class="hint err" style="display:none;margin-bottom:10px"></div>
+    <fieldset><legend>1. รับเรื่องจากใบส่งซ่อม</legend>
+      <div class="g">
+        <label>วันที่ผู้ส่งซ่อม<input type="date" name="memoDate"></label>
+        <label>งานช่าง รับเลขที่<input name="techNo" placeholder="ตามใบส่งซ่อม"><span class="mute" id="lastTech"></span></label>
+        <label>วันที่งานช่างรับ<input type="date" name="techDate"></label>
+        <label>งานพัสดุ รับเลขที่<input name="regNo" placeholder="เช่น 12/2570"><span class="mute" id="lastReg"></span></label>
+        <label class="req">วันที่งานพัสดุรับ<input type="date" name="receiveDate" required></label>
+        <label class="w2 req">งาน<input name="unitWork" list="dlUnits" required></label>
+        <label>หน่วย<input name="unitDept" list="dlDepts"></label>
+        <label>ส่วน<input name="unitSection" list="dlSections"></label>
+        <label>โทรศัพท์<input name="tel"></label>
+        <label class="w2 req">ผู้ส่งซ่อม<input name="senderName" list="dlStaff" data-pos="senderPos" required></label>
+        <label>ตำแหน่ง<input name="senderPos" readonly tabindex="-1"></label>
+        <label class="w2 req">รายการ / ชื่อเครื่อง<input name="itemName" required></label>
+        <label class="req">เป็นครุภัณฑ์หรือไม่<select name="itemType"><option value="">— เลือก —</option><option value="asset">ครุภัณฑ์</option><option value="nonasset">ไม่ใช่ครุภัณฑ์ (อาคาร สถานที่ วัสดุ)</option></select></label>
+        <label id="assetNoL" class="sugwrap">หมายเลขครุภัณฑ์<input name="assetNo" placeholder="พิมพ์เลข ชื่อ หรือสถานที่ เพื่อค้นหา" autocomplete="off"><span class="mute" id="assetHint"></span><div class="sug" id="assetSug"></div></label>
+        <label>ยี่ห้อ<input name="brand" list="dlBrands"></label>
+        <label>รุ่น<input name="model" list="dlModels"></label>
+        <label>S/N / หมายเลขเครื่อง<input name="serial"></label>
+        <label>อาคาร<input name="building" list="dlBuildings" placeholder="เลือกหรือพิมพ์"></label>
+        <label>ชั้น<input name="floor" list="dlFloors" placeholder="เช่น 2"></label>
+        <label class="w2">ห้อง / บริเวณ<input name="room" placeholder="เช่น ห้องน้ำหญิง ห้อง 301 ทางเดิน"><input type="hidden" name="location"></label>
+        <label>จำนวน<input type="number" name="qty" min="0" step="any"></label>
+        <label>หน่วยนับ<input name="qtyUnit" list="dlUoms"></label>
+        <div class="full" id="assetInfo" style="display:none;grid-column:1/-1"></div>
+        <label class="full req">สาเหตุที่ส่งซ่อม / อาการ<textarea name="symptom" required></textarea></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>2. ช่าง / ผู้ซ่อม</legend>
+      <div class="g">
+        <label class="w2">ผู้ซ่อม (ช่าง)<input name="techName" list="dlStaff" data-pos="techPos"></label>
+        <label>ตำแหน่ง<input name="techPos"></label>
+        <label>ความเห็นของช่าง<select name="techVerdict"><option value="">ยังไม่ระบุ</option><option value="fix">ซ่อมได้ (ช่างซ่อมเอง)</option><option value="nofix">ซ่อมไม่ได้ (ช่างซ่อมเองไม่ได้)</option></select></label>
+        <label class="w2">กรณี<select name="techCase"></select></label>
+        <label class="full">รายละเอียดความเห็นของช่าง<textarea name="techOpinion" placeholder="เช่น กลอนประตูหัก ต้องเปลี่ยนกลอนใหม่"></textarea></label>
+      </div>
+      <p class="mute" style="margin:4px 0 0">ช่างภายนอกพิมพ์ชื่อได้เอง ส่วนบุคลากรวิทยาลัยให้เลือกจากรายชื่อ</p>
+    </fieldset>
+    <fieldset><legend>3. ความเห็นเจ้าหน้าที่พัสดุ และการอนุมัติ</legend>
+      <div class="g">
+        <label class="w3">ความเห็นของเจ้าหน้าที่พัสดุ<select id="supplyPreset"><option value="default">เพื่อโปรดพิจารณาอนุมัติตามที่ช่างเสนอไว้</option><option value="other">อื่น ๆ (พิมพ์ข้อความเอง)</option></select></label>
+        <label class="full" id="supplyOtherLbl">ข้อความความเห็นของเจ้าหน้าที่พัสดุ<textarea name="supplyOpinion"></textarea></label>
+        <label>ผลการสั่งการ<select name="approval"><option value="">ยังไม่สั่งการ</option><option value="approve">อนุมัติ</option><option value="reject">ไม่อนุมัติ</option></select></label>
+        <label>วันที่สั่งการ<input type="date" name="approvalDate"></label>
+      </div>
+    </fieldset>
+    <fieldset><legend>4. การดำเนินการ วัสดุ อะไหล่ / จ้างเอกชน</legend>
+      <div class="g">
+        <label class="full">การแก้ไข / การดำเนินการ<textarea name="fix"></textarea></label>
+      </div>
+      <div class="tablewrap" style="max-height:none;margin-top:8px">
+      <table class="parts"><thead><tr><th style="width:100px">ประเภท</th><th>รายการอะไหล่ / จ้างเอกชน</th><th style="width:70px">จำนวน</th><th style="width:80px">หน่วย</th><th style="width:100px">ราคา/หน่วย<br><span class="mute">(รวม VAT)</span></th><th style="width:95px" class="num">ราคารวม</th><th style="width:50px">ไม่มี VAT</th><th style="width:170px">บริษัท / ร้านค้า</th><th style="width:95px">ใบเสนอราคา</th><th style="width:85px">ใบ PO</th><th style="width:95px">เลขบิล / ใบเบิก</th><th style="width:34px"></th></tr></thead>
+      <tbody id="partsBody"></tbody>
+      <tfoot><tr><td colspan="5" class="num"><b>รวม</b></td><td class="num"><b id="partsTotal">0.00</b></td><td colspan="6"><button type="button" class="sm" id="btnAddPart">+ เพิ่มรายการ</button></td></tr></tfoot></table>
+      </div>
+    </fieldset>
+    <fieldset><legend>5. สถานะ ส่งคืน และตรวจรับงานซ่อม</legend>
+      <div class="g">
+        <label>สถานะ<select name="status"></select><span class="thd" id="stHint"></span></label>
+        <label>วันที่ซ่อมเสร็จ<input type="date" name="doneDate"></label>
+        <label class="w2">ผู้ตรวจรับงานซ่อม<input name="inspName" list="dlStaff" data-pos="inspPos"></label>
+        <label>ตำแหน่ง<input name="inspPos" readonly tabindex="-1"></label>
+        <label class="w2">ผู้รับคืน<input name="retName" list="dlStaff" data-pos="retPos"></label>
+        <label>ตำแหน่ง<input name="retPos" readonly tabindex="-1"></label>
+        <label>วันที่รับคืน<input type="date" name="returnDate"></label>
+        <label class="full">หมายเหตุ<textarea name="note"></textarea></label>
+      </div>
+      <p class="mute" style="margin:4px 0 0">ใส่วันที่ซ่อมเสร็จ ระบบเปลี่ยนสถานะเป็น "ซ่อมเสร็จ รอส่งคืน" ใส่วันที่รับคืน เปลี่ยนเป็น "ส่งคืนแล้ว" ให้อัตโนมัติ</p>
+      <div id="durBox" style="margin-top:10px"></div>
+    </fieldset>
+    <fieldset><legend>บันทึกการติดตามเพิ่มเติม</legend>
+      <textarea id="followNote" placeholder="เช่น โทรตามร้านแล้ว รออะไหล่ 3 วัน (เก็บไว้ในประวัติพร้อมวันเวลาและผู้บันทึก)"></textarea>
+    </fieldset>
+    <div id="logBox"></div>
+  </div>
+  <div class="df">
+    <button type="button" class="danger" id="btnDel" style="margin-right:auto">ลบรายการ</button>
+    <button type="button" id="btnDocx">ใบส่งซ่อม (Word)</button>
+    <button type="button" id="btnJson">ไฟล์ข้อมูลงานซื้อ/จ้าง (.json)</button>
+    <button type="button" data-close>ยกเลิก</button>
+    <button type="button" class="pri" id="btnSave">บันทึก</button>
+  </div>
+</form>
+</dialog>
+
+<!-- ดูครุภัณฑ์ -->
+<dialog id="dlgA" style="width:min(820px,96vw)">
+<form method="dialog" autocomplete="off">
+  <div class="dh"><h2 id="aTitle">ครุภัณฑ์</h2><button type="button" class="sm" data-close>ปิด</button></div>
+  <div class="db" id="aBody"></div>
+  <div class="df"><button type="button" class="danger" id="aDel" style="margin-right:auto">ลบ (เฉพาะที่เพิ่มเอง)</button><button type="button" id="aEdit">แก้ไข</button><button type="button" data-close>ปิด</button><button type="button" class="pri" id="aRepair">รับเรื่องแจ้งซ่อมครุภัณฑ์นี้</button></div>
+</form>
+</dialog>
+
+<!-- เพิ่ม/แก้ไขครุภัณฑ์ -->
+<dialog id="dlgAE" style="width:min(820px,96vw)">
+<form method="dialog" autocomplete="off" id="aeForm">
+  <div class="dh"><h2 id="aeTitle">เพิ่มครุภัณฑ์</h2><button type="button" class="sm" data-close>ปิด</button></div>
+  <div class="db">
+    <div id="aeErr" class="hint err" style="display:none;margin-bottom:10px"></div>
+    <div class="g">
+      <label class="w2 req">เลขครุภัณฑ์<input data-ae="code" placeholder="เช่น วพบ.สร.7440-001-0001-1/70"></label>
+      <label class="w2 req">รายการ / ชื่อครุภัณฑ์<input data-ae="name" placeholder="ชื่อสามัญ เช่น เครื่องปรับอากาศ ขนาด 18,000 บีทียู"></label>
+      <label class="w2">ประเภท<input data-ae="cat" list="dlCats" placeholder="เลือกหรือพิมพ์"></label>
+      <label>ยี่ห้อ<input data-ae="brand" list="dlBrands"></label>
+      <label>รุ่น<input data-ae="model" list="dlModels"></label>
+      <label class="w2">S/N / หมายเลขเครื่อง<input data-ae="serial"></label>
+      <label>อาคาร<input data-ae="building" list="dlBuildings"></label>
+      <label>ชั้น<input data-ae="floor" list="dlFloorsA"></label>
+      <label class="w2">ห้อง / บริเวณ<input data-ae="room"></label>
+      <label>ราคา (บาท)<input data-ae="price" type="number" step="any" min="0"></label>
+      <label>วันที่ได้มา<input data-ae="acqDate" type="date"><span class="thd"></span></label>
+      <label class="w2" style="flex-direction:row;align-items:center;gap:6px;padding-top:20px"><input type="checkbox" data-ae="disposed" style="width:auto"> แทงชำรุดแล้ว</label>
+      <label class="full">หมายเหตุ<textarea data-ae="note"></textarea></label>
+    </div>
+    <p class="mute">ครุภัณฑ์ที่เพิ่มเองเก็บไว้กับข้อมูลงานซ่อมในเครื่องนี้ (รวมอยู่ในไฟล์สำรองข้อมูล) และค้นหาได้ทันทีในใบซ่อม</p>
+  </div>
+  <div class="df"><button type="button" data-close>ยกเลิก</button><button type="button" class="pri" id="aeSave">บันทึก</button></div>
+</form>
+</dialog>
+<datalist id="dlCats"></datalist><datalist id="dlFloorsA"></datalist>
+
+<!-- อัปเดตสถานะด่วน -->
+<dialog id="dlgQ" style="width:min(720px,96vw)">
+<form method="dialog" autocomplete="off">
+  <div class="dh"><h2 id="qTitle">อัปเดตสถานะ</h2><button type="button" class="sm" data-close>ปิด</button></div>
+  <div class="db">
+    <div id="qInfo" class="hint" style="background:#f3f7f4;border-color:#cfe0d5;margin-bottom:12px"></div>
+    <div id="qErr" class="hint err" style="display:none;margin-bottom:10px"></div>
+    <div class="g">
+      <label class="w2">สถานะใหม่<select id="qStatus"></select></label>
+      <label id="qDoneL">วันที่ซ่อมเสร็จ<input type="date" id="qDone"><span class="thd"></span></label>
+      <label id="qRetL">วันที่รับคืน<input type="date" id="qRet"><span class="thd"></span></label>
+      <label class="w2" id="qRetNameL">ผู้รับคืน<input id="qRetName" list="dlStaff"></label>
+      <label class="w2" id="qInspL">ผู้ตรวจรับงานซ่อม<input id="qInsp" list="dlStaff"></label>
+      <label class="full">บันทึกการติดตาม<textarea id="qNote" placeholder="เช่น ร้านแจ้งส่งของวันศุกร์"></textarea></label>
+    </div>
+    <div id="qLog"></div>
+  </div>
+  <div class="df"><button type="button" id="qOpen" style="margin-right:auto">เปิดใบซ่อมเต็ม (ลงข้อมูลเพิ่ม)</button><button type="button" data-close>ยกเลิก</button><button type="button" class="pri" id="qSave">บันทึก</button></div>
+</form>
+</dialog>
+
+<!-- ส่งออก JSON -->
+<dialog id="dlgJ">
+<form method="dialog" autocomplete="off">
+  <div class="dh"><h2>ทำไฟล์ข้อมูลงาน (.json) สำหรับระบบเอกสารพัสดุ</h2><button type="button" class="sm" data-close>ปิด</button></div>
+  <div class="db">
+    <div class="hint" style="margin-bottom:10px">ชื่อรายการต้องเป็นชื่อสามัญตามแบบราชการ ไม่ระบุยี่ห้อหรือรุ่น · ยอดตั้งแต่ 10,000 บาทใช้คณะกรรมการตรวจรับ 3 คน ต่ำกว่านั้นใช้ผู้ตรวจรับ 1 คน และต้องระบุรายชื่อก่อนทำไฟล์</div>
+    <div id="jErr" class="hint err" style="display:none;margin-bottom:10px"></div>
+    <div class="g">
+      <label>ประเภทงาน<select id="jMethod"><option value="hire">งานจ้าง (จ้างซ่อม)</option><option value="buy">งานซื้อ (ซื้ออะไหล่/วัสดุ)</option></select></label>
+      <label class="w3" id="jTitleLbl">ชื่องานจ้าง<input id="jTitle"></label>
+      <label class="full">รายละเอียด / สถานที่<input id="jDetail"></label>
+      <label class="full">วัตถุประสงค์ (เพื่อ…)<input id="jPurpose"></label>
+      <label class="full">วัตถุประสงค์แบบสั้น<input id="jPurposeShort"></label>
+    </div>
+    <h3 style="margin-top:12px">รายการที่ใส่ในไฟล์</h3>
+    <div id="jItems"></div>
+    <p>ยอดรวม <b id="jTotal">0.00</b> บาท</p>
+    <div class="g">
+      <label class="w2">ผู้จัดทำ<span id="jSpecLbl">ร่างขอบเขตของงาน</span><input id="jSpec" list="dlStaff"></label>
+      <label class="w2">ร้านค้า / ผู้รับจ้าง<input id="jVendor" list="dlVendors"></label>
+      <label>กำหนดส่งมอบ (วัน)<input type="number" id="jDays" min="0"></label>
+    </div>
+    <h3 style="margin-top:12px" id="jInspTitle">ผู้ตรวจรับพัสดุ</h3>
+    <div class="g" id="jInsp"></div>
+  </div>
+  <div class="df"><button type="button" data-close>ยกเลิก</button><button type="button" class="pri" id="btnJsonGo">ดาวน์โหลดไฟล์ .json</button></div>
+</form>
+</dialog>
+
+<datalist id="dlStaff"></datalist><datalist id="dlUnits"></datalist><datalist id="dlStock"></datalist><datalist id="dlDepts"></datalist><datalist id="dlSections"></datalist><datalist id="dlBuildings"></datalist><datalist id="dlFloors"></datalist><datalist id="dlBrands"></datalist><datalist id="dlModels"></datalist><datalist id="dlUoms"></datalist><datalist id="dlVendors"></datalist><datalist id="dlAssets"></datalist>
+<div id="toast"></div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="../js/supabase-config.js"></script>
+<script>
+/* ================= ONLINE: Supabase login + ข้อมูลร่วม (เฉพาะเจ้าหน้าที่ที่ได้รับสิทธิ์) ================= */
+const CLOUD=(()=>{
+  const DEF_PW='123456789';
+  const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+  let VER=0,pending=false,saving=false,timer=null,lastBy='',lastAt='',me='',myName='',myRole='',pollT=null,started=false,blocked=false,baseSettings='';
+  const g=id=>document.getElementById(id);
+  const E=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const MS=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+  const fmtT=iso=>{ if(!iso) return ''; const d=new Date(iso); return d.getDate()+' '+MS[d.getMonth()]+' '+String(d.getFullYear()+543).slice(-2)+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')+' น.'; };
+  const who=e=>String(e||'').split('@')[0];
+  function status(t,warn){ const el=g('cloudSt'); if(el){ el.textContent=t; el.style.color=warn?'#ffd7a8':''; } }
+  function showStatus(){ if(myRole==='viewer'){ status('👁 ดูอย่างเดียว'); return; }
+    status(pending||saving?'☁ กำลังบันทึก…':'☁ บันทึกแล้ว'+(lastAt?' '+fmtT(lastAt):'')+(lastBy?' · '+who(lastBy):'')); }
+
+  /* ---------- หน้าจอเข้าสู่ระบบ ---------- */
+  function gate(html){
+    let el=g('gate'); if(!el){ el=document.createElement('div'); el.id='gate'; document.body.appendChild(el); }
+    el.innerHTML='<div class="gov"><div class="gbox"><h2>ระบบทะเบียนคุมการแจ้งซ่อม</h2><div class="gbody">'+html+'</div></div></div>';
+    el.querySelectorAll('input[type=password]').forEach(addEye);
+  }
+  function closeGate(){ const el=g('gate'); if(el) el.remove(); }
+  function addEye(inp){ if(inp.dataset.eye) return; inp.dataset.eye=1; const b=document.createElement('button'); b.type='button'; b.className='sm'; b.textContent='👁'; b.title='แสดง/ซ่อนรหัสผ่าน'; b.setAttribute('aria-label','แสดงหรือซ่อนรหัสผ่าน'); b.style.marginLeft='6px';
+    b.onclick=()=>{ inp.type=inp.type==='password'?'text':'password'; }; inp.style.width='calc(100% - 52px)'; inp.after(b); }
+  function loginView(msg){
+    gate('<p class="mute" style="margin-top:0">สำหรับเจ้าหน้าที่ส่วนพัสดุและทรัพย์สินที่ได้รับสิทธิ์เท่านั้น · เข้าระบบด้วยอีเมลองค์กร</p>'+
+      '<label class="wf">อีเมลองค์กร<input type="email" id="gEmail" autocomplete="username" placeholder="ชื่อ@bcnsurin.ac.th"></label>'+
+      '<label class="wf" style="margin-top:8px">รหัสผ่าน<span><input type="password" id="gPw" autocomplete="current-password"></span></label>'+
+      '<div class="mute" id="gMsg" style="color:#b42318;min-height:1.4em;margin-top:6px"></div>'+
+      '<div class="grow"><button class="pri" id="gLogin">เข้าสู่ระบบ</button><span style="margin-left:auto"></span><a href="#" id="gForgot">ลืมรหัสผ่าน</a></div>');
+    if(msg) g('gMsg').textContent=msg;
+    const go=async()=>{ const email=g('gEmail').value.trim().toLowerCase(), pw=g('gPw').value; g('gMsg').textContent='';
+      if(!email||!pw){ g('gMsg').textContent='กรอกอีเมลและรหัสผ่าน'; return; }
+      g('gLogin').disabled=true; const r=await sb.auth.signInWithPassword({email,password:pw}); g('gLogin').disabled=false;
+      if(r.error){ g('gMsg').textContent=/Invalid login/i.test(r.error.message)?'อีเมลหรือรหัสผ่านไม่ถูกต้อง':'เข้าสู่ระบบไม่สำเร็จ: '+r.error.message; return; }
+      if(pw===DEF_PW){ try{ sessionStorage.setItem('mustChangePw','1'); }catch(e){} }
+      afterLogin(); };
+    g('gLogin').onclick=go; g('gPw').onkeydown=e=>{ if(e.key==='Enter') go(); };
+    g('gForgot').onclick=async e=>{ e.preventDefault(); const email=g('gEmail').value.trim().toLowerCase(); const m=g('gMsg');
+      if(!email){ m.textContent='พิมพ์อีเมลองค์กรก่อน แล้วกด "ลืมรหัสผ่าน"'; return; }
+      const r=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin+location.pathname});
+      m.style.color=r.error?'#b42318':'#1f7a3f'; m.textContent=r.error?'ส่งลิงก์ไม่สำเร็จ: '+r.error.message:'ถ้าอีเมลนี้มีบัญชีในระบบ จะได้รับลิงก์ตั้งรหัสใหม่ทางอีเมลองค์กร (ตรวจในกล่องจดหมายขยะด้วย) กดขอครั้งเดียวแล้วรอสักครู่'; };
+  }
+  function pwView(forced,recovery){
+    gate('<h3 style="margin-top:0">'+(recovery?'ตั้งรหัสผ่านใหม่':forced?'กรุณาเปลี่ยนรหัสผ่านตั้งต้นก่อนใช้งาน':'เปลี่ยนรหัสผ่าน')+'</h3>'+
+      (forced||recovery?'':'<label class="wf">รหัสผ่านปัจจุบัน<span><input type="password" id="pCur" autocomplete="current-password"></span></label>')+
+      '<label class="wf" style="margin-top:8px">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)<span><input type="password" id="pNew" autocomplete="new-password"></span></label>'+
+      '<label class="wf" style="margin-top:8px">ยืนยันรหัสผ่านใหม่<span><input type="password" id="pNew2" autocomplete="new-password"></span></label>'+
+      '<div class="mute" id="pMsg" style="color:#b42318;min-height:1.4em;margin-top:6px"></div>'+
+      '<div class="grow"><button class="pri" id="pSave">บันทึกรหัสผ่านใหม่</button><span style="margin-left:auto"></span>'+(forced||recovery?'<button id="pOut">ออกจากระบบ</button>':'<button id="pCancel">ยกเลิก</button>')+'</div>');
+    if(g('pOut')) g('pOut').onclick=logout; if(g('pCancel')) g('pCancel').onclick=closeGate;
+    g('pSave').onclick=async()=>{ const n=g('pNew').value,n2=g('pNew2').value,msg=t=>{g('pMsg').textContent=t;};
+      if(n.length<8) return msg('รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัว'); if(n===DEF_PW) return msg('ห้ามใช้รหัสตั้งต้น'); if(n!==n2) return msg('ยืนยันรหัสผ่านไม่ตรงกัน');
+      if(g('pCur')){ const cur=g('pCur').value; if(cur===n) return msg('รหัสใหม่ต้องไม่ซ้ำรหัสเดิม'); const r0=await sb.auth.signInWithPassword({email:me,password:cur}); if(r0.error) return msg('รหัสผ่านปัจจุบันไม่ถูกต้อง'); }
+      const r=await sb.auth.updateUser({password:n}); if(r.error) return msg(/different from the old/i.test(r.error.message)?'รหัสใหม่ต้องไม่ซ้ำรหัสเดิม':'เปลี่ยนรหัสไม่สำเร็จ: '+r.error.message);
+      try{ sessionStorage.removeItem('mustChangePw'); }catch(e){} closeGate(); toast('เปลี่ยนรหัสผ่านแล้ว'); if(!started) afterLogin(); };
+  }
+  function privacyView(){
+    gate('<h3 style="margin-top:0">ประกาศความเป็นส่วนตัว (ย่อ)</h3><div style="line-height:1.7;font-size:14px">'+
+      'ระบบนี้เก็บข้อมูลส่วนบุคคลเท่าที่จำเป็นต่องานทะเบียนคุมการแจ้งซ่อมและการจัดซื้อจัดจ้างเพื่อซ่อมแซม ได้แก่ ชื่อ-สกุลและตำแหน่งของบุคลากรผู้ส่งซ่อม ผู้ตรวจรับ และผู้ลงนาม ชื่อ ที่อยู่ เบอร์โทร เลขประจำตัวผู้เสียภาษี และบัญชีธนาคารของร้านค้า/ผู้รับจ้าง และอีเมลองค์กรของเจ้าหน้าที่ผู้บันทึก '+
+      'เพื่อปฏิบัติภารกิจของรัฐและหน้าที่ตามกฎหมายว่าด้วยการจัดซื้อจัดจ้างและการบริหารพัสดุภาครัฐ (พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล ม.24(4) และ (6)) '+
+      'ข้อมูลเก็บที่ Supabase (ศูนย์ข้อมูลสิงคโปร์) และหน้าเว็บให้บริการโดย Vercel เข้าถึงได้เฉพาะเจ้าหน้าที่ส่วนพัสดุและทรัพย์สินที่ได้รับสิทธิ์ เก็บตามระยะเวลาที่ระเบียบกำหนด (ไม่น้อยกว่า 5 ปีงบประมาณ) '+
+      'ไม่เปิดเผยต่อบุคคลภายนอก เว้นแต่ตามกฎหมาย ผู้มีข้อมูลขอเข้าถึง แก้ไข หรือคัดค้านได้ที่ส่วนพัสดุและทรัพย์สิน วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</div>'+
+      '<div class="grow" style="margin-top:12px"><button class="pri" id="pvOk">รับทราบ</button></div>');
+    g('pvOk').onclick=()=>{ try{ localStorage.setItem('repairPrivacyAck:'+me,'1'); }catch(e){} closeGate(); afterLogin(); };
+  }
+
+  /* ---------- ข้อมูล ---------- */
+  async function fetchRow(){ const r=await sb.from('repair_state').select('data,version,updated_by,updated_at').eq('id','main').maybeSingle(); if(r.error) throw r.error; return r.data; }
+  async function loadMembers(){
+    const r=await sb.from('repair_members').select('email,display_name,role'); if(r.error) throw r.error;
+    const rows=r.data||[]; const mine=rows.find(x=>(x.email||'').toLowerCase()===me);
+    myName=mine&&mine.display_name?mine.display_name:me; myRole=mine?mine.role:'';
+    OFFICERS=rows.filter(x=>x.display_name).map(x=>x.display_name);
+  }
+  async function loadRefs(){
+    const r=await sb.from('repair_ref').select('key,data'); if(r.error) throw r.error;
+    (r.data||[]).forEach(x=>{
+      if(x.key==='staff'&&Array.isArray(x.data)) STAFF=x.data.filter(s=>s&&s.name);
+      if(x.key==='assets'&&x.data&&Array.isArray(x.data.rows)) setAssets(x.data);
+    });
+  }
+  function apply(row){
+    VER=row?row.version:0; lastBy=row?row.updated_by||'':''; lastAt=row?row.updated_at||'':'';
+    DB=normalize(row&&row.data?row.data:blankDB()); baseSettings=JSON.stringify(DB.settings);
+  }
+  function refresh(){ fillLists(); renderAll(); const n=g('cloudWho'); if(n) n.textContent=myName; }
+  async function afterLogin(){
+    const u=await sb.auth.getUser(); const user=u&&u.data&&u.data.user; if(!user) return loginView(); me=(user.email||'').toLowerCase();
+    let must=false; try{ must=sessionStorage.getItem('mustChangePw')==='1'; }catch(e){} if(must) return pwView(true);
+    const rr=await sb.rpc('repair_my_role'); if(rr.error||!rr.data){ await sb.auth.signOut(); return loginView(rr.error?'ตรวจสิทธิ์ไม่ได้ ('+rr.error.message+')':'บัญชี '+me+' ยังไม่ได้รับสิทธิ์ใช้ระบบนี้ (เฉพาะเจ้าหน้าที่ส่วนพัสดุ) ติดต่อผู้ดูแลระบบ'); }
+    let ack=false; try{ ack=localStorage.getItem('repairPrivacyAck:'+me)==='1'; }catch(e){} if(!ack) return privacyView();
+    let row; try{ await loadMembers(); await loadRefs(); row=await fetchRow(); }catch(e){ return loginView('อ่านข้อมูลไม่ได้ ('+(e.message||e)+')'); }
+    apply(row); closeGate(); started=true; refresh(); showStatus();
+    if(myRole==='viewer') toast('บัญชีนี้มีสิทธิ์ดูอย่างเดียว');
+    else if(!row) toast('ยังไม่มีข้อมูลในระบบออนไลน์ — ไปที่แท็บ "สำรอง / กู้คืนข้อมูล" เลือกไฟล์สำรองจากเครื่องเดิม วิธีกู้คืนเลือก "แทนที่ข้อมูลทั้งหมด"');
+    else if(!STAFF.length||!AS().rows.length) toast('ยังไม่ได้นำเข้ารายชื่อบุคลากร/ทะเบียนครุภัณฑ์ — ไปที่แท็บ "สำรอง / กู้คืนข้อมูล"');
+    clearInterval(pollT); pollT=setInterval(poll,20000);
+  }
+  function dirty(){ if(!started) return; if(myRole!=='admin'){ toast('บัญชีนี้ไม่มีสิทธิ์แก้ไข การเปลี่ยนแปลงจะไม่ถูกบันทึก'); return; }
+    pending=true; showStatus(); clearTimeout(timer); timer=setTimeout(push,1000); }
+  function mergeById(a,b){ const map=new Map((a||[]).map(r=>[r.id,r])); (b||[]).forEach(r=>{ const o=map.get(r.id); if(!o||(r.updatedAt||'')>(o.updatedAt||'')) map.set(r.id,r); }); return [...map.values()]; }
+  // รวมการแก้ไขของเรากับของคนอื่น (กรณีบันทึกพร้อมกัน): รายการเดียวกันใช้ฉบับที่แก้ล่าสุด, รายการที่ถูกลบไม่กลับมา
+  function mergeInto(theirs,mine){
+    const del=Object.assign({},theirs.deleted||{},mine.deleted||{});
+    const out=Object.assign({},theirs);
+    out.repairs=mergeById(theirs.repairs,mine.repairs).filter(r=>!del[r.id]);
+    out.customAssets=mergeById(theirs.customAssets,mine.customAssets).filter(r=>!del[r.id]);
+    out.deleted=del;
+    if(JSON.stringify(mine.settings)!==baseSettings) out.settings=mine.settings;
+    return out;
+  }
+  async function push(){
+    if(saving||blocked){ if(!blocked) timer=setTimeout(push,800); return; }
+    saving=true; pending=false; showStatus();
+    const snap=JSON.parse(JSON.stringify(DB));
+    const r=await sb.rpc('save_repair_state',{p_data:snap,p_version:VER}); saving=false;
+    if(r.error){ if(/conflict/i.test(r.error.message)) return conflict(snap);
+      pending=true; status('☁ บันทึกไม่สำเร็จ — จะลองใหม่',true); timer=setTimeout(push,5000); return; }
+    VER=r.data.version; lastBy=me; lastAt=r.data.updated_at; baseSettings=JSON.stringify(DB.settings); showStatus();
+  }
+  async function conflict(mine){
+    blocked=true; let row; try{ row=await fetchRow(); }catch(e){ blocked=false; pending=true; timer=setTimeout(push,3000); return; }
+    const merged=mergeInto(row.data||blankDB(),mine);
+    VER=row.version; DB=normalize(merged); blocked=false;
+    if(!document.querySelector('dialog[open]')) refresh();
+    toast('รวมข้อมูลกับที่ '+who(row.updated_by)+' บันทึกไว้แล้ว');
+    pending=true; push();
+  }
+  async function poll(){
+    if(!started||pending||saving||blocked||document.hidden||document.querySelector('dialog[open]')) return;
+    const r=await sb.from('repair_state').select('version').eq('id','main').maybeSingle();
+    if(r.data&&r.data.version>VER){ const row=await fetchRow(); if(pending||saving||document.querySelector('dialog[open]')) return; apply(row); refresh(); showStatus(); toast('โหลดข้อมูลล่าสุดที่ '+who(row.updated_by)+' บันทึกแล้ว'); }
+  }
+  async function logout(){ if(pending||saving){ clearTimeout(timer); await push(); } clearInterval(pollT); await sb.auth.signOut(); started=false; DB=normalize(blankDB()); STAFF=[]; OFFICERS=[]; setAssets({cats:[],rows:[],source:'-'});
+    try{ sessionStorage.removeItem('mustChangePw'); }catch(e){} refresh(); loginView(); }
+  async function importRef(file){
+    if(myRole!=='admin'){ alert('เฉพาะผู้ดูแลระบบ'); return; }
+    if(!file){ alert('เลือกไฟล์ repair-ref.json ก่อน'); return; }
+    let d; try{ d=JSON.parse(await file.text()); }catch(e){ alert('อ่านไฟล์ไม่ได้ ไม่ใช่ไฟล์ JSON'); return; }
+    if(!d||d.app!=='repair-ref'||!Array.isArray(d.staff)||!d.assets||!Array.isArray(d.assets.rows)){ alert('ไฟล์นี้ไม่ใช่ไฟล์ข้อมูลอ้างอิงของระบบแจ้งซ่อม'); return; }
+    if(!confirm('นำเข้ารายชื่อบุคลากร '+d.staff.length+' คน และทะเบียนครุภัณฑ์ '+d.assets.rows.length+' รายการ แทนที่ข้อมูลอ้างอิงเดิมในระบบ?')) return;
+    const a=await sb.rpc('save_repair_ref',{p_key:'staff',p_data:d.staff}); if(a.error){ alert('นำเข้ารายชื่อบุคลากรไม่สำเร็จ: '+a.error.message); return; }
+    const b=await sb.rpc('save_repair_ref',{p_key:'assets',p_data:d.assets}); if(b.error){ alert('นำเข้าทะเบียนครุภัณฑ์ไม่สำเร็จ: '+b.error.message); return; }
+    await loadRefs(); refresh(); toast('นำเข้าข้อมูลอ้างอิงแล้ว');
+  }
+  window.addEventListener('beforeunload',e=>{ if(pending||saving){ e.preventDefault(); e.returnValue=''; } });
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&started) poll(); });
+  async function boot(){
+    const box=g('cloudBox');
+    if(box){ box.innerHTML='<span id="cloudWho"></span> <span id="cloudSt" class="mute" style="color:#cfe3d8"></span> <button class="sm" id="cPw">เปลี่ยนรหัสผ่าน</button> <button class="sm" id="cOut">ออกจากระบบ</button>';
+      g('cPw').onclick=()=>pwView(false); g('cOut').onclick=logout; }
+    sb.auth.onAuthStateChange(ev=>{ if(ev==='PASSWORD_RECOVERY') pwView(false,true); });
+    if(/type=recovery/.test(location.hash)) return;
+    const s=await sb.auth.getSession(); if(s&&s.data&&s.data.session) afterLogin(); else loginView();
+  }
+  return {sb,boot,dirty,importRef,name:()=>myName,role:()=>myRole,mergeInto,_state:()=>({VER,pending,saving,me,myRole})};
+})();
+</script>
+<script>
+"use strict";
+/* ===== ข้อมูลตั้งต้น ===== */
+let STAFF=[]; /* โหลดจากฐานข้อมูลหลังเข้าสู่ระบบ (ไม่เก็บในโค้ด) */
+const STOCK_DEFAULT = [{"code": "E001", "name": "กระปุกเฟืองส่ายพัดลม ขนาด 16 นิ้ว มิตซูบิชิ", "unit": "ชุด", "price": 395.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 0.0, "balDate": "2026-08-21"}, {"code": "E002", "name": "กล่องเหล็กขาสปริง 36W", "unit": "ชุด", "price": 90.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 5.0, "balDate": "2025-10-01"}, {"code": "E003", "name": "ขั้วสตาร์ทเตอร์", "unit": "อัน", "price": 30.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E004", "name": "ขาหลอดสปริง (หัวท้ายสปริง)", "unit": "คู่", "price": 50.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E005", "name": "คอพัดลมติดผนัง", "unit": "อัน", "price": 165.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 16.0, "balDate": "2026-03-20"}, {"code": "E006", "name": "คาปาซิเตอร์พัดลม 1.5uF (ไมโครฟาร์ส)", "unit": "อัน", "price": 70.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 0.0, "balDate": "2026-06-04"}, {"code": "E007", "name": "เคเบิ้ลไทร์ ขนาด 4 นิ้ว (100 อัน)", "unit": "ถุง", "price": 40.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E008", "name": "เคเบิ้ลไทร์ ขนาด 6 นิ้ว (100 อัน)", "unit": "ถุง", "price": 60.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E009", "name": "เคเบิ้ลไทร์ ขนาด 8 นิ้ว (100 อัน)", "unit": "ถุง", "price": 75.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 3.0, "balDate": "2025-10-01"}, {"code": "E010", "name": "โคมไฟดาวไลท์", "unit": "ชุด", "price": 150.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E011", "name": "เต้ารับเสียบ ขากลมแบน เบอร์ 1091-7", "unit": "อัน", "price": 25.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E012", "name": "เต้ารับเสียบ ขากลมแบน เบอร์ 10919", "unit": "อัน", "price": 41.33, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 0.0, "balDate": "2026-06-12"}, {"code": "E013", "name": "เต้ารับคู่ขากลมแบน มีกราวด์", "unit": "อัน", "price": 140.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 17.0, "balDate": "2026-06-12"}, {"code": "E014", "name": "เทปพันสายไฟ", "unit": "ม้วน", "price": 38.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 5.0, "balDate": "2026-07-01"}, {"code": "E015", "name": "บ๊อกลอย 2x4 มีคิ้ว", "unit": "อัน", "price": 20.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 3.0, "balDate": "2026-06-12"}, {"code": "E016", "name": "บัลลาสต์ 11W", "unit": "อัน", "price": 92.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E017", "name": "บัลลาสต์ 18 W", "unit": "อัน", "price": 90.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E018", "name": "บัลลาสต์อิเล็คทรอนิคส์ 1x36W", "unit": "อัน", "price": 192.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E019", "name": "บัลลาสต์อิเล็คทรอนิคส์ 2x36W", "unit": "อัน", "price": 296.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E020", "name": "เบรกเกอร์ 10A", "unit": "อัน", "price": 120.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 5.0, "balDate": "2025-10-01"}, {"code": "E021", "name": "เบรกเกอร์ 30A", "unit": "อัน", "price": 110.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 2.0, "balDate": "2026-07-01"}, {"code": "E022", "name": "ใบพัดลม (3 ใบพัด)", "unit": "อัน", "price": 120.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E023", "name": "ใบพัดลม ขนาด 16 นิ้ว พานาโซนิค", "unit": "อัน", "price": 110.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 1.0, "balDate": "2026-06-12"}, {"code": "E024", "name": "ใบพัดลม ขนาด 16 นิ้ว มิตซูบิชิ", "unit": "อัน", "price": 380.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 4.0, "balDate": "2026-03-23"}, {"code": "E025", "name": "ใบพัดลมดูดอากาศ ซันโย", "unit": "อัน", "price": 150.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E026", "name": "ปลั๊กตัวผู้ขากลม", "unit": "อัน", "price": 25.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E027", "name": "ปลั๊กตัวเมีย", "unit": "อัน", "price": 35.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 5.0, "balDate": "2025-10-01"}, {"code": "E028", "name": "ปลั๊กยางตัวผู้", "unit": "อัน", "price": 18.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 9.0, "balDate": "2026-04-30"}, {"code": "E029", "name": "ปลั๊กไฟ 4 ช่อง 4 สวิทช์ (3 เมตร)", "unit": "อัน", "price": 580.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E030", "name": "ปลั๊กไฟ 6 ช่อง 6 สวิทช์ (3 เมตร)", "unit": "อัน", "price": 690.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E031", "name": "แผงไฟ 4 x 6", "unit": "อัน", "price": 40.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 2.0, "balDate": "2026-07-01"}, {"code": "E032", "name": "ฝาครอบ 1 ช่อง (panasonic) 6801WK", "unit": "อัน", "price": 30.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 18.0, "balDate": "2026-04-30"}, {"code": "E033", "name": "ฝาครอบ 2 ช่อง (panasonic) 6802WK", "unit": "อัน", "price": 30.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 10.0, "balDate": "2026-06-12"}, {"code": "E034", "name": "ฝาครอบ 3 ช่อง (panasonic) 6803WK", "unit": "อัน", "price": 30.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 6.0, "balDate": "2026-06-12"}, {"code": "E035", "name": "ฝาครอบเบรกเกอร์", "unit": "ตัว", "price": 25.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 3.0, "balDate": "2026-07-01"}, {"code": "E036", "name": "ฝาล็อกใบพัดลม ขนาด 16 นิ้ว พานาโซนิค", "unit": "อัน", "price": 40.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 3.0, "balDate": "2026-06-12"}, {"code": "E037", "name": "มอเตอร์ส่าย", "unit": "อัน", "price": 180.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 18.0, "balDate": "2026-07-07"}, {"code": "E038", "name": "รางนีออนสำเร็จรูป 18W", "unit": "ชุด", "price": 235.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E039", "name": "รางนีออนสำเร็จรูป LED 16W ขาสปริง", "unit": "ชุด", "price": 295.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 3.0, "balDate": "2026-03-16"}, {"code": "E040", "name": "สตาร์ทเตอร์ S10", "unit": "อัน", "price": 15.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E041", "name": "สวิทช์กระตุก", "unit": "อัน", "price": 49.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E042", "name": "สวิทช์พัดลม", "unit": "อัน", "price": 190.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 8.0, "balDate": "2025-10-01"}, {"code": "E043", "name": "สวิทช์ 2 ทาง", "unit": "อัน", "price": 75.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E044", "name": "สวิทช์อัตโนมัติ", "unit": "อัน", "price": 550.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E045", "name": "สวิทซ์ไฟ ปิด-เปิด เดี่ยว", "unit": "อัน", "price": 38.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 17.0, "balDate": "2026-06-12"}, {"code": "E046", "name": "สายต่อพ่วงโทรศัพท์ (1 เมตร)", "unit": "เส้น", "price": 65.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E047", "name": "สายโทรศัพท์ 4 Core", "unit": "ม้วน", "price": 750.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E048", "name": "สายไฟ THW 1x1 (สีเหลือง)", "unit": "ขด", "price": 660.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E049", "name": "สายไฟ THW 1x1.5 (สีน้ำเงิน)", "unit": "ขด", "price": 800.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E050", "name": "สายไฟ VAF 2x4  ขนาด 200 ม.", "unit": "ขด", "price": 3000.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E051", "name": "สายไฟ VCT 2x2.5 ขนาด 100 ม.", "unit": "ขด", "price": 2100.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E052", "name": "สายไฟ VCT 2x4 ขนาด 100 ม.", "unit": "ขด", "price": 1500.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E053", "name": "ไส้สปอร์ตไลท์ 1500W", "unit": "อัน", "price": 150.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E054", "name": "ไส้สปอร์ตไลท์ 500W", "unit": "อัน", "price": 120.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 4.0, "balDate": "2025-10-01"}, {"code": "E055", "name": "หลอดตะเกียบ แบบเกลียว 11W", "unit": "หลอด", "price": 120.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": null, "balDate": null}, {"code": "E056", "name": "หลอดตะเกียบ แบบเกลียว 14W", "unit": "หลอด", "price": 155.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 46.0, "balDate": "2026-08-21"}, {"code": "E057", "name": "หลอดตะเกียบ แบบเสียบ 11W", "unit": "หลอด", "price": 78.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 25.0, "balDate": "2025-11-11"}, {"code": "E058", "name": "หลอดนีออน 18 W", "unit": "หลอด", "price": 45.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 6.0, "balDate": "2025-12-01"}, {"code": "E059", "name": "หลอดนีออน LED T8 18W", "unit": "หลอด", "price": 165.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 9.0, "balDate": "2026-08-21"}, {"code": "E060", "name": "หลอดนีออน LED T8 8W", "unit": "หลอด", "price": 145.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 50.0, "balDate": "2026-08-21"}, {"code": "E061", "name": "หลอดไฟเพดาน แบบ LED 14W", "unit": "หลอด", "price": 290.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 27.0, "balDate": "2026-08-07"}, {"code": "B001", "name": "กลอนชักสแตนเลส", "unit": "อัน", "price": 35.0, "cat": "วัสดุก่อสร้าง", "bal": 10.0, "balDate": "2026-08-27"}, {"code": "B002", "name": "กลอนประตู ขนาด 4 นิ้ว (แบบเก่า)", "unit": "อัน", "price": 15.0, "cat": "วัสดุก่อสร้าง", "bal": 19.0, "balDate": "2026-05-29"}, {"code": "B003", "name": "กลอนประตู ขนาด 4 นิ้ว (แบบใหม่)", "unit": "อัน", "price": 15.0, "cat": "วัสดุก่อสร้าง", "bal": 24.0, "balDate": "2025-10-01"}, {"code": "B004", "name": "กลอนประตู ขนาด 6 นิ้ว", "unit": "อัน", "price": 25.0, "cat": "วัสดุก่อสร้าง", "bal": 47.0, "balDate": "2025-10-01"}, {"code": "B005", "name": "ก๊อกซิ้งค์อ่างล้างจาน (แบบคอยาว)", "unit": "อัน", "price": 420.0, "cat": "วัสดุก่อสร้าง", "bal": 13.0, "balDate": "2026-06-01"}, {"code": "B006", "name": "ก๊อกซิ้งค์อ่างล้างจาน (แบบคอสั้น)", "unit": "อัน", "price": 420.0, "cat": "วัสดุก่อสร้าง", "bal": 10.0, "balDate": "2026-02-25"}, {"code": "B007", "name": "ก๊อกน้ำ ขนาด 3/4 นิ้ว", "unit": "อัน", "price": 120.0, "cat": "วัสดุก่อสร้าง", "bal": 4.0, "balDate": "2025-10-01"}, {"code": "B008", "name": "ก๊อกน้ำก้านแดง ขนาด 1/2 นิ้ว", "unit": "อัน", "price": 165.0, "cat": "วัสดุก่อสร้าง", "bal": 6.0, "balDate": "2025-10-01"}, {"code": "B009", "name": "ก๊อกอ่างล้างมือ", "unit": "อัน", "price": 420.0, "cat": "วัสดุก่อสร้าง", "bal": 1.0, "balDate": "2026-08-21"}, {"code": "B010", "name": "กาวติดท่อพีวีซี ขนาด 500 กรัม", "unit": "กระป๋อง", "price": 440.0, "cat": "วัสดุก่อสร้าง", "bal": 4.0, "balDate": "2026-06-01"}, {"code": "B011", "name": "กุญแจลูกบิด (สำหรับห้องนอน)", "unit": "ชุด", "price": 460.0, "cat": "วัสดุก่อสร้าง", "bal": 4.0, "balDate": "2026-08-05"}, {"code": "B012", "name": "กุญแจลูกบิด (สำหรับห้องน้ำ)", "unit": "ชุด", "price": 445.0, "cat": "วัสดุก่อสร้าง", "bal": 6.0, "balDate": "2026-08-28"}, {"code": "B013", "name": "กาวแท่งร้อน", "unit": "แท่ง", "price": 12.0, "cat": "วัสดุก่อสร้าง", "bal": null, "balDate": null}, {"code": "B014", "name": "ขอเกาะประตู ขนาด 6 นิ้ว", "unit": "อัน", "price": 8.0, "cat": "วัสดุก่อสร้าง", "bal": null, "balDate": null}, {"code": "B015", "name": "ซิลิโคนอุดผนังใส", "unit": "หลอด", "price": 240.0, "cat": "วัสดุก่อสร้าง", "bal": null, "balDate": null}, {"code": "B016", "name": "โซดาไฟ", "unit": "กิโลกรัม", "price": 75.0, "cat": "วัสดุก่อสร้าง", "bal": 0.0, "balDate": null}, {"code": "B017", "name": "ตะแกรงกรองฝุ่นในห้องน้ำ ขนาด 3 นิ้ว", "unit": "อัน", "price": 120.0, "cat": "วัสดุก่อสร้าง", "bal": 2.0, "balDate": "2025-10-01"}, {"code": "B018", "name": "เทปพันเกลียว", "unit": "ม้วน", "price": 25.0, "cat": "วัสดุก่อสร้าง", "bal": 2.0, "balDate": "2026-07-27"}, {"code": "B019", "name": "น้ำมันอเนกประสงค์ ขนาด 200 มิลลิลิตร", "unit": "กระป๋อง", "price": 140.0, "cat": "วัสดุก่อสร้าง", "bal": 2.0, "balDate": "2026-06-01"}, {"code": "B020", "name": "บานพับ ขนาด 2 นิ้ว", "unit": "อัน", "price": 10.0, "cat": "วัสดุก่อสร้าง", "bal": 32.0, "balDate": "2026-06-17"}, {"code": "B021", "name": "บานพับสแตนเลส ขนาด 4 นิ้ว", "unit": "อัน", "price": 60.0, "cat": "วัสดุก่อสร้าง", "bal": 0.0, "balDate": "2026-04-28"}, {"code": "B022", "name": "ปูนยาแนวกันเชื้อรา สีขาว", "unit": "ถุง", "price": 60.0, "cat": "วัสดุก่อสร้าง", "bal": null, "balDate": null}, {"code": "B023", "name": "ฝักบัวอาบน้ำ", "unit": "ชุด", "price": 415.0, "cat": "วัสดุก่อสร้าง", "bal": 10.0, "balDate": "2026-08-05"}, {"code": "B024", "name": "พุกพลาสติก เบอร์ 7", "unit": "กล่อง", "price": 20.0, "cat": "วัสดุก่อสร้าง", "bal": 3.0, "balDate": "2025-10-01"}, {"code": "B025", "name": "มือจับประตู ขนาด 4 นิ้ว  เบอร์ 666", "unit": "อัน", "price": 20.0, "cat": "วัสดุก่อสร้าง", "bal": 21.0, "balDate": "2026-07-07"}, {"code": "B026", "name": "มือจับประตู ขนาด 4 นิ้ว  เบอร์ 777", "unit": "อัน", "price": 20.0, "cat": "วัสดุก่อสร้าง", "bal": 2.0, "balDate": "2025-10-01"}, {"code": "B027", "name": "มือหมุนกระจกบานเกล็ด", "unit": "อัน", "price": 50.0, "cat": "วัสดุก่อสร้าง", "bal": null, "balDate": null}, {"code": "B028", "name": "ยี่โบว์ ขนาด 2 นิ้ว", "unit": "ชุด", "price": 450.0, "cat": "วัสดุก่อสร้าง", "bal": null, "balDate": null}, {"code": "B029", "name": "ยี่โบว์ ขนาด 3 นิ้ว", "unit": "ชุด", "price": 550.0, "cat": "วัสดุก่อสร้าง", "bal": null, "balDate": null}, {"code": "B030", "name": "รังผึ้ง ขนาด 2 นิ้ว", "unit": "อัน", "price": 19.0, "cat": "วัสดุก่อสร้าง", "bal": null, "balDate": null}, {"code": "B031", "name": "ล้อประตูเลื่อน", "unit": "กล่อง", "price": 235.0, "cat": "วัสดุก่อสร้าง", "bal": 0.0, "balDate": "2026-07-27"}, {"code": "B032", "name": "วาล์วเปิด-ปิดน้ำ", "unit": "ชุด", "price": 420.0, "cat": "วัสดุก่อสร้าง", "bal": 3.0, "balDate": "2026-08-21"}, {"code": "B033", "name": "สะดืออ่างสแตนเลส", "unit": "อัน", "price": 80.0, "cat": "วัสดุก่อสร้าง", "bal": 7.0, "balDate": "2026-08-07"}, {"code": "B034", "name": "สายน้ำดี ขนาด 32 นิ้ว", "unit": "อัน", "price": 160.0, "cat": "วัสดุก่อสร้าง", "bal": 5.0, "balDate": "2025-12-19"}, {"code": "B035", "name": "สายน้ำดีสแตนเลส ขนาด 32 นิ้ว ยาว 30 เซนติเมตร", "unit": "อัน", "price": 175.0, "cat": "วัสดุก่อสร้าง", "bal": 10.0, "balDate": "2026-07-01"}, {"code": "B036", "name": "สายยู 3 พับ", "unit": "ชุด", "price": 50.0, "cat": "วัสดุก่อสร้าง", "bal": 4.0, "balDate": "2025-10-01"}, {"code": "B037", "name": "สายยู ขนาด 2 นิ้ว", "unit": "อัน", "price": 40.0, "cat": "วัสดุก่อสร้าง", "bal": 0.0, "balDate": "2026-05-29"}, {"code": "B038", "name": "สายยู ขนาด 3 นิ้ว", "unit": "อัน", "price": 40.0, "cat": "วัสดุก่อสร้าง", "bal": 2.0, "balDate": "2026-06-17"}, {"code": "B039", "name": "สายยูหูช้าง", "unit": "คู่", "price": 45.0, "cat": "วัสดุก่อสร้าง", "bal": 17.0, "balDate": "2025-10-01"}, {"code": "B040", "name": "หัวฉีดฝักบัวชำระ", "unit": "ชุด", "price": 770.0, "cat": "วัสดุก่อสร้าง", "bal": 2.0, "balDate": "2026-08-28"}, {"code": "B041", "name": "เหล็กฉากท้าวแขน", "unit": "อัน", "price": 30.0, "cat": "วัสดุก่อสร้าง", "bal": 68.0, "balDate": "2025-10-01"}, {"code": "", "name": "โคมไฟดาวน์ไลท์ LED 24W ขนาด 8 นิ้ว", "unit": "หลอด", "price": 355.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 6.0, "balDate": null}, {"code": "", "name": "รางนีออนสำเร็จรูป LED 8W ขาสปริง", "unit": "ชุด", "price": 250.0, "cat": "วัสดุไฟฟ้าและวิทยุ", "bal": 8.0, "balDate": null}, {"code": "", "name": "มินิบอลวาล์ว สองทาง ขนาด 1/2 นิ้ว (ผผ)", "unit": "อัน", "price": 115.0, "cat": "วัสดุก่อสร้าง", "bal": 5.0, "balDate": null}, {"code": "", "name": "มินิบอลวาล์ว สามทาง ขนาด 1/2 นิ้ว (ผผผ)", "unit": "อัน", "price": 150.0, "cat": "วัสดุก่อสร้าง", "bal": 7.0, "balDate": null}, {"code": "", "name": "มือปัดชักโครกด้านหน้า", "unit": "อัน", "price": 265.0, "cat": "วัสดุก่อสร้าง", "bal": 10.0, "balDate": null}, {"code": "", "name": "มือปัดชักโครกด้านข้าง", "unit": "อัน", "price": 265.0, "cat": "วัสดุก่อสร้าง", "bal": 6.0, "balDate": null}]; // บัญชีวัสดุ ปีงบ 2569: วัสดุไฟฟ้าและวิทยุ (E) + วัสดุก่อสร้าง (B) ราคาตามบัญชีวัสดุ // จากไฟล์รายชื่อบุคลากร update 20 สิงหาคม 2569
+let OFFICERS=[]; /* โหลดจากตารางสมาชิกหลังเข้าสู่ระบบ */
+const ST = {
+  received:{t:"รับเรื่อง",c:"#64748b",open:1},
+  repairing:{t:"กำลังซ่อม",c:"#2563eb",open:1},
+  waitBuy:{t:"รอจัดซื้อ",c:"#c2410c",open:1},
+  waitHire:{t:"รอจัดจ้าง",c:"#a16207",open:1},
+  done:{t:"ซ่อมเสร็จ รอส่งคืน",c:"#0f766e",open:1},
+  returned:{t:"ส่งคืนแล้ว",c:"#15803d",open:0},
+  dispose:{t:"แทงชำรุด",c:"#b91c1c",open:0},
+  replace:{t:"แทงชำรุดเพื่อซื้อทดแทน",c:"#9d174d",open:0},
+  cancelled:{t:"ยกเลิก",c:"#6b7280",open:0}
+};
+const VERDICT = {"":"ยังไม่ระบุ",fix:"ซ่อมได้",nofix:"ซ่อมไม่ได้"};
+const CASES = {
+  fix:{noparts:"ไม่ใช้อะไหล่",stock:"เบิกวัสดุในคลัง",buy:"จัดซื้อวัสดุมาซ่อม"},
+  nofix:{hire:"จ้างเอกชนซ่อม",dispose:"แทงชำรุด (ทิ้ง)",replace:"แทงชำรุดและซื้อทดแทน"}
+};
+const KIND = {part:"ซื้อวัสดุ/อะไหล่",stock:"เบิกวัสดุในคลัง",hire:"จ้างเอกชน"};
+function techText(r){if(!r.techVerdict)return "ยังไม่ระบุความเห็นช่าง";const c=(CASES[r.techVerdict]||{})[r.techCase];return VERDICT[r.techVerdict]+(c?" – "+c:"");}
+const ITEMTYPE={asset:"ครุภัณฑ์",nonasset:"ไม่ใช่ครุภัณฑ์"};
+function isAsset(r){return r.itemType==="asset";}
+function typeUi(){const t=$("[name=itemType]").value,a=$("[name=assetNo]");$("#assetNoL").style.display=t==="nonasset"?"none":"";$("#assetHint").textContent=t==="asset"&&!a.value?"ถ้ามีหมายเลขในใบส่งซ่อมควรกรอก":"";}
+const SUPPLY_DEFAULT="เพื่อโปรดพิจารณาอนุมัติตามที่ช่างเสนอไว้";
+function supplyUi(mode){const t=$("[name=supplyOpinion]");$("#supplyPreset").value=mode;$("#supplyOtherLbl").style.display=mode==="other"?"":"none";if(mode==="default")t.value=SUPPLY_DEFAULT;else if(t.value===SUPPLY_DEFAULT)t.value="";}
+function caseOptions(v,cur){const sel=$("[name=techCase]");const o=CASES[v]||{};sel.innerHTML=`<option value="">${v?"เลือกกรณี":"เลือกความเห็นของช่างก่อน"}</option>`+Object.entries(o).map(([k,t])=>`<option value="${k}">${t}</option>`).join("");sel.value=cur&&o[cur]?cur:"";sel.disabled=!v;}
+const DEFAULT_SETTINGS = {
+  overdueDays:15,
+  costPct:50,
+  officer:"",
+  units:["งานบริหารและยุทธศาสตร์","งานวิชาการ","งานวิจัยและบริการวิชาการ"],
+  depts:["หน่วยบริหารทั่วไป"],
+  sections:["ส่วนพัสดุและทรัพย์สิน","ส่วนซ่อมบำรุง"],
+  buildings:["อาคาร 1","อาคาร 2","อาคาร 3","อาคาร 4","บ้านพักผู้อำนวยการ"],
+  stock:STOCK_DEFAULT,
+  uoms:["เครื่อง","ชุด","ตัว","อัน","ชิ้น","งาน","ครั้ง","หลอด","ดวง","เส้น","ตลับ","กล่อง","ม้วน","แผ่น","คู่","ลูก","ถัง","บาน"],
+  signers:{
+    head:{name:"",pos:"",title:"หัวหน้าเจ้าหน้าที่พัสดุ"},
+    deputy:{name:"",pos:"",title:"รองผู้อำนวยการด้านบริหารและยุทธศาสตร์"},
+    director:{name:"",pos:"",title:"ผู้อำนวยการ"}
+  },
+  vendors:[]
+};
+
+/* ===== ที่เก็บข้อมูล ===== */
+let DB;
+function blankDB(){return {schema:1,app:"repair-register",settings:JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),repairs:[],lastBackupAt:null,changesSinceBackup:0};}
+function load(){DB=normalize(blankDB());} /* ข้อมูลจริงโหลดจากฐานข้อมูลหลังเข้าสู่ระบบ (ดู CLOUD) */
+/* ปรับข้อมูลรุ่นเก่าให้เป็นรุ่นปัจจุบัน ใช้ทั้งตอนเปิดระบบและตอนกู้คืน */
+function normalize(d){
+  const old=d.settings||{},s=Object.assign(JSON.parse(JSON.stringify(DEFAULT_SETTINGS)),old);
+  if(old.units&&!old.depts){ // รุ่นแรก: งาน/หน่วย/ส่วน อยู่ในรายการเดียวกัน
+    const all=old.units;
+    const dp=all.filter(u=>u.startsWith("หน่วย")),sc=all.filter(u=>u.startsWith("ส่วน"));
+    s.units=all.filter(u=>!u.startsWith("หน่วย")&&!u.startsWith("ส่วน"));
+    s.depts=dp.length?dp:[...DEFAULT_SETTINGS.depts];
+    s.sections=sc.length?sc:[...DEFAULT_SETTINGS.sections];
+  }
+  d.settings=s;d.repairs=d.repairs||[];d.customAssets=d.customAssets||[];d.deleted=d.deleted||{};
+  d.repairs.forEach(r=>{ // ข้อมูลรุ่นแรก: ช่อง "ฝ่าย / หน่วย" ที่ขึ้นต้นด้วย "ส่วน" ย้ายไปช่องส่วน
+    if(r.unitSection===undefined){r.unitSection="";if(r.unitDept&&r.unitDept.startsWith("ส่วน")){r.unitSection=r.unitDept;r.unitDept="";}}
+    if(r.techDate===undefined)r.techDate="";
+    if(!r.itemType)r.itemType=r.assetNo?"asset":"nonasset";
+    if(r.building===undefined){const L=parseLoc(r.location);r.building=L.building;r.floor=L.floor;r.room=L.room;r.location=locText(r);}
+    if(r.brand===undefined){r.brand="";r.model="";}
+    if(r.techVerdict===undefined){
+      const map={self:["fix","noparts"],parts:["fix","buy"],hire:["nofix","hire"],center:["nofix","hire"],none:["nofix","dispose"]};
+      const m=map[r.action]||["",""];r.techVerdict=m[0];r.techCase=m[1];delete r.action;
+    }
+    if(r.status==="waiting")r.status=r.techCase==="hire"?"waitHire":"waitBuy";
+    if(r.status==="unrepairable")r.status=r.techCase==="replace"?"replace":"dispose";
+  });
+  [["unitWork","units"],["unitDept","depts"],["unitSection","sections"],["building","buildings"]].forEach(([f,k])=>d.repairs.forEach(r=>{const v=(r[f]||"").trim();if(v&&!s[k].includes(v))s[k].push(v);}));
+  return d;
+}
+function save(changed=true){
+  if(changed) DB.changesSinceBackup=(DB.changesSinceBackup||0)+1;
+  CLOUD.dirty();
+  showBackupState();
+}
+const S=()=>DB.settings;
+const ME=()=>CLOUD.name()||"";
+
+/* ===== เครื่องมือ ===== */
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid=()=>(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2));
+const TM=["มกราคม","กุมภาพันธ์","มีนาคม","เมษายน","พฤษภาคม","มิถุนายน","กรกฎาคม","สิงหาคม","กันยายน","ตุลาคม","พฤศจิกายน","ธันวาคม"];
+const TMS=["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+function pd(iso){if(!iso)return null;const[y,m,d]=iso.split("-").map(Number);return{y,m,d};}
+function thLong(iso){const p=pd(iso);return p?`${p.d} ${TM[p.m-1]} ${p.y+543}`:"";}
+function thShort(iso){const p=pd(iso);return p?`${p.d} ${TMS[p.m-1]} ${String(p.y+543).slice(-2)}`:"";}
+function todayISO(){const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function fyOf(iso){const p=pd(iso);if(!p)return null;return (p.m>=10?p.y+1:p.y)+543;}
+function daysBetween(a,b){return Math.round((Date.parse(b)-Date.parse(a))/86400000);}
+const money=n=>Number(n||0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=v=>{const n=parseFloat(String(v??"").replace(/,/g,""));return isFinite(n)?n:0;};
+const partTotal=p=>Math.round(num(p.qty)*num(p.price)*100)/100;
+const repairCost=r=>(r.parts||[]).reduce((a,p)=>a+partTotal(p),0);
+const staffPos=n=>(STAFF.find(s=>s.name===n)||{}).pos||"";
+const isStaff=n=>STAFF.some(s=>s.name===n);
+function toast(t){const e=$("#toast");e.textContent=t;e.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display="none",2600);}
+function download(name,blob){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},800);}
+function regSort(a,b){const fa=fyOf(a.receiveDate)||0,fb=fyOf(b.receiveDate)||0;if(fa!==fb)return fa-fb;const na=parseInt(a.regNo||a.techNo)||0,nb=parseInt(b.regNo||b.techNo)||0;if(na!==nb)return na-nb;return (a.receiveDate||"").localeCompare(b.receiveDate||"")||(a.createdAt||"").localeCompare(b.createdAt||"");}
+/* ระยะเวลาแต่ละขั้น: ผู้ส่งซ่อม → งานช่าง → งานพัสดุ → รอรับคืน (ขั้นที่ยังไม่จบนับถึงวันนี้) */
+const STAGES=[["sender","ผู้ส่งซ่อม","วันที่ผู้ส่งซ่อม → วันที่งานช่างรับ"],["tech","งานช่าง","วันที่งานช่างรับ → วันที่งานพัสดุรับ"],["supply","งานพัสดุ (จัดซื้อ/จัดจ้าง/ซ่อม)","วันที่งานพัสดุรับ → วันที่ซ่อมเสร็จ"],["ret","รอรับคืน","วันที่ซ่อมเสร็จ → วันที่รับคืน"],["total","รวมทั้งกระบวนการ","วันที่เริ่มแรก → วันที่รับคืน"]];
+function stages(r){
+  const open=!!(ST[r.status]&&ST[r.status].open),T=todayISO();
+  const seg=(a,b,running)=>{if(!a)return null;const end=b||(running?T:null);if(!end)return null;return {days:daysBetween(a,end),running:!b,from:a,to:end};};
+  const o={};
+  o.sender=seg(r.memoDate,r.techDate||r.receiveDate,false);if(o.sender&&!r.techDate)o.sender.combined=true;
+  o.tech=r.techDate?seg(r.techDate,r.receiveDate,false):null;
+  o.supply=seg(r.receiveDate,r.doneDate,open);
+  o.ret=r.doneDate?seg(r.doneDate,r.returnDate,open):null;
+  o.total=seg(r.memoDate||r.techDate||r.receiveDate,r.returnDate||(open?null:r.doneDate),open);
+  return o;
+}
+function segTxt(x){return x?String(x.days)+(x.running?"+":""):"–";}
+function stageLine(r){const g=stages(r),sh={sender:"ส่ง",tech:"ช่าง",supply:"พัสดุ",ret:"คืน"};return Object.keys(sh).filter(k=>g[k]).map(k=>`${sh[k]} ${segTxt(g[k])}`).join(" · ");}
+function stageStats(L){
+  return STAGES.map(([k,label,desc])=>{const done=L.map(r=>stages(r)[k]).filter(x=>x&&!x.running),run=L.map(r=>stages(r)[k]).filter(x=>x&&x.running);
+    const avg=done.length?done.reduce((a,x)=>a+x.days,0)/done.length:null,max=done.length?Math.max(...done.map(x=>x.days)):null;
+    return {k,label,desc,n:done.length,avg,max,running:run.length};});
+}
+function elapsed(r){if(!r.receiveDate)return null;const end=r.doneDate||r.returnDate||(ST[r.status]&&ST[r.status].open?todayISO():null);return end?daysBetween(r.receiveDate,end):null;}
+function isLate(r){return ST[r.status]&&ST[r.status].open&&r.receiveDate&&daysBetween(r.receiveDate,todayISO())>num(S().overdueDays);}
+function nextRegNo(fy){let mx=0;DB.repairs.forEach(r=>{if(fyOf(r.receiveDate)===fy){const n=parseInt(r.regNo);if(n>mx)mx=n;}});return (mx+1)+"/"+fy;}
+function lastNo(fy,k){let best=null,bn=-1;DB.repairs.forEach(r=>{if(r.id!==editing&&fyOf(r.receiveDate)===fy&&r[k]){const n=parseInt(r[k]);if(n>bn){bn=n;best=r[k];}}});return best;}
+function showLastNos(){const fy=fyOf($("[name=receiveDate]").value);const a=fy&&lastNo(fy,"regNo"),b=fy&&lastNo(fy,"techNo");$("#lastReg").textContent=a?`เลขล่าสุดปีงบ ${fy}: ${a}`:"";$("#lastTech").textContent=b?`เลขล่าสุดปีงบ ${fy}: ${b}`:"";}
+function refText(r){return [r.regNo?"พัสดุ "+r.regNo:"",r.techNo?"ช่าง "+r.techNo:""].filter(Boolean).join(" · ");}
+function unitText(r){return [r.unitSection,r.unitDept,r.unitWork].filter(Boolean).join(" ");}
+
+/* ===== ZIP / XLSX / DOCX (ทำงานออฟไลน์ ไม่ใช้ไลบรารีภายนอก) ===== */
+const CRCT=(()=>{const t=new Uint32Array(256);for(let n=0;n<256;n++){let c=n;for(let k=0;k<8;k++)c=c&1?0xEDB88320^(c>>>1):c>>>1;t[n]=c>>>0;}return t;})();
+function crc32(b){let c=0xFFFFFFFF;for(let i=0;i<b.length;i++)c=CRCT[(c^b[i])&255]^(c>>>8);return(c^0xFFFFFFFF)>>>0;}
+function zip(files){
+  const enc=new TextEncoder(),out=[],cen=[];let off=0;const d=new Date();
+  const tm=(d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()>>1),dt=((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  for(const f of files){
+    const nm=enc.encode(f.name),data=typeof f.data==="string"?enc.encode(f.data):f.data,crc=crc32(data);
+    const h=new DataView(new ArrayBuffer(30));
+    h.setUint32(0,0x04034b50,true);h.setUint16(4,20,true);h.setUint16(6,0x0800,true);h.setUint16(8,0,true);h.setUint16(10,tm,true);h.setUint16(12,dt,true);
+    h.setUint32(14,crc,true);h.setUint32(18,data.length,true);h.setUint32(22,data.length,true);h.setUint16(26,nm.length,true);h.setUint16(28,0,true);
+    out.push(new Uint8Array(h.buffer),nm,data);
+    const c=new DataView(new ArrayBuffer(46));
+    c.setUint32(0,0x02014b50,true);c.setUint16(4,20,true);c.setUint16(6,20,true);c.setUint16(8,0x0800,true);c.setUint16(10,0,true);c.setUint16(12,tm,true);c.setUint16(14,dt,true);
+    c.setUint32(16,crc,true);c.setUint32(20,data.length,true);c.setUint32(24,data.length,true);c.setUint16(28,nm.length,true);c.setUint32(42,off,true);
+    cen.push(new Uint8Array(c.buffer),nm);off+=30+nm.length+data.length;
+  }
+  const cs=cen.reduce((a,b)=>a+b.length,0),e=new DataView(new ArrayBuffer(22));
+  e.setUint32(0,0x06054b50,true);e.setUint16(8,files.length,true);e.setUint16(10,files.length,true);e.setUint32(12,cs,true);e.setUint32(16,off,true);
+  return new Blob([...out,...cen,new Uint8Array(e.buffer)]);
+}
+const xe=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g,"");
+function colL(i){let s="";i++;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26);}return s;}
+/* สไตล์: 0 ปกติ, 1 หัวตาราง, 2 ข้อความมีเส้น, 3 เงินมีเส้น, 4 หัวเรื่อง, 5 กลางมีเส้น, 6 เงินตัวหนา, 7 ข้อความตัวหนามีเส้น */
+function xlsx(sheets){
+  const FONT="TH SarabunIT๙";
+  const styles=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts>
+<fonts count="3"><font><sz val="14"/><name val="${FONT}"/></font><font><b/><sz val="14"/><name val="${FONT}"/></font><font><b/><sz val="16"/><name val="${FONT}"/></font></fonts>
+<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFE2EFDA"/><bgColor indexed="64"/></patternFill></fill></fills>
+<borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"/><right style="thin"/><top style="thin"/><bottom style="thin"/><diagonal/></border></borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="8">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyBorder="1" applyAlignment="1"><alignment vertical="top"/></xf>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="top" wrapText="1"/></xf>
+<xf numFmtId="164" fontId="1" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyFont="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf>
+</cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const files=[],wbS=[],rels=[],defs=[],ct=[];
+  sheets.forEach((sh,i)=>{
+    const rowsXml=sh.rows.map((row,ri)=>`<row r="${ri+1}">`+row.map((c,ci)=>{
+      if(c==null||c==="")return "";
+      const o=(typeof c==="object")?c:{v:c};const s=o.s??0,ref=colL(ci)+(ri+1);
+      if(o.v===""||o.v==null)return `<c r="${ref}" s="${s}"/>`;
+      if(typeof o.v==="number")return `<c r="${ref}" s="${s}"><v>${o.v}</v></c>`;
+      return `<c r="${ref}" s="${s}" t="inlineStr"><is><t xml:space="preserve">${xe(o.v)}</t></is></c>`;
+    }).join("")+`</row>`).join("");
+    const cols=sh.cols?`<cols>${sh.cols.map((w,ci)=>`<col min="${ci+1}" max="${ci+1}" width="${w}" customWidth="1"/>`).join("")}</cols>`:"";
+    const merges=sh.merges&&sh.merges.length?`<mergeCells count="${sh.merges.length}">${sh.merges.map(m=>`<mergeCell ref="${m}"/>`).join("")}</mergeCells>`:"";
+    const fr=sh.freeze?`<pane ySplit="${sh.freeze}" topLeftCell="A${sh.freeze+1}" activePane="bottomLeft" state="frozen"/>`:"";
+    files.push({name:`xl/worksheets/sheet${i+1}.xml`,data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr><sheetViews><sheetView workbookViewId="0"${i===0?' tabSelected="1"':''}>${fr}</sheetView></sheetViews><sheetFormatPr defaultRowHeight="21"/>${cols}<sheetData>${rowsXml}</sheetData>${merges}<printOptions horizontalCentered="1"/><pageMargins left="0.4" right="0.4" top="0.6" bottom="0.6" header="0.3" footer="0.3"/><pageSetup paperSize="9" orientation="${sh.landscape?"landscape":"portrait"}" fitToWidth="1" fitToHeight="0"/></worksheet>`});
+    wbS.push(`<sheet name="${xe(sh.name)}" sheetId="${i+1}" r:id="rId${i+1}"/>`);
+    rels.push(`<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`);
+    ct.push(`<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`);
+    if(sh.titleRows)defs.push(`<definedName name="_xlnm.Print_Titles" localSheetId="${i}">'${xe(sh.name).replace(/'/g,"''")}'!$1:$${sh.titleRows}</definedName>`);
+  });
+  files.push({name:"xl/workbook.xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><bookViews><workbookView/></bookViews><sheets>${wbS.join("")}</sheets>${defs.length?`<definedNames>${defs.join("")}</definedNames>`:""}</workbook>`});
+  files.push({name:"xl/_rels/workbook.xml.rels",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels.join("")}<Relationship Id="rIdS" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`});
+  files.push({name:"xl/styles.xml",data:styles});
+  files.push({name:"_rels/.rels",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`});
+  files.unshift({name:"[Content_Types].xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${ct.join("")}</Types>`});
+  return zip(files);
+}
+
+/* ===== ส่งออกทะเบียน Excel ตามแบบทะเบียนคุมเดิม ===== */
+const H_MAIN=["ลำดับ","เลขที่ใบซ่อม","ว/ด/ป รับ","หน่วยงาน","โทร","วันที่หน่วยงาน","ผู้ส่งซ่อม","รายการ/ชื่อเครื่อง/ครุภัณฑ์/ID/SN","อาการ/สาเหตุ","การแก้ไข/การดำเนินการ","วันที่เสร็จ","ผู้รับคืน","วันรับคืน","รายการอะไหล่/จ้างเอกชน","จำนวน","ราคา/หน่วย","ราคารวม","บริษัท/ร้านค้า","ใบเสนอราคา","ใบ PO","เลขบิล"];
+const W_MAIN=[4.75,10.125,8.375,15.25,5.375,11.375,11.75,32.375,25.375,21.25,8.125,9.25,8.375,24.625,5.625,9.625,8.25,14.875,10.25,8.875,13];
+const H_P1=["ลำดับ","เลขที่ใบซ่อม","ว/ด/ป รับ","หน่วยงาน","โทร","วันที่หน่วยงาน","ผู้ส่งซ่อม","ผู้ซ่อม","รายการ/ชื่อเครื่อง/ครุภัณฑ์/ID/SN","อาการ/สาเหตุ"];
+const W_P1=[4.75,10.125,8.375,15.25,5.375,11.375,11.75,13,32.375,25.375];
+const H_P2=["การแก้ไข/การดำเนินการ","วันที่เสร็จ","ผู้รับคืน","วันรับคืน","รายการอะไหล่/จ้างเอกชน","จำนวน","ราคา/หน่วย","ราคารวม","บริษัท/ร้านค้า","ใบเสนอราคา","ใบ PO","เลขบิล"];
+const W_P2=[21.25,8.125,9.25,8.375,24.625,5.625,9.625,8.25,14.875,10.25,8.875,13];
+/* สถานที่: อาคาร / ชั้น / ห้อง-บริเวณ  → ข้อความรวม (ใช้ในทะเบียน ใบส่งซ่อม รายงาน) */
+const FLOORS={"อาคาร 1":3,"อาคาร 2":5,"อาคาร 3":3,"อาคาร 4":10,"บ้านพักผู้อำนวยการ":1};
+const TH_DIG=s=>String(s||"").replace(/[๐-๙]/g,d=>"๐๑๒๓๔๕๖๗๘๙".indexOf(d));
+function cleanFloor(f){return String(f||"").trim().replace(/^ชั้น(ที่)?\s*/,"");}
+function locText(o){const f=cleanFloor(o.floor);return [(o.building||"").trim(),f?"ชั้น "+f:"",(o.room||"").trim()].filter(Boolean).join(" ");}
+function parseLoc(t){
+  let s=" "+String(t||"")+" ",b="",f="";
+  const mb=s.match(/(อาคาร|ตึก)\s*([0-9๐-๙]+)/);if(mb){b="อาคาร "+TH_DIG(mb[2]);s=s.replace(mb[0]," ");}
+  else if(s.includes("บ้านพักผู้อำนวยการ")){b="บ้านพักผู้อำนวยการ";s=s.replace("บ้านพักผู้อำนวยการ"," ");}
+  const mf=s.match(/ชั้น(ที่)?\s*([0-9๐-๙]+(?:\s*[,\-–]\s*[0-9๐-๙]+)*)/);if(mf){f=TH_DIG(mf[2]).replace(/\s+/g,"");s=s.replace(mf[0]," ");}
+  return {building:b,floor:f,room:s.replace(/\s+/g," ").trim()};
+}
+function floorOptions(){const n=FLOORS[$("[name=building]").value.trim()]||10;$("#dlFloors").innerHTML=Array.from({length:n},(_,i)=>`<option value="${i+1}">`).join("");}
+/* ===== ทะเบียนครุภัณฑ์ (เก็บในตาราง repair_ref ของฐานข้อมูล โหลดหลังเข้าสู่ระบบ) ===== */
+let _AS=null,_ASIX=null,_ASMAP=null;
+function AS(){if(!_AS)_AS={cats:[],rows:[],source:"-"};return _AS;}
+function setAssets(a){_AS=a&&Array.isArray(a.rows)?a:{cats:[],rows:[],source:"-"};asReset();}
+// แถว: [0 เลข,1 ชื่อ,2 ยี่ห้อ,3 รุ่น,4 ที่ตั้ง,5 ราคา,6 วันที่ได้มา,7 ประเภท,8 หมายเหตุ,9 แทงชำรุด,10 ชื่อเต็ม]
+const normCode=c=>String(c||"").toLowerCase().replace(/^\d+\s+/,"").replace(/วพ(บ)?\.?สร\.?/g,"").replace(/[\s]/g,"");
+const glueLoc=t=>String(t||"").replace(/(อาคาร|ตึก|ชั้น)\s*([0-9๐-๙]+)/g,(m,a,b)=>(a==="ตึก"?"อาคาร":a)+TH_DIG(b)+"|");
+let _ASR=null,_ASLOC=null;
+function isoToBE(d){const p=pd(d);return p?`${p.d}/${p.m}/${p.y+543}`:"";}
+function beToIso(d){if(!d)return "";const[a,b,c]=String(d).split("/").map(Number);if(!a||!b||!c)return "";return `${c-543}-${String(b).padStart(2,"0")}-${String(a).padStart(2,"0")}`;}
+function customRow(c){return [c.code,c.name,c.brand||"",c.model||"",locText(c),c.price===""||c.price==null?"":c.price,isoToBE(c.acqDate),c.cat||"",c.note||"",c.disposed?1:0,"","custom",c.id,c.serial||""];}
+function ASR(){if(!_ASR)_ASR=AS().rows.concat((DB.customAssets||[]).map(customRow));return _ASR;}
+function asReset(){_ASR=_ASIX=_ASMAP=_ASLOC=null;}
+function catName(r){return typeof r[7]==="number"?(AS().cats[r[7]]||""):(r[7]||"");}
+const isCustom=r=>r[11]==="custom";
+function asIndex(){if(!_ASIX){_ASIX=ASR().map(r=>(r[0]+" "+normCode(r[0])+" "+(r[10]||r[1])+" "+r[2]+" "+r[3]+" "+r[4]+" "+glueLoc(r[4])).toLowerCase());}return _ASIX;}
+function asFind(code){if(!_ASMAP){_ASMAP=new Map();ASR().forEach(r=>{const k=String(r[0]).trim();if(!_ASMAP.has(k))_ASMAP.set(k,[]);_ASMAP.get(k).push(r);});}return _ASMAP.get(String(code||"").trim())||[];}
+function asMatch(terms,cap){const ix=asIndex(),out=[];for(let i=0;i<ix.length&&(!cap||out.length<cap);i++){if(terms.every(([t,n])=>ix[i].includes(t)||(n&&ix[i].includes(n))))out.push(i);}return out;}
+const asTerms=q=>glueLoc(q).toLowerCase().split(/\s+/).filter(Boolean).map(t=>[t,t.endsWith("|")?"":normCode(t)]);
+function asSearch(q,lim=40){
+  const terms=glueLoc(q).toLowerCase().split(/\s+/).filter(Boolean).map(t=>[t,t.endsWith("|")?"":normCode(t)]);if(!terms.length)return {hits:[],total:0};
+  const ix=asIndex(),rows=ASR(),out=asMatch(terms,400);
+  const qn=normCode(q);out.sort((a,b)=>(normCode(rows[b][0]).startsWith(qn)?1:0)-(normCode(rows[a][0]).startsWith(qn)?1:0));
+  return {hits:out.slice(0,lim).map(i=>rows[i]),total:out.length};
+}
+const ymd=d=>{if(!d)return "";const[a,b,c]=d.split("/");return `${a} ${TMS[b-1]} ${String(c).slice(-2)}`;};
+function asCostInfo(code,excludeId){
+  const L=DB.repairs.filter(r=>r.id!==excludeId&&r.status!=="cancelled"&&(r.assetNo||"").trim()===String(code).trim());
+  return {n:L.length,cost:L.reduce((a,r)=>a+repairCost(r),0)};
+}
+function showAssetInfo(){
+  const box=$("#assetInfo"),code=$("[name=assetNo]").value.trim();
+  if(!code||$("[name=itemType]").value==="nonasset"){box.style.display="none";return;}
+  const M=asFind(code),h=asCostInfo(code,editing);
+  let html="";
+  if(M.length){const r=M[0],price=num(r[5]);
+    html+=`<b>ตามทะเบียนครุภัณฑ์:</b> ${esc(r[10]||r[1])} · ${esc(catName(r))}${price?` · ราคา ${money(price)} บาท`:""}${r[6]?` · ได้มา ${ymd(r[6])}`:""}${r[4]?` · ที่ตั้ง ${esc(r[4])}`:""}`;
+    if(M.length>1)html+=` <span class="mute">(เลขนี้มีในทะเบียน ${M.length} รายการ)</span>`;
+    if(r[9])html+=`<br><span class="dispflag">⚠ ทะเบียนครุภัณฑ์บันทึกว่าแทงชำรุดแล้ว</span>`;
+    if(r[8])html+=`<br><span class="mute">หมายเหตุในทะเบียน: ${esc(r[8])}</span>`;
+    const tot=h.cost;html+=`<br>ประวัติซ่อมในระบบนี้ (ไม่รวมเรื่องนี้): ${h.n} ครั้ง รวม ${money(tot)} บาท${price&&tot?` = <b class="${tot/price*100>=num(S().costPct)?"late":""}">${(tot/price*100).toFixed(0)}% ของราคา</b>`:""}`;
+  }else{html=`<span class="mute">ไม่พบเลขนี้ในทะเบียนครุภัณฑ์ (${esc(AS().source)}) · ตรวจเลขอีกครั้ง หรือเป็นครุภัณฑ์ที่ยังไม่ได้ลงทะเบียน</span>${h.n?`<br>ประวัติซ่อมในระบบนี้: ${h.n} ครั้ง รวม ${money(h.cost)} บาท`:""}`;}
+  box.innerHTML=`<div class="hint" style="background:#f3f7f4;border-color:#cfe0d5">${html}</div>`;box.style.display="";
+}
+let sugIdx=-1,sugRows=[];
+function renderSug(){
+  const q=$("[name=assetNo]").value.trim(),box=$("#assetSug");
+  if(q.length<2){box.style.display="none";sugRows=[];return;}
+  const {hits,total}=asSearch(q);sugRows=hits;sugIdx=-1;
+  if(!hits.length){box.innerHTML=`<div class="hd">ไม่พบในทะเบียนครุภัณฑ์ — พิมพ์เลขเองได้</div>`;box.style.display="block";return;}
+  box.innerHTML=`<div class="hd">พบ ${total>=400?"มากกว่า 400":total} รายการ${total>hits.length?` · แสดง ${hits.length} รายการแรก พิมพ์เพิ่มเพื่อกรอง`:""} · ↑↓ เลือก Enter ยืนยัน</div>`+hits.map((r,i)=>`<div class="it" data-i="${i}"><span class="cd">${esc(r[0])}</span> · ${esc(r[10]||r[1])}${r[9]?` <span class="dispflag">แทงชำรุดแล้ว</span>`:""}<div class="sm2">${esc(catName(r))}${r[4]?" · "+esc(r[4]):""}${num(r[5])?" · "+money(r[5])+" บาท":""}${r[6]?" · ได้มา "+ymd(r[6]):""}</div></div>`).join("");
+  box.style.display="block";
+}
+function pickAsset(r){
+  $("#assetSug").style.display="none";
+  $("[name=assetNo]").value=r[0];$("[name=itemType]").value="asset";
+  const set=(k,v)=>{const i=$(`[name=${k}]`);if(v&&!i.value)i.value=v;};
+  set("itemName",r[1]);set("brand",r[2]);set("model",r[3]);if(r[13])set("serial",r[13]);
+  if(!$("[name=building]").value&&!$("[name=floor]").value&&!$("[name=room]").value&&r[4]){const L=parseLoc(r[4]);set("building",L.building);set("floor",L.floor);set("room",L.room);}
+  floorOptions();typeUi();showAssetInfo();
+  if(r[9])toast("ครุภัณฑ์นี้ทะเบียนบันทึกว่าแทงชำรุดแล้ว โปรดตรวจสอบ");
+}
+function brandModel(r){return [r.brand?"ยี่ห้อ "+r.brand:"",r.model?"รุ่น "+r.model:""].filter(Boolean).join(" ");}
+function itemText(r){return [r.itemName,brandModel(r),isAsset(r)&&r.assetNo?("หมายเลข "+r.assetNo):"",r.serial?("S/N "+r.serial):"",r.location?("("+r.location+")"):""].filter(Boolean).join(" ");}
+function registerRows(list){
+  const main=[H_MAIN.map(h=>({v:h,s:1}))],p1=[H_P1.map(h=>({v:h,s:1}))],p2=[H_P2.map(h=>({v:h,s:1}))];
+  list.forEach((r,i)=>{
+    const parts=(r.parts&&r.parts.length)?r.parts:[null];
+    parts.forEach((p,k)=>{
+      const first=k===0,T=s=>first?{v:s,s:2}:{v:"",s:2},C=s=>first?{v:s,s:5}:{v:"",s:5};
+      const fixTxt=first?[r.techVerdict?techText(r)+":":"",r.fix,r.status&&!ST[r.status].open?"":("("+ST[r.status].t+")")].filter(Boolean).join(" "):"";
+      const pc=p?[{v:p.name||"",s:2},p.qty!==""&&p.qty!=null?{v:num(p.qty),s:5}:{v:"",s:5},p.price!==""&&p.price!=null?{v:num(p.price),s:3}:{v:"",s:3},{v:partTotal(p),s:3},{v:p.vendor||"",s:2},{v:p.quoteNo||"",s:2},{v:p.poNo||"",s:2},{v:p.billNo||"",s:2}]
+                 :[{v:"",s:2},{v:"",s:5},{v:"",s:3},{v:"",s:3},{v:"",s:2},{v:"",s:2},{v:"",s:2},{v:"",s:2}];
+      const a=[first?{v:i+1,s:5}:{v:"",s:5},C(r.regNo||r.techNo||""),C(thShort(r.receiveDate)),T(unitText(r)),C(r.tel||""),C(thShort(r.memoDate)),T(r.senderName||"")];
+      const b=[T(itemText(r)),T(r.symptom||"")];
+      const c=[{v:fixTxt,s:2},C(thShort(r.doneDate)),T(r.retName||""),C(thShort(r.returnDate))];
+      main.push([...a,...b,...c,...pc]);
+      p1.push([...a,T(r.techName||""),...b]);
+      p2.push([...c,...pc]);
+    });
+  });
+  return {main,p1,p2};
+}
+function summarySheet(fy,list){
+  list=list||DB.repairs.filter(r=>fyOf(r.receiveDate)===fy);const R=[];
+  R.push([{v:`สรุปผลการแจ้งซ่อม ปีงบประมาณ พ.ศ. ${fy}`,s:4}]);
+  R.push([{v:"วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์ (ข้อมูล ณ วันที่ "+thLong(todayISO())+")",s:0}]);
+  R.push([]);
+  R.push(["เดือน","จำนวนเรื่อง","ส่งคืนแล้ว","ค้างดำเนินการ","ค่าใช้จ่าย (บาท)"].map(v=>({v,s:1})));
+  let tot=[0,0,0,0];
+  monthsOfFy(fy).forEach(([y,m,label])=>{
+    const L=list.filter(r=>{const p=pd(r.receiveDate);return p.y===y&&p.m===m;});
+    const done=L.filter(r=>r.status==="returned").length,open=L.filter(r=>ST[r.status].open).length,cost=L.reduce((a,r)=>a+repairCost(r),0);
+    tot=[tot[0]+L.length,tot[1]+done,tot[2]+open,tot[3]+cost];
+    R.push([{v:label,s:2},{v:L.length,s:5},{v:done,s:5},{v:open,s:5},{v:cost,s:3}]);
+  });
+  R.push([{v:"รวม",s:7},{v:tot[0],s:5},{v:tot[1],s:5},{v:tot[2],s:5},{v:tot[3],s:6}]);
+  R.push([]);
+  const SR=stockRows(list);
+  if(SR.length){R.push(["วัสดุที่เบิกจากคลังพัสดุ","จำนวน","หน่วย","มูลค่า (บาท)","ใช้ในงานซ่อม (เรื่อง)"].map(v=>({v,s:1})));
+    SR.forEach(([k,o])=>R.push([{v:(o.code?o.code+" ":"")+k,s:2},{v:o.qty,s:5},{v:o.unit,s:5},{v:o.val,s:3},{v:o.rep.size,s:5}]));
+    R.push([{v:"รวม",s:7},{v:"",s:5},{v:"",s:5},{v:SR.reduce((a,x)=>a+x[1].val,0),s:6},{v:"",s:5}]);R.push([]);}
+  R.push(["ระยะเวลาแต่ละขั้น","จำนวนเรื่องที่จบขั้นแล้ว","เฉลี่ย (วัน)","นานสุด (วัน)","ยังอยู่ในขั้นนี้"].map(v=>({v,s:1})));
+  stageStats(list).forEach(x=>R.push([{v:x.label+" ("+x.desc+")",s:x.k==="total"?7:2},{v:x.n,s:5},x.avg!=null?{v:Math.round(x.avg*10)/10,s:5}:{v:"–",s:5},x.max!=null?{v:x.max,s:5}:{v:"–",s:5},{v:x.running,s:5}]));
+  R.push([]);
+  R.push(["สถานะ","จำนวนเรื่อง"].map(v=>({v,s:1})));
+  Object.keys(ST).forEach(k=>{const n=list.filter(r=>r.status===k).length;if(n)R.push([{v:ST[k].t,s:2},{v:n,s:5}]);});
+  return {name:"สรุป",rows:R,cols:[30,14,14,14,18],landscape:false};
+}
+function durationSheet(list){
+  const H=["ลำดับ","เลขรับงานพัสดุ","เลขรับงานช่าง","รายการ/หมายเลขครุภัณฑ์","หน่วยงาน","วันที่ผู้ส่งซ่อม","วันที่งานช่างรับ","วันที่งานพัสดุรับ","วันที่ซ่อมเสร็จ","วันที่รับคืน","ผู้ส่งซ่อม (วัน)","งานช่าง (วัน)","งานพัสดุ (วัน)","รอรับคืน (วัน)","รวม (วัน)","สถานะ","หมายเหตุ"];
+  const rows=[H.map(v=>({v,s:1}))];
+  list.forEach((r,i)=>{const g=stages(r),n=x=>x?{v:x.days,s:5}:{v:"",s:5};
+    const run=["sender","tech","supply","ret"].filter(k=>g[k]&&g[k].running).length||(g.total&&g.total.running);
+    rows.push([{v:i+1,s:5},{v:r.regNo||"",s:5},{v:r.techNo||"",s:5},{v:itemText(r),s:2},{v:unitText(r),s:2},{v:thShort(r.memoDate),s:5},{v:thShort(r.techDate),s:5},{v:thShort(r.receiveDate),s:5},{v:thShort(r.doneDate),s:5},{v:thShort(r.returnDate),s:5},n(g.sender),n(g.tech),n(g.supply),n(g.ret),n(g.total),{v:ST[r.status].t,s:2},{v:[run?"ยังไม่จบ นับถึง "+thShort(todayISO()):"",g.sender&&g.sender.combined?"ไม่มีวันที่ช่าง ช่วงผู้ส่งซ่อมนับถึงวันที่พัสดุรับ":""].filter(Boolean).join(" · "),s:2}]);});
+  return {name:"ระยะเวลาซ่อม",rows,cols:[5,10,10,30,24,9,9,9,9,9,8,8,8,8,8,14,26],landscape:true,titleRows:1,freeze:1};
+}
+function exportRegister(list,fy,withSummary,dims){
+  list=[...list].sort(regSort);
+  const {main,p1,p2}=registerRows(list);
+  const sheets=[
+    {name:"วพบ.สุรินทร์",rows:main,cols:W_MAIN,landscape:true,titleRows:1,freeze:1},
+    {name:"หน้า 1",rows:p1,cols:W_P1,landscape:true,titleRows:1,freeze:1},
+    {name:"หน้า 2",rows:p2,cols:W_P2,landscape:true,titleRows:1,freeze:1}
+  ];
+  sheets.push(durationSheet(list));
+  if(withSummary&&fy)sheets.push(summarySheet(fy,dims?list:null));
+  if(dims)sheets.push(...dimSheets(list));
+  download(`ทะเบียนคุมการแจ้งซ่อม_ปีงบ${fy||"ทั้งหมด"}.xlsx`,new Blob([xlsx(sheets)],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  toast("ส่งออก Excel แล้ว");
+}
+function monthsOfFy(fy){const y=fy-543,out=[];for(let i=0;i<12;i++){const m=((9+i)%12)+1,yy=m>=10?y-1:y;out.push([yy,m,TM[m-1]+" "+(yy+543)]);}return out;}
+function groupBy(list,fn){const m=new Map();list.forEach(r=>{const k=fn(r);if(!m.has(k))m.set(k,[]);m.get(k).push(r);});return [...m.entries()].sort((a,b)=>b[1].length-a[1].length);}
+
+/* ===== ใบส่งซ่อม (Word) คงรูปแบบฟอร์มเดิม ===== */
+function docxRepairForm(r){
+  const F="TH SarabunIT๙",SZ=30; // 15pt
+  const run=(t,o={})=>`<w:r><w:rPr>${o.b?"<w:b/>":""}${o.u?`<w:u w:val="dotted"/>`:""}${o.sz?`<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>`:""}</w:rPr><w:t xml:space="preserve">${xe(t)}</w:t></w:r>`;
+  const tab=`<w:r><w:tab/></w:r>`;
+  const val=(t,dots=20)=>t?run(" "+t+" ",{u:1}):run(".".repeat(dots));
+  const P=(runs,o={})=>`<w:p><w:pPr>${o.border?`<w:pBdr><w:top w:val="single" w:sz="8" w:space="4" w:color="000000"/></w:pBdr>`:""}${o.leader!==false?`<w:tabs><w:tab w:val="right" w:leader="dot" w:pos="9638"/></w:tabs>`:""}<w:spacing w:before="${o.before||0}" w:after="0" w:line="240" w:lineRule="auto"/>${o.ind?`<w:ind w:left="${o.ind}"/>`:""}${o.jc?`<w:jc w:val="${o.jc}"/>`:""}</w:pPr>${runs}</w:p>`;
+  const fill=runs=>runs+tab;               // ต่อเส้นจุดถึงขอบขวา
+  const dotLine=()=>P(tab);
+  const sign=(name,pos,suffix,opts={})=>
+    P(run("(ลงชื่อ)")+run(".".repeat(55))+(suffix?run(suffix):""),{ind:2268,before:opts.before??120,leader:false})+
+    P(run("(")+(name?run(name):run(".".repeat(50)))+run(")")+(opts.posInline?run(" "+opts.posInline):""),{ind:3061,leader:false})+
+    (pos!==undefined?P(run("ตำแหน่ง ")+(pos?run(pos):run(".".repeat(45))),{ind:opts.posInd??0,leader:false}):"");
+  const sg=S().signers,qty=[r.qty,r.qtyUnit].filter(v=>v!==""&&v!=null).join(" ");
+  const asset=r.itemType==="nonasset"?"- (ไม่ใช่ครุภัณฑ์)":[r.assetNo,r.serial?("S/N "+r.serial):""].filter(Boolean).join(" ");
+  const regParts=(r.regNo||"").split("/"),techParts=(r.techNo||"").split("/");
+  const numCell=(label,no)=>`<w:tc><w:tcPr><w:tcW w:w="1900" w:type="dxa"/></w:tcPr>${P(run(label,{b:1,sz:28}),{jc:"center",leader:false})}${P(run("รับเลขที่",{b:1,sz:28}),{jc:"center",leader:false})}${P(no?run(no,{sz:28}):run("................/................",{sz:28}),{jc:"center",leader:false})}</w:tc>`;
+  const head=`<w:tbl><w:tblPr><w:tblW w:w="9638" w:type="dxa"/><w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="5838"/><w:gridCol w:w="1900"/><w:gridCol w:w="1900"/></w:tblGrid><w:tr><w:tc><w:tcPr><w:tcW w:w="5838" w:type="dxa"/><w:vAlign w:val="bottom"/></w:tcPr>${P(run("ใบส่งซ่อม",{b:1,sz:36}),{jc:"right",leader:false})}</w:tc>${numCell("งานช่าง",r.techNo)}${numCell("งานพัสดุ",r.regNo)}</w:tr></w:tbl>`;
+  const body=[
+    head,
+    P(fill(run("1. ด้วยงาน")+val(r.unitWork,40)+run("ฝ่าย")+val([r.unitSection,r.unitDept].filter(Boolean).join(" "),40)+run("มีความประสงค์จะส่งซ่อม")+val([r.itemName,brandModel(r)].filter(Boolean).join(" "),35)+run("ครุภัณฑ์หมายเลข")+val(asset,35)+run("สถานที่")+val(r.location,30)+run("จำนวน")+val(qty,15)+run("สาเหตุที่ส่งซ่อม")+val(r.symptom,40)),{before:160}),
+    sign(r.senderName,r.senderPos,"ผู้ส่งซ่อม"),
+    P(fill(run("2. ความเห็นของช่าง")+val([r.techVerdict?techText(r):"",r.techOpinion].filter(Boolean).join(" "),60)),{border:1,before:80}),
+    dotLine(),dotLine(),
+    sign(r.techName,r.techPos,""),
+    P(fill(run("3. ความเห็นของเจ้าหน้าที่พัสดุ")+val(r.supplyOpinion,60)),{border:1,before:80}),
+    dotLine(),dotLine(),
+    P(fill(run("4. ความเห็นของ"+(sg.head.title||"หัวหน้าเจ้าหน้าที่พัสดุ"))),{border:1,before:120}),
+    dotLine(),dotLine(),
+    sign(sg.head.name,undefined,"",{posInline:"ตำแหน่ง "+sg.head.pos}),
+    P(fill(run("5. ความเห็นของ"+(sg.deputy.title||"รองผู้อำนวยการ"))),{border:1,before:80}),
+    dotLine(),
+    sign(sg.deputy.name,undefined,"",{posInline:"ตำแหน่ง "+sg.deputy.pos}),
+    P(run("วันที่ ")+run(".".repeat(50)),{ind:3061,leader:false}),
+    P(run("คำสั่ง",{b:1})+tab+tab+run("☐  อนุมัติ")+tab+tab+run("☐  ไม่อนุมัติ"),{border:1,before:80,leader:false}),
+    P(run("(ลงชื่อ)")+run(".".repeat(55)),{ind:2268,before:120,leader:false}),
+    P(run("("+sg.director.name+")"),{ind:3061,leader:false}),
+    P(run("ตำแหน่ง   "+sg.director.pos),{ind:1134,leader:false}),
+    P(run("วันที่ ")+run(".".repeat(50)),{ind:3061,leader:false}),
+    P(run("เจ้าหน้าที่ได้มาดำเนินการซ่อมให้เรียบร้อยแล้ว"),{border:1,before:80,ind:1134,leader:false}),
+    P(run("(ลงชื่อ)")+run(".".repeat(55)),{ind:2268,before:120,leader:false}),
+    P(run("(")+(r.inspName?run(r.inspName):run(".".repeat(50)))+run(") ผู้ตรวจรับงานซ่อม"),{ind:3061,leader:false})
+  ].join("");
+  const doc=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="851" w:right="1134" w:bottom="567" w:left="1134" w:header="425" w:footer="425" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+  const sty=`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="${F}" w:hAnsi="${F}" w:eastAsia="${F}" w:cs="${F}"/><w:sz w:val="${SZ}"/><w:szCs w:val="${SZ}"/><w:lang w:val="th-TH" w:bidi="th-TH"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="240" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/></w:style></w:styles>`;
+  const files=[
+    {name:"[Content_Types].xml",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`},
+    {name:"_rels/.rels",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`},
+    {name:"word/_rels/document.xml.rels",data:`<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`},
+    {name:"word/document.xml",data:doc},{name:"word/styles.xml",data:sty}
+  ];
+  download(`ใบส่งซ่อม_${(r.regNo||r.techNo||"ใหม่").replace(/\//g,"-")}.docx`,new Blob([zip(files)],{type:"application/vnd.openxmlformats-officedocument.wordprocessingml.document"}));
+  toast("สร้างใบส่งซ่อม (Word) แล้ว");
+}
+
+/* ===== หน้าทะเบียน ===== */
+let fStatus="";
+function fyList(){const s=new Set(DB.repairs.map(r=>fyOf(r.receiveDate)).filter(Boolean));s.add(fyOf(todayISO()));return [...s].sort((a,b)=>b-a);}
+function fillFySelect(sel,withAll){const cur=sel.value;sel.innerHTML=(withAll?`<option value="">ทุกปี</option>`:"")+fyList().map(y=>`<option value="${y}">${y}</option>`).join("");sel.value=cur&&[...sel.options].some(o=>o.value===cur)?cur:String(fyOf(todayISO()));}
+function filtered(ignoreStatus){
+  const fy=$("#fFy").value,u=$("#fUnit").value,q=$("#fQ").value.trim().toLowerCase(),late=$("#fLate").checked;
+  return DB.repairs.filter(r=>(q||!fy||String(fyOf(r.receiveDate))===fy)&&(!u||r.unitWork===u)&&(ignoreStatus||!fStatus||r.status===fStatus)&&(!late||isLate(r))&&
+    (!q||[r.regNo,r.techNo,r.itemName,r.assetNo,r.serial,r.brand,r.model,r.senderName,r.techName,r.unitWork,r.unitDept,r.unitSection,r.location,r.symptom,...(r.parts||[]).map(p=>p.vendor+" "+p.name)].join(" ").toLowerCase().includes(q)));
+}
+function renderReg(){
+  fillFySelect($("#fFy"),true);
+  const units=[...new Set([...S().units,...DB.repairs.map(r=>r.unitWork).filter(Boolean)])];
+  const cu=$("#fUnit").value;$("#fUnit").innerHTML=`<option value="">ทั้งหมด</option>`+units.map(u=>`<option>${esc(u)}</option>`).join("");$("#fUnit").value=cu;
+  const base=filtered(true);
+  $("#stChips").innerHTML=`<span class="chip ${fStatus?"":"on"}" data-st="">ทั้งหมด<b>${base.length}</b></span>`+Object.entries(ST).map(([k,v])=>`<span class="chip ${fStatus===k?"on":""}" data-st="${k}"><span class="badge" style="background:${v.c}">${v.t}</span><b>${base.filter(r=>r.status===k).length}</b></span>`).join("")+
+    `<span class="chip" style="cursor:default;border-color:#efb4b4">ค้างเกิน ${esc(S().overdueDays)} วัน<b class="late">${base.filter(isLate).length}</b></span>`;
+  const list=filtered().sort((a,b)=>regSort(b,a));
+  $("#regTable").innerHTML=`<thead><tr><th>เลขพัสดุ</th><th>เลขช่าง</th><th>วันที่รับ</th><th>งาน / หน่วยงาน</th><th>ผู้ส่งซ่อม</th><th>รายการ / หมายเลขครุภัณฑ์</th><th>อาการ</th><th>ผู้ซ่อม</th><th>สถานะ</th><th class="num">ค่าใช้จ่าย</th><th class="num" title="ส่ง = ผู้ส่งซ่อม, ช่าง = งานช่าง, พัสดุ = งานพัสดุ, คืน = รอรับคืน · + = ยังไม่จบขั้น นับถึงวันนี้">ระยะเวลา (วัน)</th><th class="noprint"></th></tr></thead><tbody>`+
+    (list.length?list.map(r=>{const e=elapsed(r),late=isLate(r),c=repairCost(r);return `<tr class="click" data-id="${r.id}"><td>${esc(r.regNo||"")}</td><td>${esc(r.techNo||"")}</td><td style="white-space:nowrap">${r.memoDate?`<div class="mute">ส่ง ${thShort(r.memoDate)}</div>`:""}${r.techDate?`<div class="mute">ช่าง ${thShort(r.techDate)}</div>`:""}<div>พัสดุ ${thShort(r.receiveDate)}</div></td><td>${esc(unitText(r))}</td><td>${esc(r.senderName)}</td><td>${esc(r.itemName)}${brandModel(r)?`<div class="mute">${esc(brandModel(r))}</div>`:""}${isAsset(r)?`<div class="mute">ครุภัณฑ์${r.assetNo?" "+esc(r.assetNo):" (ไม่มีหมายเลข)"}</div>`:`<div class="mute">ไม่ใช่ครุภัณฑ์</div>`}</td><td>${esc((r.symptom||"").slice(0,80))}</td><td>${esc(r.techName||"")}</td><td><span class="badge" style="background:${ST[r.status].c}">${ST[r.status].t}</span>${r.techVerdict?`<div class="mute">${esc(techText(r))}</div>`:""}</td><td class="num">${c?money(c):""}</td><td class="num ${late?"late":""}" style="white-space:nowrap">${(()=>{const g=stages(r);return g.total?`<b>${segTxt(g.total)}</b><div class="mute">${stageLine(r)}</div>`:"";})()}</td><td class="noprint" style="white-space:nowrap"><button class="sm pri" data-quick="${r.id}" title="เปลี่ยนสถานะ ลงวันที่ และบันทึกการติดตาม">อัปเดตสถานะ</button> <button class="sm" data-open="${r.id}">เปิดใบซ่อม</button><br><button class="sm" data-doc="${r.id}" title="ใบส่งซ่อม Word" style="margin-top:4px">Word</button> <button class="sm" data-json="${r.id}" title="ไฟล์ข้อมูลงาน">JSON</button></td></tr>`;}).join(""):`<tr><td colspan="12" class="mute" style="text-align:center;padding:24px">ยังไม่มีรายการ กด "+ รับเรื่องแจ้งซ่อมใหม่" เพื่อเริ่มบันทึก</td></tr>`)+`</tbody>`;
+  $("#regCount").textContent=($("#fQ").value.trim()?`ค้นหาจากทุกปีงบประมาณ (กด Enter เพื่อเปิดใบซ่อมเมื่อพบรายการเดียว) · `:"")+`แสดง ${list.length} รายการ · ค่าใช้จ่ายรวม ${money(list.reduce((a,r)=>a+repairCost(r),0))} บาท · ระยะเวลา: ส่ง = อยู่กับผู้ส่งซ่อม, ช่าง = อยู่กับงานช่าง, พัสดุ = งานพัสดุรับถึงซ่อมเสร็จ, คืน = รอรับคืน · เครื่องหมาย + คือยังไม่จบขั้น นับถึงวันนี้`;
+}
+
+/* ===== ฟอร์มบันทึก ===== */
+let editing=null;
+function partRow(p={}){
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td><select data-k="kind"><option value="part">ซื้อวัสดุ</option><option value="stock">เบิกคลัง</option><option value="hire">จ้าง</option></select></td><td><input data-k="name"></td><td><input data-k="qty" type="number" step="any" min="0"></td><td><input data-k="unit" list="dlUoms"></td><td><input data-k="price" type="number" step="any" min="0"></td><td class="num" data-tot></td><td style="text-align:center"><input type="checkbox" data-k="vatExempt" style="width:auto"></td><td><input data-k="vendor" list="dlVendors"></td><td><input data-k="quoteNo"></td><td><input data-k="poNo"></td><td><input data-k="billNo"><input type="hidden" data-k="stockCode"></td><td><button type="button" class="sm danger" data-delpart title="ลบ">✕</button></td>`;
+  $$("[data-k]",tr).forEach(i=>{const k=i.dataset.k;if(i.type==="checkbox")i.checked=!!p[k];else i.value=p[k]??(k==="kind"?defaultKind():"");});
+  $("#partsBody").appendChild(tr);kindUi(tr);calcParts();
+}
+function stockFind(name){name=(name||"").trim();return S().stock.find(x=>x.name===name||(x.code&&(x.code+" "+x.name)===name));}
+function kindUi(tr){
+  const st=$("[data-k=kind]",tr).value==="stock",nm=$("[data-k=name]",tr);
+  nm.setAttribute("list",st?"dlStock":"");nm.placeholder=st?"พิมพ์ชื่อหรือรหัสวัสดุในคลัง":"";
+  $("[data-k=billNo]",tr).placeholder=st?"ใบเบิกเลขที่":"";
+  ["quoteNo","poNo"].forEach(k=>{$(`[data-k=${k}]`,tr).disabled=st;});
+}
+function stockPick(tr){
+  const nm=$("[data-k=name]",tr),it=$("[data-k=kind]",tr).value==="stock"&&stockFind(nm.value);
+  if(!it){$("[data-k=stockCode]",tr).value="";return;}
+  nm.value=it.name;$("[data-k=stockCode]",tr).value=it.code||"";
+  $("[data-k=unit]",tr).value=it.unit||"";$("[data-k=price]",tr).value=it.price??"";
+  const v=$("[data-k=vendor]",tr);if(!v.value)v.value="คลังพัสดุ";
+  if(!$("[data-k=qty]",tr).value)$("[data-k=qty]",tr).value=1;
+}
+function defaultKind(){const c=$("[name=techCase]").value;return c==="hire"?"hire":c==="stock"?"stock":"part";}
+function readParts(){return $$("#partsBody tr").map(tr=>{const o={};$$("[data-k]",tr).forEach(i=>o[i.dataset.k]=i.type==="checkbox"?i.checked:(i.type==="number"?(i.value===""?"":num(i.value)):i.value.trim()));return o;}).filter(p=>p.name||p.price||p.vendor);}
+function calcParts(){let t=0;$$("#partsBody tr").forEach(tr=>{const q=num($("[data-k=qty]",tr).value),p=num($("[data-k=price]",tr).value),v=Math.round(q*p*100)/100;t+=v;$("[data-tot]",tr).textContent=v?money(v):"";});$("#partsTotal").textContent=money(t);}
+function openForm(r){
+  editing=r?r.id:null;const f=$("#frm");f.reset();$("#followNote").value="";$("#frmErr").style.display="none";$("#partsBody").innerHTML="";
+  const d=r||{receiveDate:todayISO(),status:"received",techVerdict:"",techCase:"",parts:[]};
+  $$("[name]",f).forEach(i=>{if(i.name!=="techCase")i.value=d[i.name]??"";});
+  caseOptions(d.techVerdict||"",d.techCase||"");typeUi();$("#stHint").textContent="";$("#assetSug").style.display="none";showAssetInfo();
+  supplyUi(!d.supplyOpinion||d.supplyOpinion===SUPPLY_DEFAULT?"default":"other");
+  (d.parts||[]).forEach(partRow);if(!(d.parts||[]).length)partRow();
+  $("#dlgTitle").textContent=r?`แก้ไขเรื่องแจ้งซ่อม ${refText(r)}`:"รับเรื่องแจ้งซ่อมใหม่ (พิมพ์จากใบส่งซ่อม)";
+  showLastNos();showThaiDates();
+  $("#dlAssets").innerHTML=[...new Set(DB.repairs.map(x=>x.assetNo).filter(Boolean))].map(a=>`<option value="${esc(a)}">`).join("");
+  const uniq=k=>[...new Set(DB.repairs.map(x=>(x[k]||"").trim()).filter(Boolean))].sort().map(a=>`<option value="${esc(a)}">`).join("");
+  $("#dlBrands").innerHTML=uniq("brand");$("#dlModels").innerHTML=uniq("model");floorOptions();
+  $("#btnDel").style.display=r?"":"none";
+  $("#logBox").innerHTML=r&&r.logs&&r.logs.length?`<h3>ประวัติการดำเนินการ</h3><ul class="log">${r.logs.slice().reverse().map(l=>`<li>${thShort(l.at.slice(0,10))} ${l.at.slice(11,16)} · ${esc(l.text)} · ${esc(l.by||"")}</li>`).join("")}</ul>`:"";
+  $("#dlg").showModal();
+}
+function readForm(){const o={};$$("#frm [name]").forEach(i=>o[i.name]=i.type==="number"?(i.value===""?"":num(i.value)):i.value.trim());if(o.itemType==="nonasset")o.assetNo="";o.floor=cleanFloor(o.floor);o.location=locText(o);o.parts=readParts();return o;}
+function validate(o){
+  const e=[];
+  if(!o.regNo&&!o.techNo)e.push("ใส่เลขรับของงานพัสดุ หรือเลขรับของงานช่าง อย่างน้อย 1 เลข");
+  if(!o.receiveDate)e.push("ใส่วันที่รับเรื่อง");
+  if(!o.unitWork)e.push("ใส่งาน/หน่วยงาน");
+  if(!o.itemName)e.push("ใส่รายการที่ส่งซ่อม");
+  if(!o.itemType)e.push("เลือกว่าเป็นครุภัณฑ์หรือไม่");
+  if(!o.symptom)e.push("ใส่สาเหตุ/อาการ");
+  if(!o.senderName)e.push("ใส่ผู้ส่งซ่อม");
+  if(o.techVerdict&&!o.techCase)e.push("เลือกกรณีของความเห็นช่าง ("+VERDICT[o.techVerdict]+")");
+  [["senderName","ผู้ส่งซ่อม"],["inspName","ผู้ตรวจรับงานซ่อม"],["retName","ผู้รับคืน"]].forEach(([k,t])=>{if(o[k]&&!isStaff(o[k]))e.push(`${t} "${o[k]}" ไม่ตรงกับรายชื่อบุคลากร กรุณาเลือกจากรายการ`);});
+  const fy=fyOf(o.receiveDate);
+  if(o.regNo&&DB.repairs.some(r=>r.id!==editing&&r.regNo===o.regNo&&fyOf(r.receiveDate)===fy))e.push(`เลขรับงานพัสดุ ${o.regNo} ซ้ำกับรายการอื่นในปีงบประมาณ ${fy}`);
+  if(o.techNo&&DB.repairs.some(r=>r.id!==editing&&r.techNo===o.techNo&&fyOf(r.receiveDate)===fy))e.push(`เลขรับงานช่าง ${o.techNo} ซ้ำกับรายการอื่นในปีงบประมาณ ${fy}`);
+  if(o.doneDate&&o.receiveDate&&o.doneDate<o.receiveDate)e.push("วันที่ซ่อมเสร็จก่อนวันที่รับเรื่อง");
+  if(o.returnDate&&o.doneDate&&o.returnDate<o.doneDate)e.push("วันที่รับคืนก่อนวันที่ซ่อมเสร็จ");
+  return e;
+}
+const CASE_STATUS={dispose:"dispose",replace:"replace",hire:"waitHire",buy:"waitBuy"};
+function caseStatus(o){
+  if(CASE_STATUS[o.techCase])return CASE_STATUS[o.techCase];
+  if(o.techVerdict==="fix")return "repairing";
+  return "received";
+}
+/* เปลี่ยนสถานะในฟอร์มทันทีเมื่อใส่/ลบวันที่ หรือเปลี่ยนความเห็นช่าง */
+function liveStatus(){
+  const sel=$("[name=status]"),cur=sel.value,o={status:cur,doneDate:$("[name=doneDate]").value,returnDate:$("[name=returnDate]").value,techVerdict:$("[name=techVerdict]").value,techCase:$("[name=techCase]").value};
+  let nx=cur;
+  if(cur==="cancelled")nx=cur;
+  else if(o.returnDate)nx=["dispose","replace"].includes(cur)?cur:"returned";
+  else if(o.doneDate)nx=["dispose","replace"].includes(cur)?cur:"done";
+  else if(["returned","done","received","repairing","waitBuy","waitHire","dispose","replace"].includes(cur))nx=caseStatus(o);
+  if(nx!==cur){sel.value=nx;$("#stHint").textContent="เปลี่ยนเป็น \""+ST[nx].t+"\" อัตโนมัติ";sel.style.outline="2px solid #0f766e";clearTimeout(liveStatus.t);liveStatus.t=setTimeout(()=>{sel.style.outline="";},1500);renderDur();}
+}
+function autoStatus(o,prev){
+  // แก้ความเห็นช่างภายหลัง: สถานะตามวิธีดำเนินการใหม่ (ถ้ายังไม่ซ่อมเสร็จ/ไม่ยกเลิก)
+  if(prev&&(prev.techVerdict!==o.techVerdict||prev.techCase!==o.techCase)&&o.status===prev.status&&o.status!=="cancelled"&&!o.doneDate&&!o.returnDate&&["received","repairing","waitBuy","waitHire","dispose","replace"].includes(o.status))return caseStatus(o);
+  if(["cancelled","dispose","replace"].includes(o.status))return o.status;
+  if(o.returnDate)return "returned";
+  if(o.doneDate&&ST[o.status].open)return "done";
+  if(o.status==="received")return caseStatus(o);
+  return o.status;
+}
+function nowStamp(){const d=new Date();return todayISO()+"T"+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");}
+function rememberUnits(o){
+  let ch=false;[["unitWork","units"],["unitDept","depts"],["unitSection","sections"],["building","buildings"]].forEach(([f,k])=>{const v=(o[f]||"").trim();if(v&&!S()[k].includes(v)){S()[k].push(v);ch=true;}});
+  if(ch)fillLists();
+}
+function saveForm(){
+  const o=readForm(),err=validate(o);
+  if(err.length){$("#frmErr").innerHTML=err.map(esc).join("<br>");$("#frmErr").style.display="block";$("#dlg .db").scrollTop=0;return false;}
+  const ord=[];
+  if(o.memoDate&&o.techDate&&o.techDate<o.memoDate)ord.push("วันที่งานช่างรับ ก่อนวันที่ผู้ส่งซ่อม");
+  if(o.techDate&&o.receiveDate&&o.receiveDate<o.techDate)ord.push("วันที่งานพัสดุรับ ก่อนวันที่งานช่างรับ");
+  if(o.memoDate&&o.receiveDate&&o.receiveDate<o.memoDate)ord.push("วันที่งานพัสดุรับ ก่อนวันที่ผู้ส่งซ่อม");
+  if(ord.length&&!confirm("โปรดตรวจวันที่:\n- "+ord.join("\n- ")+"\n\nกด OK เพื่อบันทึกตามนี้ หรือ Cancel เพื่อกลับไปแก้"))return false;
+  const prev=editing?byId(editing):null;
+  o.status=autoStatus(o,prev);
+  const by=ME(),now=nowStamp();let rec;
+  if(editing){
+    const r=DB.repairs.find(x=>x.id===editing),logs=r.logs||[];
+    if(r.techVerdict!==o.techVerdict||r.techCase!==o.techCase)logs.push({at:now,text:`เปลี่ยนความเห็นช่าง/วิธีดำเนินการ ${techText(r)} → ${techText(o)}`,by});
+    if(r.status!==o.status)logs.push({at:now,text:`เปลี่ยนสถานะ ${ST[r.status].t} → ${ST[o.status].t}`,by});
+    if(r.techVerdict===o.techVerdict&&r.techCase===o.techCase&&r.status===o.status&&!$("#followNote").value.trim())logs.push({at:now,text:"แก้ไขข้อมูล",by});
+    if($("#followNote").value.trim())logs.push({at:now,text:"บันทึกการติดตาม: "+$("#followNote").value.trim(),by});
+    Object.assign(r,o,{logs,updatedAt:now,updatedBy:by});rec=r;
+  }else{
+    rec=Object.assign({id:uid(),createdAt:now,createdBy:by,updatedAt:now,updatedBy:by,logs:[{at:now,text:"รับเรื่อง ("+ST[o.status].t+")",by}].concat($("#followNote").value.trim()?[{at:now,text:"บันทึกการติดตาม: "+$("#followNote").value.trim(),by}]:[])},o);DB.repairs.push(rec);
+  }
+  rememberUnits(o);
+  save();$("#dlg").close();renderAll();toast("บันทึกแล้ว");return rec;
+}
+
+/* ===== แท็บทะเบียนครุภัณฑ์ ===== */
+let aaLimit=100,aaRows=[];
+function repairStats(){const m=new Map();DB.repairs.forEach(r=>{if(r.status==="cancelled"||!r.assetNo)return;const k=r.assetNo.trim(),o=m.get(k)||{n:0,cost:0,last:""};o.n++;o.cost+=repairCost(r);if((r.receiveDate||"")>o.last)o.last=r.receiveDate;m.set(k,o);});return m;}
+function rowBld(i){if(!_ASLOC)_ASLOC=[];if(_ASLOC[i]===undefined){const r=ASR()[i];_ASLOC[i]=isCustom(r)?(((DB.customAssets||[]).find(c=>c.id===r[12])||{}).building||""):parseLoc(r[4]).building;}return _ASLOC[i];}
+function assetsFiltered(){
+  const q=$("#aaQ").value.trim(),cat=$("#aaCat").value,bld=$("#aaBld").value,hide=$("#aaHide").checked,onlyRep=$("#aaRep").checked,mine=$("#aaMine").checked,rows=ASR(),st=repairStats();
+  let idx=q?asMatch(asTerms(q),0):rows.map((_,i)=>i);
+  idx=idx.filter(i=>{const r=rows[i];if(cat&&catName(r)!==cat)return false;if(hide&&r[9])return false;if(mine&&!isCustom(r))return false;if(onlyRep&&!st.has(String(r[0]).trim()))return false;if(bld&&(bld==="-"?rowBld(i):rowBld(i)!==bld))return false;return true;});
+  if(mine)idx.reverse();
+  return {idx,st};
+}
+function renderAssets(){
+  const cats=[...new Set(ASR().map(catName).filter(Boolean))].sort();
+  const cc=$("#aaCat").value;$("#aaCat").innerHTML=`<option value="">ทุกประเภท</option>`+cats.map(c=>`<option>${esc(c)}</option>`).join("");$("#aaCat").value=cc;
+  const bb=$("#aaBld").value;$("#aaBld").innerHTML=`<option value="">ทุกอาคาร</option>`+S().buildings.map(c=>`<option>${esc(c)}</option>`).join("")+`<option value="-">(ไม่ระบุอาคาร)</option>`;$("#aaBld").value=bb;
+  $("#dlCats").innerHTML=cats.map(c=>`<option value="${esc(c)}">`).join("");
+  const {idx,st}=assetsFiltered(),rows=ASR();aaRows=idx;
+  const val=idx.reduce((a,i)=>a+(num(rows[i][5])||0),0),nd=idx.filter(i=>rows[i][9]).length,nr=idx.filter(i=>st.has(String(rows[i][0]).trim())).length;
+  $("#aaSum").textContent=`พบ ${idx.length.toLocaleString()} รายการ · มูลค่าตามทะเบียนรวม ${money(val)} บาท · เคยส่งซ่อมในระบบนี้ ${nr} รายการ · แทงชำรุดแล้ว ${nd} รายการ · ข้อมูลทะเบียน ${AS().source}${(DB.customAssets||[]).length?` + เพิ่มเอง ${DB.customAssets.length} รายการ`:""}`;
+  const show=idx.slice(0,aaLimit),pct=num(S().costPct);
+  $("#aaTable").innerHTML=`<thead><tr><th>เลขครุภัณฑ์</th><th>รายการ</th><th>ประเภท</th><th>ที่ตั้ง</th><th class="num">ราคา</th><th>ได้มา</th><th class="num">ซ่อมในระบบนี้</th><th></th></tr></thead><tbody>`+
+   (show.length?show.map(i=>{const r=rows[i],h=st.get(String(r[0]).trim()),pr=num(r[5]),p=h&&pr?h.cost/pr*100:null;
+     return `<tr class="click" data-ai="${i}"><td style="white-space:nowrap">${esc(r[0])}${isCustom(r)?`<div><span class="badge" style="background:#7c3aed">เพิ่มเอง</span></div>`:""}</td><td>${esc(r[10]||r[1])}${(r[2]||r[3])&&!r[10]?`<div class="mute">${esc(brandModel({brand:r[2],model:r[3]}))}</div>`:""}${r[9]?`<div class="dispflag">แทงชำรุดแล้ว</div>`:""}</td><td>${esc(catName(r))}</td><td>${esc(r[4])}</td><td class="num">${pr?money(pr):"–"}</td><td style="white-space:nowrap">${r[6]?ymd(r[6]):""}</td><td class="num">${h?`${h.n} ครั้ง<div>${money(h.cost)}</div>${p!=null?`<div class="${p>=pct?"late":"mute"}">${p.toFixed(0)}% ของราคา</div>`:""}`:"–"}</td><td style="white-space:nowrap"><button class="sm" data-aview="${i}">ดู</button> <button class="sm pri" data-arep="${i}">ส่งซ่อม</button></td></tr>`;}).join("")
+   :`<tr><td colspan="8" class="mute" style="text-align:center;padding:24px">ไม่พบครุภัณฑ์</td></tr>`)+`</tbody>`;
+  const m=$("#aaMore");if(idx.length>aaLimit){m.style.display="";m.textContent=`แสดงเพิ่มอีก ${Math.min(100,idx.length-aaLimit)} รายการ (แสดงแล้ว ${aaLimit} จาก ${idx.length.toLocaleString()})`;}else m.style.display="none";
+}
+let aCur=null;
+function openAssetView(r){
+  aCur=r;const pr=num(r[5]),L=DB.repairs.filter(x=>x.status!=="cancelled"&&(x.assetNo||"").trim()===String(r[0]).trim()).sort(regSort),tot=L.reduce((a,x)=>a+repairCost(x),0),dup=asFind(r[0]).length;
+  $("#aTitle").textContent=`ครุภัณฑ์ ${r[0]}`;
+  const c=isCustom(r)?(DB.customAssets||[]).find(x=>x.id===r[12]):null;
+  const row=(k,v)=>v?`<tr><th style="width:160px">${k}</th><td>${v}</td></tr>`:"";
+  $("#aBody").innerHTML=`<table style="margin-bottom:12px">${row("เลขครุภัณฑ์",esc(r[0])+(dup>1?` <span class="late">(เลขนี้มี ${dup} รายการ)</span>`:""))}${row("รายการ",esc(r[10]||r[1]))}${row("ยี่ห้อ / รุ่น",esc(brandModel({brand:r[2],model:r[3]})))}${row("S/N",esc(r[13]||""))}${row("ประเภท",esc(catName(r)))}${row("ที่ตั้ง",esc(r[4]))}${row("ราคา",pr?money(pr)+" บาท":"")}${row("วันที่ได้มา",r[6]?ymd(r[6]):"")}${row("สถานะ",r[9]?`<span class="dispflag">แทงชำรุดแล้ว</span>`:"")}${row("หมายเหตุในทะเบียน",esc(r[8]))}${row("ที่มา",isCustom(r)?`เพิ่มเองในระบบนี้${c&&c.createdBy?" โดย "+esc(c.createdBy):""}${c&&c.createdAt?" "+thShort(c.createdAt.slice(0,10)):""}`:"ทะเบียนครุภัณฑ์ "+esc(AS().source))}</table>
+  <h3>ประวัติซ่อมในระบบนี้ (${L.length} ครั้ง รวม ${money(tot)} บาท${pr&&tot?` = <span class="${tot/pr*100>=num(S().costPct)?"late":""}">${(tot/pr*100).toFixed(0)}% ของราคา</span>`:""})</h3>
+  ${L.length?`<table><thead><tr><th>เลขรับ</th><th>วันที่รับ</th><th>อาการ</th><th>วิธีดำเนินการ</th><th>สถานะ</th><th class="num">ค่าใช้จ่าย</th></tr></thead><tbody>${L.map(x=>`<tr class="click" data-rid="${x.id}"><td>${esc(refText(x))}</td><td>${thShort(x.receiveDate)}</td><td>${esc(x.symptom||"")}</td><td>${esc(techText(x))}</td><td><span class="badge" style="background:${ST[x.status].c}">${ST[x.status].t}</span></td><td class="num">${money(repairCost(x))}</td></tr>`).join("")}</tbody></table>`:`<p class="mute">ยังไม่เคยส่งซ่อมในระบบนี้</p>`}`;
+  $("#aEdit").style.display=isCustom(r)?"":"none";$("#aDel").style.display=isCustom(r)?"":"none";
+  $("#dlgA").showModal();
+}
+let aeId=null;
+function openAssetEdit(c){
+  aeId=c?c.id:null;$("#aeErr").style.display="none";$("#aeTitle").textContent=c?`แก้ไขครุภัณฑ์ ${c.code}`:"เพิ่มครุภัณฑ์";
+  $$("[data-ae]").forEach(i=>{const v=c?c[i.dataset.ae]:"";if(i.type==="checkbox")i.checked=!!v;else i.value=v??"";});
+  aeFloors();$$("#aeForm input[type=date]").forEach(i=>i.nextElementSibling.textContent=i.value?thLong(i.value):"");
+  $("#dlgAE").showModal();
+}
+function aeFloors(){const n=FLOORS[$("[data-ae=building]").value.trim()]||10;$("#dlFloorsA").innerHTML=Array.from({length:n},(_,i)=>`<option value="${i+1}">`).join("");}
+function saveAssetEdit(){
+  const o={};$$("[data-ae]").forEach(i=>{o[i.dataset.ae]=i.type==="checkbox"?i.checked:(i.type==="number"?(i.value===""?"":num(i.value)):i.value.trim());});
+  o.floor=cleanFloor(o.floor);
+  const e=[];if(!o.code)e.push("ใส่เลขครุภัณฑ์");if(!o.name)e.push("ใส่รายการ / ชื่อครุภัณฑ์");
+  if(o.code&&asFind(o.code).some(r=>!(isCustom(r)&&r[12]===aeId)))e.push(`เลขครุภัณฑ์ ${o.code} มีในทะเบียนแล้ว`);
+  if(e.length){$("#aeErr").innerHTML=e.map(esc).join("<br>");$("#aeErr").style.display="block";return;}
+  const now=nowStamp(),by=ME();DB.customAssets=DB.customAssets||[];
+  let c;if(aeId){c=DB.customAssets.find(x=>x.id===aeId);Object.assign(c,o,{updatedAt:now,updatedBy:by});}
+  else{c=Object.assign({id:uid(),createdAt:now,createdBy:by,updatedAt:now,updatedBy:by},o);DB.customAssets.push(c);}
+  if(o.building&&!S().buildings.includes(o.building)){S().buildings.push(o.building);fillLists();}
+  asReset();save();$("#dlgAE").close();if($("#dlgA").open)$("#dlgA").close();renderAll();toast(aeId?"แก้ไขครุภัณฑ์แล้ว":"เพิ่มครุภัณฑ์แล้ว");
+}
+function exportAssets(){
+  const {idx,st}=assetsFiltered(),rows=ASR();
+  const H=["ลำดับ","เลขครุภัณฑ์","รายการ","ยี่ห้อ","รุ่น","S/N","ประเภท","ที่ตั้ง","ราคา (บาท)","วันที่ได้มา","ซ่อมในระบบนี้ (ครั้ง)","ค่าซ่อมสะสม (บาท)","% ของราคา","สถานะ","ที่มา","หมายเหตุในทะเบียน"];
+  const R=[H.map(v=>({v,s:1}))];
+  idx.forEach((i,k)=>{const r=rows[i],h=st.get(String(r[0]).trim()),pr=num(r[5]);R.push([{v:k+1,s:5},{v:r[0],s:2},{v:r[10]||r[1],s:2},{v:r[2],s:2},{v:r[3],s:2},{v:r[13]||"",s:2},{v:catName(r),s:2},{v:r[4],s:2},pr?{v:pr,s:3}:{v:"",s:3},{v:r[6]?ymd(r[6]):"",s:5},{v:h?h.n:"",s:5},h?{v:h.cost,s:3}:{v:"",s:3},h&&pr?{v:Math.round(h.cost/pr*1000)/10,s:5}:{v:"",s:5},{v:r[9]?"แทงชำรุดแล้ว":"",s:2},{v:isCustom(r)?"เพิ่มเอง":"ทะเบียนครุภัณฑ์",s:2},{v:r[8],s:2}]);});
+  download(`ทะเบียนครุภัณฑ์_${todayISO()}.xlsx`,new Blob([xlsx([{name:"ทะเบียนครุภัณฑ์",rows:R,cols:[6,26,34,12,12,14,22,30,12,11,10,12,9,13,14,40],landscape:true,titleRows:1,freeze:1}])],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}));
+  toast(`ส่งออก ${idx.length.toLocaleString()} รายการแล้ว`);
+}
+
+/* ===== อัปเดตสถานะด่วน ===== */
+let qRec=null;
+function qUi(){
+  const st=$("#qStatus").value,needDone=st==="done"||st==="returned",needRet=st==="returned";
+  $("#qDoneL").style.display=needDone?"":"none";$("#qRetL").style.display=needRet?"":"none";$("#qRetNameL").style.display=needRet?"":"none";$("#qInspL").style.display=needDone?"":"none";
+  if(needDone&&!$("#qDone").value)$("#qDone").value=todayISO();
+  if(needRet&&!$("#qRet").value)$("#qRet").value=todayISO();
+  $$("#dlgQ input[type=date]").forEach(i=>i.nextElementSibling.textContent=i.value?thLong(i.value):"");
+}
+function openQuick(r){
+  qRec=r;$("#qErr").style.display="none";$("#qNote").value="";
+  $("#qTitle").textContent=`อัปเดตสถานะ ${refText(r)}`;
+  const g=stages(r);
+  $("#qInfo").innerHTML=`<b>${esc(r.itemName||"")}</b>${brandModel(r)?" "+esc(brandModel(r)):""}${isAsset(r)?" · ครุภัณฑ์"+(r.assetNo?" หมายเลข "+esc(r.assetNo):" (ไม่มีหมายเลข)"):" · ไม่ใช่ครุภัณฑ์"}${r.location?" · "+esc(r.location):""}<br>${esc(unitText(r))} · ผู้ส่งซ่อม ${esc(r.senderName||"")}<br>ช่าง ${esc(r.techName||"ยังไม่ระบุ")} · ${esc(techText(r))}<br>สถานะปัจจุบัน <span class="badge" style="background:${ST[r.status].c}">${ST[r.status].t}</span>${g.total?` · ผ่านมา ${segTxt(g.total)} วัน (${stageLine(r)})`:""}${repairCost(r)?` · ค่าใช้จ่าย ${money(repairCost(r))} บาท`:""}`;
+  $("#qStatus").innerHTML=Object.entries(ST).map(([k,v])=>`<option value="${k}">${v.t}</option>`).join("");$("#qStatus").value=r.status;
+  $("#qDone").value=r.doneDate||"";$("#qRet").value=r.returnDate||"";$("#qRetName").value=r.retName||"";$("#qInsp").value=r.inspName||"";
+  $("#qLog").innerHTML=r.logs&&r.logs.length?`<h3 style="margin-top:12px">ประวัติล่าสุด</h3><ul class="log">${r.logs.slice(-5).reverse().map(l=>`<li>${thShort(l.at.slice(0,10))} ${l.at.slice(11,16)} · ${esc(l.text)} · ${esc(l.by||"")}</li>`).join("")}</ul>`:"";
+  qUi();$("#dlgQ").showModal();
+}
+function saveQuick(){
+  const r=qRec,st=$("#qStatus").value,e=[];
+  let done=st==="done"||st==="returned"?$("#qDone").value:r.doneDate,ret=st==="returned"?$("#qRet").value:r.returnDate;
+  const retName=st==="returned"?$("#qRetName").value.trim():r.retName,insp=st==="done"||st==="returned"?$("#qInsp").value.trim():r.inspName;
+  if((st==="done"||st==="returned")&&!done)e.push("ใส่วันที่ซ่อมเสร็จ");
+  if(st==="returned"&&!ret)e.push("ใส่วันที่รับคืน");
+  if(done&&r.receiveDate&&done<r.receiveDate)e.push("วันที่ซ่อมเสร็จก่อนวันที่งานพัสดุรับ");
+  if(ret&&done&&ret<done)e.push("วันที่รับคืนก่อนวันที่ซ่อมเสร็จ");
+  if(retName&&!isStaff(retName))e.push(`ผู้รับคืน "${retName}" ไม่ตรงกับรายชื่อบุคลากร`);
+  if(insp&&!isStaff(insp))e.push(`ผู้ตรวจรับงานซ่อม "${insp}" ไม่ตรงกับรายชื่อบุคลากร`);
+  if(e.length){$("#qErr").innerHTML=e.map(esc).join("<br>");$("#qErr").style.display="block";return;}
+  // ย้อนสถานะกลับไปก่อนซ่อมเสร็จ: ล้างวันที่เสร็จ/รับคืน
+  if(ST[st].open&&st!=="done"&&(r.doneDate||r.returnDate)){if(!confirm("สถานะนี้ยังไม่ซ่อมเสร็จ ระบบจะล้างวันที่ซ่อมเสร็จและวันที่รับคืนที่บันทึกไว้ ยืนยัน?"))return;done="";ret="";}
+  if(st==="done")ret="";
+  const by=ME(),now=nowStamp(),note=$("#qNote").value.trim();r.logs=r.logs||[];
+  if(r.status!==st)r.logs.push({at:now,text:`เปลี่ยนสถานะ ${ST[r.status].t} → ${ST[st].t}`,by});
+  if(note)r.logs.push({at:now,text:"บันทึกการติดตาม: "+note,by});
+  if(r.status===st&&!note&&done===r.doneDate&&ret===r.returnDate&&retName===r.retName&&insp===r.inspName){$("#dlgQ").close();return;}
+  if(r.status===st&&!note)r.logs.push({at:now,text:"แก้ไขวันที่/ผู้รับคืน",by});
+  Object.assign(r,{status:st,doneDate:done||"",returnDate:ret||"",retName:retName||"",retPos:retName?staffPos(retName):"",inspName:insp||"",inspPos:insp?staffPos(insp):"",updatedAt:now,updatedBy:by});
+  save();$("#dlgQ").close();renderAll();toast("อัปเดตสถานะแล้ว");
+}
+
+/* ===== ไฟล์ข้อมูลงาน (.json) สำหรับระบบเอกสารพัสดุ ===== */
+let jRepair=null;
+function personPicker(label,val){return `<label class="w2">${label}<input list="dlStaff" class="jInspIn" value="${esc(val||"")}"></label>`;}
+function openJson(r){
+  jRepair=r;$("#jErr").style.display="none";
+  const hasHire=r.techCase==="hire"||(r.techCase!=="buy"&&r.techCase!=="replace"&&(r.parts||[]).some(p=>p.kind==="hire"));
+  $("#jMethod").value=hasHire?"hire":"buy";
+  $("#jDetail").value=[r.location,isAsset(r)&&r.assetNo?("หมายเลขครุภัณฑ์ "+r.assetNo):""].filter(Boolean).join(" ");
+  const rep=r.techCase==="replace";
+  $("#jPurpose").value=rep?`ทดแทน${r.itemName||""}ที่ชำรุดและซ่อมแซมไม่ได้`:`ซ่อมแซม${r.itemName||""}ให้สามารถใช้งานได้ตามปกติ`;
+  $("#jPurposeShort").value=rep?`การจัดหา${r.itemName||""}ทดแทน`:`การซ่อมแซม${r.itemName||""}`;
+  $("#jSpec").value=r.techName&&isStaff(r.techName)?r.techName:"";
+  const vs=[...new Set((r.parts||[]).map(p=>p.vendor).filter(Boolean))];$("#jVendor").value=vs[0]||"";
+  $("#jDays").value="";
+  $("#jItems").innerHTML=(r.parts||[]).length?`<table><thead><tr><th></th><th>รายการ</th><th class="num">จำนวน</th><th>หน่วย</th><th class="num">ราคา/หน่วย</th><th class="num">รวม</th><th>ประเภท</th></tr></thead><tbody>${r.parts.map((p,i)=>`<tr><td><input type="checkbox" class="jPick" data-i="${i}" ${p.kind==="stock"?"":"checked"}></td><td>${esc(p.name)}</td><td class="num">${esc(p.qty)}</td><td>${esc(p.unit)}</td><td class="num">${money(p.price)}</td><td class="num">${money(partTotal(p))}</td><td>${KIND[p.kind]||KIND.part}</td></tr>`).join("")}</tbody></table>`:`<p class="hint err">เรื่องนี้ยังไม่มีรายการอะไหล่/จ้างเอกชน กรุณาเพิ่มในส่วนที่ 4 ของแบบบันทึกก่อน</p>`;
+  jMethodChanged();jRecalc();$("#dlgJ").showModal();
+}
+function jPicked(){return $$(".jPick:checked").map(c=>jRepair.parts[+c.dataset.i]);}
+function jRecalc(){
+  const t=jPicked().reduce((a,p)=>a+partTotal(p),0);$("#jTotal").textContent=money(t);
+  const need=t>=10000?3:1,cur=$$(".jInspIn").map(i=>i.value);
+  if($$(".jInspIn").length!==need){
+    $("#jInspTitle").textContent=need===3?"คณะกรรมการตรวจรับพัสดุ (3 คน)":"ผู้ตรวจรับพัสดุ (1 คน)";
+    $("#jInsp").innerHTML=need===3?personPicker("ประธานกรรมการ",cur[0])+personPicker("กรรมการ",cur[1])+personPicker("กรรมการ",cur[2]):personPicker("ผู้ตรวจรับพัสดุ",cur[0]||"");
+  }
+}
+function jMethodChanged(){
+  const hire=$("#jMethod").value==="hire",r=jRepair;
+  $("#jTitleLbl").firstChild.textContent=hire?"ชื่องานจ้าง":"ประเภทพัสดุ";
+  $("#jSpecLbl").textContent=hire?"ร่างขอบเขตของงาน":"คุณลักษณะเฉพาะ";
+  $("#jTitle").value=hire?`จ้างซ่อม${r.itemName||""}`:(r.techCase==="replace"?"ครุภัณฑ์":"วัสดุ");
+}
+function buildJson(){
+  const r=jRepair,hire=$("#jMethod").value==="hire",items=jPicked(),e=[];
+  if(!items.length)e.push("เลือกรายการอย่างน้อย 1 รายการ");
+  const insp=$$(".jInspIn").map(i=>i.value.trim());
+  if(insp.some(n=>!n))e.push("ระบุรายชื่อผู้ตรวจรับให้ครบก่อนทำไฟล์");
+  insp.forEach(n=>{if(n&&!isStaff(n))e.push(`"${n}" ไม่ตรงกับรายชื่อบุคลากร`);});
+  if(new Set(insp).size!==insp.length)e.push("รายชื่อผู้ตรวจรับซ้ำกัน");
+  const spec=$("#jSpec").value.trim();if(spec&&!isStaff(spec))e.push(`ผู้จัดทำ "${spec}" ไม่ตรงกับรายชื่อบุคลากร`);
+  items.forEach(p=>{if(!p.unit)e.push(`รายการ "${p.name}" ยังไม่มีหน่วยนับ`);if(!num(p.price))e.push(`รายการ "${p.name}" ยังไม่มีราคา`);});
+  if(e.length){$("#jErr").innerHTML=e.map(esc).join("<br>");$("#jErr").style.display="block";return null;}
+  const now=new Date(),vName=$("#jVendor").value.trim(),v=S().vendors.find(x=>x.name===vName);
+  const vendor=v?{name:v.name,short:v.name,addr:v.addr,tel:v.tel,tax:v.tax,bankAcc:v.bankAcc,accName:v.accName,bankName:v.bankName,bankBranch:v.bankBranch}:{name:vName,short:vName,addr:"",tel:"",tax:"",bankAcc:"",accName:"",bankName:"",bankBranch:""};
+  const total=items.reduce((a,p)=>a+partTotal(p),0);
+  const j={
+    method:hire?"hire":"buy",source:"repair",
+    month:TM[now.getMonth()],year:now.getFullYear()+543,
+    ...(hire?{jobTitle:$("#jTitle").value.trim(),jobDetail:$("#jDetail").value.trim()}:{type:$("#jTitle").value.trim()}),
+    purposeLong:$("#jPurpose").value.trim(),purposeShort:$("#jPurposeShort").value.trim(),
+    project:{name:"",code:"",budget:0,fiscalYear:fyOf(todayISO())},
+    ref:{no:r.regNo||r.techNo||"",date:thLong(r.memoDate||r.receiveDate)},
+    requester:{unit:unitText(r),name:r.senderName||"",pos:r.senderPos||staffPos(r.senderName)},
+    vendor,
+    specWriter:spec?{name:spec,pos:staffPos(spec)}:{name:"",pos:""},
+    inspectors:insp.map(n=>({name:n,pos:staffPos(n)})),
+    items:items.map(p=>({name:p.name,qty:num(p.qty),unit:p.unit,price:num(p.price),vatExempt:!!p.vatExempt})),
+    penaltyRate:hire?"0.10":"0.20",
+    po:{no:"",date:""},egpNo:"",announceDate:"",
+    officer:{name:ME(),pos:staffPos(ME())},
+    repairRef:{regNo:r.regNo||"",techNo:r.techNo||"",itemType:r.itemType||"",assetNo:isAsset(r)?(r.assetNo||""):"",item:r.itemName||"",brand:r.brand||"",model:r.model||"",serial:r.serial||"",location:r.location||"",symptom:r.symptom||"",total}
+  };
+  const d=$("#jDays").value;if(d!=="")j.deliveryDays=num(d);
+  return j;
+}
+
+/* ===== ประวัติรายครุภัณฑ์ ===== */
+function assetKey(r){return isAsset(r)&&r.assetNo?"A:"+r.assetNo.replace(/\s+/g,"").toLowerCase():"N:"+(r.itemName||"").trim().toLowerCase()+"|"+(r.location||"").trim().toLowerCase();}
+function renderAsset(){
+  const q=$("#aQ").value.trim().toLowerCase(),min=+$("#aMin").value,m=new Map();
+  const ty=$("#aType").value;
+  $("#aNote").textContent=ty==="asset"?"นับทุกปีงบประมาณ เฉพาะรายการที่เป็นครุภัณฑ์ · ไม่มีหมายเลขรวมตามชื่อรายการและสถานที่ · เฟสถัดไปเชื่อมระบบครุภัณฑ์ด้วยหมายเลขครุภัณฑ์ เพื่อเทียบค่าซ่อมสะสมกับราคาทุน":"นับทุกปีงบประมาณ รายการที่ไม่ใช่ครุภัณฑ์ รวมตามชื่อรายการและสถานที่ ใช้ดูจุดที่ซ่อมบ่อย";
+  DB.repairs.filter(r=>r.status!=="cancelled"&&(ty==="asset"?isAsset(r):!isAsset(r))).forEach(r=>{const k=assetKey(r);if(!m.has(k))m.set(k,[]);m.get(k).push(r);});
+  let rows=[...m.values()].filter(L=>L.length>=min).filter(L=>!q||L.some(r=>[r.assetNo,r.itemName,r.serial,r.brand,r.model,r.location].join(" ").toLowerCase().includes(q)));
+  rows.sort((a,b)=>b.length-a.length||repairCost2(b)-repairCost2(a));
+  $("#assetTable").innerHTML=`<thead><tr><th>${ty==="asset"?"หมายเลขครุภัณฑ์":"ประเภท"}</th><th>รายการ</th><th>สถานที่ / หน่วยงาน</th><th class="num">ซ่อม (ครั้ง)</th><th class="num">ค่าใช้จ่ายรวม</th>${ty==="asset"?`<th class="num">ราคาครุภัณฑ์ / ได้มา</th><th class="num">ค่าซ่อม % ของราคา</th>`:""}<th>ครั้งล่าสุด</th><th>ประวัติ</th></tr></thead><tbody>`+
+    (rows.length?rows.map(L=>{L.sort(regSort);const last=L[L.length-1],warn=L.length>=3,disp=L.find(r=>r.techCase==="dispose"||r.techCase==="replace");return `<tr><td>${ty==="asset"?esc(last.assetNo||"(ไม่มีหมายเลข)"):"ไม่ใช่ครุภัณฑ์"}</td><td>${esc(last.itemName)}${brandModel(last)?`<div class="mute">${esc(brandModel(last))}</div>`:""}${disp?`<div class="late">ช่างเห็นควร${esc(CASES.nofix[disp.techCase])} (${esc(refText(disp))})</div>`:warn?`<div class="late">ซ่อมบ่อย ควรพิจารณาแทงชำรุด/ซื้อทดแทน</div>`:""}</td><td>${esc([last.location,unitText(last)].filter(Boolean).join(" · "))}</td><td class="num">${L.length}</td><td class="num"><b>${money(repairCost2(L))}</b>${(()=>{const c={part:0,stock:0,hire:0};L.forEach(r=>{const x=costKinds(r);c.part+=x.part;c.stock+=x.stock;c.hire+=x.hire;});return repairCost2(L)?`<div class="mute">${[["ซื้อ",c.part],["เบิกคลัง",c.stock],["จ้าง",c.hire]].filter(x=>x[1]).map(x=>x[0]+" "+money(x[1])).join(" · ")}</div>`:"";})()}</td>${ty==="asset"?(()=>{const A=last.assetNo?asFind(last.assetNo)[0]:null,pr=A?num(A[5]):0,tot=repairCost2(L),pc=pr&&tot?tot/pr*100:null;return `<td class="num">${pr?money(pr):"–"}${A&&A[6]?`<div class="mute">${ymd(A[6])}</div>`:""}${A&&A[9]?`<div class="dispflag">ทะเบียน: แทงชำรุดแล้ว</div>`:""}</td><td class="num ${pc!=null&&pc>=num(S().costPct)?"late":""}">${pc!=null?pc.toFixed(0)+"%":"–"}${pc!=null&&pc>=num(S().costPct)?`<div>เกิน ${esc(S().costPct)}% ควรพิจารณาซื้อทดแทน</div>`:""}</td>`;})():""}<td>${thShort(last.receiveDate)}</td><td>${L.map(r=>`<div class="click" data-id="${r.id}" style="cursor:pointer;text-decoration:underline dotted">${esc(refText(r))} · ${thShort(r.receiveDate)} · ${esc((r.symptom||"").slice(0,50))} · ${esc(techText(r))} · ${ST[r.status].t}${repairCost(r)?" · "+money(repairCost(r))+" บาท":""}</div>`).join("")}</td></tr>`;}).join(""):`<tr><td colspan="9" class="mute" style="text-align:center;padding:24px">ไม่มีข้อมูล</td></tr>`)+"</tbody>";
+}
+function repairCost2(L){return L.reduce((a,r)=>a+repairCost(r),0);}
+
+/* ===== รายงาน ===== */
+function renderReport(){
+  fillFySelect($("#rFy"),false);
+  const fy=+$("#rFy").value,L=reportList(),f=$("#rFrom").value,t=$("#rTo").value;
+  const SS=stageStats(L),avg=SS.find(x=>x.k==="total").avg;
+  const cost=L.reduce((a,r)=>a+repairCost(r),0),open=L.filter(r=>ST[r.status].open).length;
+  const tbl=(head,rows)=>`<table style="margin-bottom:14px"><thead><tr>${head.map((h,i)=>`<th class="${i?"num":""}">${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>`<td class="${i?"num":""}">${c}</td>`).join("")}</tr>`).join("")}</tbody></table>`;
+  const months=monthsOfFy(fy).map(([y,m,label])=>{const M=L.filter(r=>{const p=pd(r.receiveDate);return p.y===y&&p.m===m;});return [label,M.length,M.filter(r=>r.status==="returned").length,M.filter(r=>ST[r.status].open).length,money(M.reduce((a,r)=>a+repairCost(r),0))];});
+  months.push(["<b>รวม</b>",`<b>${L.length}</b>`,`<b>${L.filter(r=>r.status==="returned").length}</b>`,`<b>${open}</b>`,`<b>${money(cost)}</b>`]);
+  $("#repBody").innerHTML=`<div class="card"><h3>สรุปผลการแจ้งซ่อม ปีงบประมาณ พ.ศ. ${fy}</h3><p class="mute">ข้อมูล ณ วันที่ ${thLong(todayISO())} (${f||t?`ช่วงวันที่พัสดุรับ ${f?thLong(f):"ต้นปีงบ"} – ${t?thLong(t):"ปัจจุบัน"} · `:""}1 ตุลาคม ${fy-1} – 30 กันยายน ${fy})</p>
+  <div class="kpi"><div><b>${L.length}</b><span>เรื่องแจ้งซ่อมทั้งหมด</span></div><div><b>${L.filter(r=>r.status==="returned").length}</b><span>ส่งคืนแล้ว</span></div><div><b>${open}</b><span>ค้างดำเนินการ</span></div><div><b class="${L.filter(isLate).length?"late":""}">${L.filter(isLate).length}</b><span>ค้างเกิน ${esc(S().overdueDays)} วัน</span></div><div><b>${avg!=null?avg.toFixed(1):"-"}</b><span>วันเฉลี่ยทั้งกระบวนการ (เรื่องที่จบแล้ว)</span></div><div><b>${money(cost)}</b><span>ค่าใช้จ่ายรวม (บาท)</span></div></div>
+  <h3>ระยะเวลาเฉลี่ยแต่ละขั้น (วัน)</h3>${tbl(["ขั้น","จำนวนเรื่องที่จบขั้นแล้ว","เฉลี่ย (วัน)","นานสุด (วัน)","ยังอยู่ในขั้นนี้"],SS.map(x=>[`${x.k==="total"?"<b>":""}${x.label}${x.k==="total"?"</b>":""}<div class="mute">${x.desc}</div>`,x.n,x.avg!=null?x.avg.toFixed(1):"–",x.max??"–",x.running]))}
+  <h3>รายเดือน</h3>${tbl(["เดือน","จำนวนเรื่อง","ส่งคืนแล้ว","ค้างดำเนินการ","ค่าใช้จ่าย (บาท)"],months)}
+  <h3>รายงานหลายมิติ</h3><p class="mute noprint" style="margin-top:-6px">เลือกมุมมอง: ช่างแต่ละคน ผู้ส่งซ่อม ส่วน หน่วย งาน วิธีดำเนินการ หรือครุภัณฑ์ · กด "x งาน" เพื่อดูรายการ และคลิกเพื่อเปิดใบซ่อม</p>
+  <div id="dimBox">${dimHtml(L)}</div>
+  <h3>วัสดุที่เบิกจากคลังพัสดุเพื่อซ่อม</h3>${(()=>{const SR=stockRows(L);return SR.length?tbl(["รายการวัสดุ","จำนวน","มูลค่า (บาท)","ใช้ในงานซ่อม (เรื่อง)"],[...SR.map(([k,o])=>[esc((o.code?o.code+" ":"")+k),`${o.qty} ${esc(o.unit)}`,money(o.val),o.rep.size]),["<b>รวม</b>","",`<b>${money(SR.reduce((a,x)=>a+x[1].val,0))}</b>`,""]]):`<p class="mute">ยังไม่มีการเบิกวัสดุจากคลังในปีงบประมาณนี้</p>`;})()}
+  <h3>แยกตามร้านค้า / ผู้รับจ้าง</h3>${tbl(["บริษัท / ร้านค้า","จำนวนรายการ","ค่าใช้จ่าย (บาท)"],vendorRows(L))}</div>`;
+}
+/* ===== รายงานหลายมิติ ===== */
+const DIMS=[
+  {k:"tech",t:"ช่าง / ผู้ซ่อม",key:r=>r.techName||"(ยังไม่ระบุช่าง)",date:r=>r.techDate||r.receiveDate,dl:"วันที่ช่างรับ"},
+  {k:"sender",t:"ผู้ส่งซ่อม",key:r=>r.senderName||"(ไม่ระบุ)",date:r=>r.memoDate||r.receiveDate,dl:"วันที่ส่งซ่อม"},
+  {k:"section",t:"ส่วน",key:r=>r.unitSection||"(ไม่ระบุส่วน)",date:r=>r.receiveDate,dl:"วันที่พัสดุรับ"},
+  {k:"dept",t:"หน่วย",key:r=>r.unitDept||"(ไม่ระบุหน่วย)",date:r=>r.receiveDate,dl:"วันที่พัสดุรับ"},
+  {k:"building",t:"อาคาร",key:r=>r.building||"(ไม่ระบุอาคาร)",date:r=>r.receiveDate,dl:"วันที่พัสดุรับ"},
+  {k:"work",t:"งาน",key:r=>r.unitWork||"(ไม่ระบุงาน)",date:r=>r.receiveDate,dl:"วันที่พัสดุรับ"},
+  {k:"method",t:"วิธีดำเนินการ (ความเห็นช่าง)",key:r=>techText(r),date:r=>r.receiveDate,dl:"วันที่พัสดุรับ"},
+  {k:"itype",t:"ครุภัณฑ์ / ไม่ใช่ครุภัณฑ์",sh:"แยกประเภทสิ่งที่ซ่อม",key:r=>ITEMTYPE[r.itemType]||"(ไม่ระบุ)",date:r=>r.receiveDate,dl:"วันที่พัสดุรับ"},
+  {k:"asset",t:"ครุภัณฑ์ (มีหมายเลข)",key:r=>isAsset(r)&&r.assetNo?r.assetNo.trim():null,label:L=>{const x=L[L.length-1];return x.assetNo+" · "+(x.itemName||"");},date:r=>r.receiveDate,dl:"วันที่พัสดุรับ"}
+];
+function costKinds(r){const o={part:0,stock:0,hire:0};(r.parts||[]).forEach(p=>{o[o[p.kind]!==undefined?p.kind:"part"]+=partTotal(p);});return o;}
+function dateList(L,fn){const m=new Map();L.map(fn).filter(Boolean).sort().forEach(d=>m.set(d,(m.get(d)||0)+1));return [...m.entries()].map(([d,n])=>thShort(d)+(n>1?` (${n} งาน)`:"")).join(", ");}
+function dimRows(L,dim){
+  const g=new Map();L.forEach(r=>{const k=dim.key(r);if(k==null)return;if(!g.has(k))g.set(k,[]);g.get(k).push(r);});
+  return [...g.entries()].map(([k,M])=>{M.sort(regSort);const c={part:0,stock:0,hire:0};M.forEach(r=>{const x=costKinds(r);c.part+=x.part;c.stock+=x.stock;c.hire+=x.hire;});
+    const fin=M.map(r=>stages(r).total).filter(x=>x&&!x.running);
+    return {name:dim.label?dim.label(M):k,M,n:M.length,closed:M.filter(r=>!ST[r.status].open).length,open:M.filter(r=>ST[r.status].open).length,c,total:c.part+c.stock+c.hire,avg:fin.length?fin.reduce((a,x)=>a+x.days,0)/fin.length:null,dates:dateList(M,dim.date),
+      flag:dim.k==="asset"?(M.some(r=>r.techCase==="dispose"||r.techCase==="replace")?"ช่างเห็นควรแทงชำรุด":M.length>=3?"ซ่อมบ่อย":""):""};
+  }).sort((a,b)=>b.n-a.n||b.total-a.total);
+}
+const DIM_HEAD=["จำนวนงาน","จบแล้ว","ค้าง","ซื้อวัสดุ (บาท)","เบิกคลัง (บาท)","จ้าง (บาท)","รวมค่าใช้จ่าย (บาท)","วันเฉลี่ย (เรื่องที่จบ)"];
+let repDim="tech";
+function dimHtml(L){
+  const dim=DIMS.find(d=>d.k===repDim),rows=dimRows(L,dim);
+  const tot=rows.reduce((a,x)=>({n:a.n+x.n,closed:a.closed+x.closed,open:a.open+x.open,part:a.part+x.c.part,stock:a.stock+x.c.stock,hire:a.hire+x.c.hire,total:a.total+x.total}),{n:0,closed:0,open:0,part:0,stock:0,hire:0,total:0});
+  const noAsset=dim.k==="asset"?L.filter(r=>isAsset(r)&&!r.assetNo).length:0,nonAsset=dim.k==="asset"?L.filter(r=>!isAsset(r)).length:0;
+  return `<div class="chips noprint" id="dimChips" style="margin-bottom:10px">${DIMS.map(d=>`<span class="chip ${d.k===repDim?"on":""}" data-dim="${d.k}">${d.t}</span>`).join("")}</div>
+  <div class="tablewrap" style="max-height:none"><table id="dimTable"><thead><tr><th>${dim.t}</th>${DIM_HEAD.map(h=>`<th class="num">${h}</th>`).join("")}<th>${dim.dl}</th><th>รายการงาน</th></tr></thead><tbody>${rows.length?rows.map(x=>`<tr><td>${esc(x.name)}${x.flag?`<div class="late">${x.flag}</div>`:""}</td><td class="num"><b>${x.n}</b></td><td class="num">${x.closed}</td><td class="num">${x.open}</td><td class="num">${x.c.part?money(x.c.part):"–"}</td><td class="num">${x.c.stock?money(x.c.stock):"–"}</td><td class="num">${x.c.hire?money(x.c.hire):"–"}</td><td class="num"><b>${money(x.total)}</b></td><td class="num">${x.avg!=null?x.avg.toFixed(1):"–"}</td><td style="min-width:150px">${x.dates}</td><td style="min-width:220px"><details><summary>${x.n} งาน</summary><ul class="log">${x.M.map(r=>`<li class="click" data-id="${r.id}" style="cursor:pointer">${esc(refText(r))} · ${esc(r.itemName||"")} · ${ST[r.status].t}${repairCost(r)?" · "+money(repairCost(r))+" บาท":""}</li>`).join("")}</ul></details></td></tr>`).join("")
+    +`<tr><td><b>รวม</b></td><td class="num"><b>${tot.n}</b></td><td class="num">${tot.closed}</td><td class="num">${tot.open}</td><td class="num">${money(tot.part)}</td><td class="num">${money(tot.stock)}</td><td class="num">${money(tot.hire)}</td><td class="num"><b>${money(tot.total)}</b></td><td></td><td></td><td></td></tr>`
+    :`<tr><td colspan="11" class="mute" style="text-align:center;padding:18px">ไม่มีข้อมูล</td></tr>`}</tbody></table></div>
+  ${dim.k==="asset"?`<p class="mute">นับเฉพาะครุภัณฑ์ที่มีหมายเลข${noAsset?` · ครุภัณฑ์ไม่มีหมายเลข ${noAsset} งาน`:""}${nonAsset?` · ไม่ใช่ครุภัณฑ์ ${nonAsset} งาน`:""}${noAsset||nonAsset?" (ไม่รวมในตารางนี้)":""} · ดูประวัติทุกปีงบประมาณได้ที่เมนู "ประวัติซ่อมรายครุภัณฑ์"</p>`:""}`;
+}
+function dimSheets(L){
+  return DIMS.map(dim=>{
+    const rows=dimRows(L,dim),R=[[dim.t,...DIM_HEAD,dim.dl,"รายการงาน"].map(v=>({v,s:1}))];
+    rows.forEach(x=>R.push([{v:x.name+(x.flag?" ("+x.flag+")":""),s:2},{v:x.n,s:5},{v:x.closed,s:5},{v:x.open,s:5},{v:x.c.part,s:3},{v:x.c.stock,s:3},{v:x.c.hire,s:3},{v:x.total,s:3},x.avg!=null?{v:Math.round(x.avg*10)/10,s:5}:{v:"–",s:5},{v:x.dates,s:2},{v:x.M.map(r=>refText(r)+" "+(r.itemName||"")).join(", "),s:2}]));
+    const t=k=>rows.reduce((a,x)=>a+(k==="total"?x.total:k in x.c?x.c[k]:x[k]),0);
+    R.push([{v:"รวม",s:7},{v:t("n"),s:5},{v:t("closed"),s:5},{v:t("open"),s:5},{v:t("part"),s:6},{v:t("stock"),s:6},{v:t("hire"),s:6},{v:t("total"),s:6},{v:"",s:5},{v:"",s:2},{v:"",s:2}]);
+    return {name:dim.sh||"แยก"+dim.t.split(" ")[0].replace(/[\/?*\[\]:]/g,""),rows:R,cols:[34,9,8,8,12,12,12,14,11,30,40],landscape:true,titleRows:1,freeze:1};
+  });
+}
+function reportList(){
+  const fy=+$("#rFy").value,f=$("#rFrom").value,t=$("#rTo").value;
+  return DB.repairs.filter(r=>fyOf(r.receiveDate)===fy&&(!f||r.receiveDate>=f)&&(!t||r.receiveDate<=t));
+}
+function stockRows(L){const m=new Map();L.forEach(r=>(r.parts||[]).forEach(p=>{if(p.kind!=="stock"||!p.name)return;const o=m.get(p.name)||{code:p.stockCode||"",unit:p.unit||"",qty:0,val:0,rep:new Set()};o.qty+=num(p.qty);o.val+=partTotal(p);o.rep.add(r.id);m.set(p.name,o);}));return [...m.entries()].sort((a,b)=>b[1].val-a[1].val);}
+function vendorRows(L){const m=new Map();L.forEach(r=>(r.parts||[]).forEach(p=>{if(!p.vendor||p.kind==="stock")return;const o=m.get(p.vendor)||[0,0];o[0]++;o[1]+=partTotal(p);m.set(p.vendor,o);}));return [...m.entries()].sort((a,b)=>b[1][1]-a[1][1]).map(([k,v])=>[esc(k),v[0],money(v[1])]);}
+
+/* ===== ตั้งค่า ===== */
+function renderSettings(){
+  const s=S(),sg=s.signers;
+  $("#signerBox").innerHTML=[["head","หัวหน้าเจ้าหน้าที่พัสดุ (ข้อ 4)"],["deputy","รองผู้อำนวยการ (ข้อ 5)"],["director","ผู้อำนวยการ (คำสั่ง)"]].map(([k,t])=>
+    `<label class="w2">${t}<input list="dlStaff" data-sg="${k}" data-f="name" value="${esc(sg[k].name)}"></label><label>ตำแหน่ง<input data-sg="${k}" data-f="pos" value="${esc(sg[k].pos)}"></label><label>ชื่อตำแหน่งในหัวข้อ<input data-sg="${k}" data-f="title" value="${esc(sg[k].title)}"></label>`).join("");
+  $("#sOver").value=s.overdueDays;$("#sCostPct").value=s.costPct;$("#assetDbInfo").textContent=`${AS().rows.length.toLocaleString()} รายการ (${AS().source})`+((DB.customAssets||[]).length?` + เพิ่มเอง ${DB.customAssets.length} รายการ`:"");$("#sUnits").value=s.units.join("\n");$("#sDepts").value=s.depts.join("\n");$("#sSections").value=s.sections.join("\n");$("#sBuildings").value=s.buildings.join("\n");$("#sUoms").value=s.uoms.join("\n");
+  renderVendors();renderStock();
+}
+const SF=[["code","รหัส",70],["name","รายการวัสดุ",280],["unit","หน่วยนับ",70],["price","ราคา/หน่วย",90],["cat","ประเภท",150],["bal","คงเหลือ (ตามบัญชี)",80]];
+function renderStock(){
+  const q=($("#stQ").value||"").trim().toLowerCase();
+  $("#stockTable").innerHTML=`<thead><tr>${SF.map(f=>`<th>${f[1]}</th>`).join("")}<th>ณ วันที่</th><th></th></tr></thead><tbody>${S().stock.map((x,i)=>({x,i})).filter(({x})=>!q||((x.code||"")+" "+x.name).toLowerCase().includes(q)).map(({x,i})=>`<tr>${SF.map(f=>`<td><input data-st="${i}" data-f="${f[0]}" ${f[0]==="price"||f[0]==="bal"?'type="number" step="any"':""} value="${esc(x[f[0]]??"")}" style="width:100%;min-width:${f[2]}px"></td>`).join("")}<td class="mute">${x.balDate?thShort(x.balDate):""}</td><td><button class="sm danger" data-delst="${i}">ลบ</button></td></tr>`).join("")}</tbody>`;
+}
+function readStock(){$$("#stockTable [data-st]").forEach(i=>{const x=S().stock[+i.dataset.st];x[i.dataset.f]=(i.dataset.f==="price"||i.dataset.f==="bal")?(i.value===""?null:num(i.value)):i.value.trim();});}
+const VF=[["name","ชื่อ"],["addr","ที่อยู่"],["tel","โทรศัพท์"],["tax","เลขผู้เสียภาษี"],["bankName","ธนาคาร"],["bankBranch","สาขา"],["bankAcc","เลขบัญชี"],["accName","ชื่อบัญชี"]];
+function renderVendors(){$("#vendorTable").innerHTML=`<thead><tr>${VF.map(f=>`<th>${f[1]}</th>`).join("")}<th></th></tr></thead><tbody>${S().vendors.map((v,i)=>`<tr>${VF.map(f=>`<td><input data-v="${i}" data-f="${f[0]}" value="${esc(v[f[0]])}" style="width:100%;min-width:${f[0]==="addr"?220:110}px"></td>`).join("")}<td><button class="sm danger" data-delv="${i}">ลบ</button></td></tr>`).join("")}</tbody>`;}
+function readVendors(){$$("#vendorTable [data-v]").forEach(i=>{S().vendors[+i.dataset.v][i.dataset.f]=i.value.trim();});}
+function saveSettings(){
+  const s=S();
+  $$("[data-sg]").forEach(i=>{s.signers[i.dataset.sg][i.dataset.f]=i.value.trim();});
+  s.overdueDays=Math.max(1,num($("#sOver").value)||15);s.costPct=Math.max(1,num($("#sCostPct").value)||50);
+  const lines=id=>$(id).value.split("\n").map(x=>x.trim()).filter(Boolean);
+  s.units=lines("#sUnits");s.depts=lines("#sDepts");s.sections=lines("#sSections");s.buildings=lines("#sBuildings");
+  s.uoms=$("#sUoms").value.split("\n").map(x=>x.trim()).filter(Boolean);
+  readVendors();s.vendors=s.vendors.filter(v=>v.name);
+  readStock();s.stock=s.stock.filter(x=>x.name);
+  const bad=["head","deputy","director"].map(k=>s.signers[k].name).filter(n=>n&&!isStaff(n));
+  save();fillLists();renderAll();toast(bad.length?"บันทึกแล้ว แต่มีชื่อไม่ตรงรายชื่อบุคลากร: "+bad.join(", "):"บันทึกการตั้งค่าแล้ว");
+}
+
+/* ===== สำรอง / กู้คืน ===== */
+function showBackupState(){
+  const n=DB.changesSinceBackup||0,last=DB.lastBackupAt;
+  const old=!last||daysBetween(last.slice(0,10),todayISO())>=7;
+  $("#backupState").textContent="";
+  $("#lastBackup").textContent=last?`สำรองล่าสุด ${thLong(last.slice(0,10))} เวลา ${last.slice(11,16)} น.`:"ยังไม่เคยสำรองข้อมูล";
+  $("#dataInfo").textContent=`มีเรื่องแจ้งซ่อม ${DB.repairs.length} รายการ · รูปแบบข้อมูลรุ่น ${DB.schema} · ครุภัณฑ์ในทะเบียน ${AS().rows.length} รายการ · รายชื่อบุคลากร ${STAFF.length} คน`;
+}
+function backup(){
+  DB.lastBackupAt=nowStamp();DB.changesSinceBackup=0;save(false);
+  download(`สำรอง_ทะเบียนคุมการแจ้งซ่อม_${todayISO()}.json`,new Blob([JSON.stringify(DB,null,1)],{type:"application/json"}));
+  toast("ดาวน์โหลดไฟล์สำรองแล้ว");
+}
+function restore(){
+  const f=$("#restoreFile").files[0];if(!f){alert("เลือกไฟล์สำรองก่อน");return;}
+  const rd=new FileReader();rd.onload=()=>{
+    let d;try{d=JSON.parse(rd.result);}catch(e){alert("อ่านไฟล์ไม่ได้ ไม่ใช่ไฟล์ JSON");return;}
+    if(!d||d.app!=="repair-register"||!Array.isArray(d.repairs)){alert("ไฟล์นี้ไม่ใช่ไฟล์สำรองของระบบทะเบียนคุมการแจ้งซ่อม");return;}
+    if($("#restoreMode").value==="replace"){
+      if(!confirm(`แทนที่ข้อมูลปัจจุบัน ${DB.repairs.length} รายการ ด้วยข้อมูลในไฟล์ ${d.repairs.length} รายการ?`))return;
+      DB=normalize(d);
+    }else{
+      let ca=0;(normalize(d).customAssets||[]).forEach(x=>{const i=DB.customAssets.findIndex(c=>c.id===x.id);if(i<0){DB.customAssets.push(x);ca++;}else if((x.updatedAt||"")>(DB.customAssets[i].updatedAt||""))DB.customAssets[i]=x;});
+      let add=0,upd=0;d.repairs.forEach(x=>{const i=DB.repairs.findIndex(r=>r.id===x.id);if(i<0){DB.repairs.push(x);add++;}else if((x.updatedAt||"")>(DB.repairs[i].updatedAt||"")){DB.repairs[i]=x;upd++;}});
+      alert(`รวมข้อมูลแล้ว: เพิ่มใหม่ ${add} รายการ ปรับปรุง ${upd} รายการ`);
+    }
+    asReset();save();fillLists();renderAll();$("#restoreFile").value="";toast("กู้คืนข้อมูลแล้ว");
+  };rd.readAsText(f);
+}
+
+/* ===== ทั่วไป ===== */
+function fillLists(){
+  $("#dlStaff").innerHTML=STAFF.map(s=>`<option value="${esc(s.name)}">${esc(s.pos)}</option>`).join("");
+  $("#dlStock").innerHTML=S().stock.map(x=>`<option value="${esc(x.name)}">${esc((x.code?x.code+" · ":"")+x.unit+" · "+money(x.price)+" บาท")}</option>`).join("");
+  $("#dlUnits").innerHTML=S().units.map(u=>`<option value="${esc(u)}">`).join("");
+  $("#dlDepts").innerHTML=S().depts.map(u=>`<option value="${esc(u)}">`).join("");
+  $("#dlSections").innerHTML=S().sections.map(u=>`<option value="${esc(u)}">`).join("");
+  $("#dlBuildings").innerHTML=S().buildings.map(u=>`<option value="${esc(u)}">`).join("");
+  $("#dlUoms").innerHTML=S().uoms.map(u=>`<option value="${esc(u)}">`).join("");
+  $("#dlVendors").innerHTML=S().vendors.map(v=>`<option value="${esc(v.name)}">`).join("");
+  $("[name=status]").innerHTML=Object.entries(ST).map(([k,v])=>`<option value="${k}">${v.t}</option>`).join("");
+
+}
+let curView="reg";
+function renderAll(){renderReg();if(curView==="asset")renderAsset();if(curView==="assets")renderAssets();if(curView==="report")renderReport();if(curView==="settings")renderSettings();showBackupState();}
+function byId(id){return DB.repairs.find(r=>r.id===id);}
+
+function renderDur(){
+  const o={};$$("#frm [name]").forEach(i=>o[i.name]=i.value);const g=stages(o);
+  const rows=STAGES.map(([k,label,desc])=>{const x=g[k];const bad=x&&x.days<0;return `<tr><td>${k==="total"?"<b>"+label+"</b>":label}<div class="mute">${desc}${k==="sender"&&x&&x.combined?" (ไม่มีวันที่ช่าง นับถึงวันที่พัสดุรับ)":""}</div></td><td class="num ${bad?"late":""}">${x?(k==="total"?"<b>"+x.days+"</b>":x.days)+" วัน"+(x.running?" <span class='mute'>(ยังไม่จบ นับถึงวันนี้)</span>":""):"<span class='mute'>ยังคำนวณไม่ได้</span>"}${bad?" วันที่ไม่เรียงลำดับ":""}</td></tr>`;}).join("");
+  $("#durBox").innerHTML=`<table style="max-width:640px"><thead><tr><th>ระยะเวลาซ่อม</th><th class="num">จำนวนวัน</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+function showThaiDates(){renderDur();$$("#frm input[type=date]").forEach(i=>{i.nextElementSibling.textContent=i.value?thLong(i.value):"";});}
+function init(){
+  load();fillLists();
+  $$("label.req").forEach(l=>{const t=l.firstChild,sp=document.createElement("span");sp.innerHTML=esc(t.textContent)+' <span class="star">*</span>';l.replaceChild(sp,t);});
+  $$("#frm input[type=date]").forEach(i=>{const sp=document.createElement("span");sp.className="thd";i.after(sp);i.addEventListener("input",showThaiDates);i.addEventListener("change",showThaiDates);});
+  $("#tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;$$("#tabs button").forEach(x=>x.classList.toggle("on",x===b));curView=b.dataset.v;$$("main>section").forEach(s=>s.classList.toggle("on",s.id==="v-"+curView));renderAll();});
+  $("#btnNew").onclick=()=>openForm(null);
+  ["#fFy","#fUnit","#fLate"].forEach(s=>$(s).onchange=renderReg);$("#fQ").oninput=renderReg;
+  $("#fQ").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();const L=filtered();if(L.length===1)openForm(L[0]);else if(!L.length)toast("ไม่พบใบซ่อมที่ค้นหา");}});
+  $("#stChips").onclick=e=>{const c=e.target.closest("[data-st]");if(!c)return;fStatus=c.dataset.st;renderReg();};
+  $("#regTable").onclick=e=>{
+    const d=e.target.closest("[data-doc]"),j=e.target.closest("[data-json]");
+    if(d){docxRepairForm(byId(d.dataset.doc));return;}
+    if(j){openJson(byId(j.dataset.json));return;}
+    const q=e.target.closest("[data-quick]");if(q){openQuick(byId(q.dataset.quick));return;}
+    const tr=e.target.closest("tr[data-id]");if(tr)openForm(byId(tr.dataset.id));
+  };
+  $("#assetTable").onclick=e=>{const t=e.target.closest("[data-id]");if(t)openForm(byId(t.dataset.id));};
+  $("#aQ").oninput=renderAsset;$("#aType").onchange=renderAsset;$("#aMin").onchange=renderAsset;
+  $("#btnXlsx").onclick=()=>{const fy=$("#fFy").value;exportRegister(filtered(),fy?+fy:null,!!fy&&!fStatus&&!$("#fUnit").value&&!$("#fQ").value&&!$("#fLate").checked);};
+  $("#rFy").onchange=renderReport;
+  $("#btnRepXlsx").onclick=()=>{const fy=+$("#rFy").value;exportRegister(reportList(),fy,true,true);};
+  ["#rFrom","#rTo"].forEach(x=>$(x).onchange=renderReport);
+  $("#rClear").onclick=()=>{$("#rFrom").value="";$("#rTo").value="";renderReport();};
+  $("#repBody").addEventListener("click",e=>{const c=e.target.closest("[data-dim]");if(c){repDim=c.dataset.dim;$("#dimBox").innerHTML=dimHtml(reportList());return;}
+    const j=e.target.closest("[data-id]");if(j)openForm(byId(j.dataset.id));});
+  // ฟอร์ม
+  $$("dialog [data-close]").forEach(b=>b.onclick=()=>b.closest("dialog").close());
+  $("#frm").addEventListener("input",e=>{
+    const i=e.target;if(i.dataset.pos){const p=staffPos(i.value);const t=$(`[name=${i.dataset.pos}]`);if(p||t.readOnly)t.value=p;}
+    if(i.closest("#partsBody")){const tr=i.closest("tr");if(i.dataset.k==="kind")kindUi(tr);if(i.dataset.k==="name")stockPick(tr);calcParts();}
+    if(i.name==="status")renderDur();
+    if(i.name==="doneDate"||i.name==="returnDate")liveStatus();
+  });
+  $("[name=receiveDate]").addEventListener("change",showLastNos);
+  $("#btnAddPart").onclick=()=>partRow();
+  $("[name=itemType]").addEventListener("change",typeUi);
+  $("[name=building]").addEventListener("input",floorOptions);
+  const an=$("[name=assetNo]");
+  an.addEventListener("input",()=>{renderSug();if(asFind(an.value).length||!an.value.trim())showAssetInfo();else $("#assetInfo").style.display="none";});
+  an.addEventListener("blur",showAssetInfo);
+  an.addEventListener("focus",()=>{if(an.value.trim().length>=2&&!asFind(an.value).length)renderSug();});
+  an.addEventListener("keydown",e=>{const box=$("#assetSug");if(box.style.display!=="block"||!sugRows.length)return;
+    const its=$$("#assetSug .it");
+    if(e.key==="ArrowDown"||e.key==="ArrowUp"){e.preventDefault();sugIdx=(sugIdx+(e.key==="ArrowDown"?1:-1)+its.length)%its.length;its.forEach((x,i)=>x.classList.toggle("on",i===sugIdx));its[sugIdx].scrollIntoView({block:"nearest"});}
+    else if(e.key==="Enter"){e.preventDefault();pickAsset(sugRows[sugIdx<0?0:sugIdx]);}
+    else if(e.key==="Escape"){e.preventDefault();e.stopPropagation();box.style.display="none";}});
+  an.addEventListener("blur",()=>setTimeout(()=>{$("#assetSug").style.display="none";},200));
+  $("#assetSug").addEventListener("mousedown",e=>{const it=e.target.closest(".it");if(it){e.preventDefault();pickAsset(sugRows[+it.dataset.i]);}});
+  an.addEventListener("change",()=>{const M=asFind(an.value);if(M.length&&!$("[name=itemName]").value)pickAsset(M[0]);showAssetInfo();});
+  $("[name=itemType]").addEventListener("change",showAssetInfo);
+  $("[name=assetNo]").addEventListener("change",()=>{const a=$("[name=assetNo]").value.trim();if(!a)return;
+    const prev=DB.repairs.filter(r=>r.id!==editing&&(r.assetNo||"").trim()===a).sort((x,y)=>(y.updatedAt||"").localeCompare(x.updatedAt||""))[0];if(!prev)return;
+    let n=0;["itemName","brand","model","serial","building","floor","room"].forEach(k=>{const i=$(`[name=${k}]`);if(!i.value&&prev[k]){i.value=prev[k];n++;}});
+    if(n){floorOptions();toast("เติมข้อมูลจากการซ่อมครั้งก่อนของครุภัณฑ์นี้แล้ว");}});$("[name=assetNo]").addEventListener("input",()=>{if($("[name=assetNo]").value&&!$("[name=itemType]").value)$("[name=itemType]").value="asset";typeUi();});
+  $("#supplyPreset").addEventListener("change",e=>{supplyUi(e.target.value);if(e.target.value==="other")$("[name=supplyOpinion]").focus();});
+  $("[name=techVerdict]").addEventListener("change",e=>{caseOptions(e.target.value,"");liveStatus();});
+  ["doneDate","returnDate"].forEach(n=>$(`[name=${n}]`).addEventListener("change",liveStatus));
+  $("[name=techCase]").addEventListener("change",liveStatus);
+  $("[name=status]").addEventListener("change",()=>{$("#stHint").textContent="";});
+  $("[name=techCase]").addEventListener("change",e=>{ // ปรับประเภทของรายการที่ยังว่างตามกรณี
+    $$("#partsBody tr").forEach(tr=>{if(!$("[data-k=name]",tr).value){$("[data-k=kind]",tr).value=defaultKind();kindUi(tr);}});});
+  $("#partsBody").onclick=e=>{const b=e.target.closest("[data-delpart]");if(b){b.closest("tr").remove();calcParts();}};
+  $("#btnSave").onclick=saveForm;
+  $("#qStatus").onchange=qUi;$$("#dlgQ input[type=date]").forEach(i=>i.addEventListener("change",qUi));
+  $("#qSave").onclick=saveQuick;
+  let aaT=null;const aaRe=()=>{aaLimit=100;renderAssets();};
+  $("#aaQ").oninput=()=>{clearTimeout(aaT);aaT=setTimeout(aaRe,200);};
+  ["#aaCat","#aaBld","#aaHide","#aaRep","#aaMine"].forEach(x=>$(x).onchange=aaRe);
+  $("#aaMore").onclick=()=>{aaLimit+=100;renderAssets();};
+  $("#aaNew").onclick=()=>openAssetEdit(null);
+  $("#aaXlsx").onclick=exportAssets;
+  $("#aaTable").onclick=e=>{const r=x=>ASR()[+x];
+    const rep=e.target.closest("[data-arep]");if(rep){openForm(null);pickAsset(r(rep.dataset.arep));return;}
+    const v=e.target.closest("[data-aview]")||e.target.closest("tr[data-ai]");if(v)openAssetView(r(v.dataset.aview??v.dataset.ai));};
+  $("#aRepair").onclick=()=>{const r=aCur;$("#dlgA").close();openForm(null);pickAsset(r);};
+  $("#aEdit").onclick=()=>{const c=(DB.customAssets||[]).find(x=>x.id===aCur[12]);if(c)openAssetEdit(c);};
+  $("#aDel").onclick=()=>{const c=(DB.customAssets||[]).find(x=>x.id===aCur[12]);if(!c)return;const n=DB.repairs.filter(x=>(x.assetNo||"").trim()===c.code).length;
+    if(!confirm(`ลบครุภัณฑ์ ${c.code} ที่เพิ่มเอง?${n?`\nมีใบซ่อมอ้างถึงเลขนี้ ${n} เรื่อง (ใบซ่อมไม่ถูกลบ)`:""}`))return;
+    (DB.deleted=DB.deleted||{})[c.id]=nowStamp();DB.customAssets=DB.customAssets.filter(x=>x.id!==c.id);asReset();save();$("#dlgA").close();renderAll();toast("ลบครุภัณฑ์แล้ว");};
+  $("#aBody").addEventListener("click",e=>{const t=e.target.closest("[data-rid]");if(t){$("#dlgA").close();openForm(byId(t.dataset.rid));}});
+  $("#aeSave").onclick=saveAssetEdit;
+  $("[data-ae=building]").addEventListener("input",aeFloors);
+  $("[data-ae=acqDate]").addEventListener("change",e=>{e.target.nextElementSibling.textContent=e.target.value?thLong(e.target.value):"";});$("#qOpen").onclick=()=>{$("#dlgQ").close();openForm(qRec);};
+  $("#btnDel").onclick=()=>{const r=byId(editing);if(r&&confirm(`ลบเรื่องแจ้งซ่อม ${refText(r)} (${r.itemName})?\nลบแล้วกู้คืนได้จากไฟล์สำรองเท่านั้น`)){(DB.deleted=DB.deleted||{})[editing]=nowStamp();DB.repairs=DB.repairs.filter(x=>x.id!==editing);save();$("#dlg").close();renderAll();toast("ลบแล้ว");}};
+  $("#btnDocx").onclick=()=>{const o=readForm();docxRepairForm(Object.assign({},editing?byId(editing):{},o));};
+  $("#btnJson").onclick=()=>{const rec=saveForm();if(rec)openJson(rec);};
+  // JSON
+  $("#jMethod").onchange=jMethodChanged;
+  $("#jItems").onchange=jRecalc;
+  $("#btnJsonGo").onclick=()=>{const j=buildJson();if(!j)return;
+    download(`ข้อมูลงาน_${j.method==="hire"?"จ้าง":"ซื้อ"}ซ่อม_${(jRepair.regNo||jRepair.techNo||"").replace(/\//g,"-")}.json`,new Blob([JSON.stringify(j,null,1)],{type:"application/json"}));
+    jRepair.logs=jRepair.logs||[];jRepair.logs.push({at:nowStamp(),text:`ทำไฟล์ข้อมูลงาน${j.method==="hire"?"จ้าง":"ซื้อ"} ยอด ${money(j.repairRef.total)} บาท`,by:ME()});
+    const ws=j.method==="hire"?"waitHire":"waitBuy";
+    if(jRepair.status==="received"||jRepair.status==="repairing"){jRepair.logs.push({at:nowStamp(),text:`เปลี่ยนสถานะ ${ST[jRepair.status].t} → ${ST[ws].t}`,by:ME()});jRepair.status=ws;}
+    jRepair.updatedAt=nowStamp();save();$("#dlgJ").close();renderAll();toast("ดาวน์โหลดไฟล์ข้อมูลงานแล้ว เปิดในระบบเอกสารพัสดุด้วยปุ่ม \"เปิดไฟล์ข้อมูล\"");};
+  // ตั้งค่า
+  $("#btnSaveSettings").onclick=saveSettings;
+  $("#stQ").oninput=()=>{readStock();renderStock();};
+  $("#btnAddStock").onclick=()=>{readStock();$("#stQ").value="";S().stock.push({code:"",name:"",unit:"",price:null,cat:"",bal:null,balDate:null});renderStock();const w=$("#stockTable").closest(".tablewrap");w.scrollTop=w.scrollHeight;};
+  $("#stockTable").onclick=e=>{const b=e.target.closest("[data-delst]");if(b&&confirm("ลบวัสดุนี้ออกจากรายการ?")){readStock();S().stock.splice(+b.dataset.delst,1);renderStock();}};
+  $("#btnAddVendor").onclick=()=>{readVendors();S().vendors.push({name:"",addr:"",tel:"",tax:"",bankAcc:"",accName:"",bankName:"",bankBranch:""});renderVendors();};
+  $("#vendorTable").onclick=e=>{const b=e.target.closest("[data-delv]");if(b){readVendors();S().vendors.splice(+b.dataset.delv,1);renderVendors();}};
+  // สำรอง
+  $("#btnBackup").onclick=backup;$("#btnRestore").onclick=restore;$("#btnRef").onclick=()=>CLOUD.importRef($("#refFile").files[0]);
+  renderAll();
+}
+init();
+CLOUD.boot();
+</script>
+</body>
+</html>
