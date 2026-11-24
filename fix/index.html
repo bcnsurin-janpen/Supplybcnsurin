@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>ระบบแจ้งซ่อมออนไลน์ - วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</title>
+<style>
+:root{
+  --teal-900:#0b3b3b; --teal-800:#0f4c4c; --teal-700:#136161; --teal-600:#177a7a;
+  --amber-500:#f59e0b; --amber-100:#fef3c7; --amber-800:#92400e; --amber-300:#fcd34d;
+  --sky-600:#0284c7; --sky-100:#e0f2fe; --sky-800:#075985; --sky-300:#7dd3fc;
+  --emerald-600:#059669; --emerald-100:#d1fae5; --emerald-800:#065f46; --emerald-300:#6ee7b7;
+  --slate-50:#f8fafc; --slate-100:#f1f5f9; --slate-200:#e2e8f0; --slate-300:#cbd5e1;
+  --slate-400:#94a3b8; --slate-500:#64748b; --slate-600:#475569; --slate-700:#334155; --slate-800:#1e293b;
+  --rose-500:#f43f5e; --rose-100:#ffe4e6;
+  font-family:-apple-system,"Segoe UI","Sarabun","Leelawadee UI","Tahoma",sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--slate-100);color:var(--slate-800);}
+#app{max-width:1200px;margin:0 auto;background:var(--slate-50);min-height:100vh;border-left:1px solid var(--slate-200);border-right:1px solid var(--slate-200);}
+
+.topbar{background:var(--teal-900);color:#fff;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.brand{display:flex;align-items:center;gap:10px;}
+.brand-icon{width:36px;height:36px;border-radius:10px;background:var(--teal-700);display:flex;align-items:center;justify-content:center;font-size:18px;flex:none;}
+.brand-title{font-weight:600;font-size:14px;line-height:1.3;}
+.brand-sub{font-size:11px;color:#cfe8e8;}
+
+.bell-wrap{position:relative;}
+.bell-btn{background:none;border:none;color:#fff;cursor:pointer;padding:8px;border-radius:8px;font-size:18px;position:relative;}
+.bell-btn:hover{background:var(--teal-800);}
+.bell-badge{position:absolute;top:-2px;right:-2px;background:var(--amber-500);color:#1a1a1a;font-size:10px;border-radius:999px;min-width:16px;height:16px;display:flex;align-items:center;justify-content:center;padding:0 3px;font-weight:700;}
+.notif-panel{position:absolute;right:0;top:44px;width:320px;max-height:380px;overflow-y:auto;background:#fff;color:var(--slate-700);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.2);border:1px solid var(--slate-200);z-index:50;}
+.notif-head{padding:10px 12px;border-bottom:1px solid var(--slate-200);font-size:11px;font-weight:600;color:var(--slate-500);}
+.notif-item{padding:8px 12px;border-bottom:1px solid var(--slate-100);font-size:12px;display:flex;gap:8px;}
+.notif-empty{padding:16px;font-size:12px;color:var(--slate-400);}
+
+.tabs{display:flex;gap:2px;overflow-x:auto;background:#fff;border-bottom:1px solid var(--slate-200);padding:0 8px;}
+.tab-btn{background:none;border:none;padding:11px 12px;font-size:13px;color:var(--slate-500);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;display:flex;align-items:center;gap:6px;}
+.tab-btn.active{color:var(--teal-800);font-weight:600;border-bottom-color:var(--teal-700);}
+.tab-btn:hover{color:var(--teal-700);}
+
+.body{padding:18px;}
+.grid{display:grid;gap:18px;}
+@media(min-width:1000px){.grid-2{grid-template-columns:2fr 3fr;} .grid-2b{grid-template-columns:1fr 1fr;} .grid-4{grid-template-columns:repeat(4,1fr);}}
+@media(max-width:999px){.grid-4{grid-template-columns:repeat(2,1fr);}}
+
+.card{background:#fff;border:1px solid var(--slate-200);border-radius:14px;box-shadow:0 1px 2px rgba(0,0,0,.03);padding:16px;}
+.card h2{margin:0 0 4px;font-size:16px;display:flex;align-items:center;gap:8px;}
+.card h3{margin:0 0 10px;font-size:13px;color:var(--slate-600);}
+.hint{font-size:12px;color:var(--slate-400);margin:0 0 14px;}
+
+label.field{display:block;margin-bottom:12px;}
+label.field .lab{display:block;font-size:13px;color:var(--slate-600);margin-bottom:4px;}
+.req{color:var(--rose-500);}
+.inp,select,textarea,input[type=text],input[type=date],input[type=number],input[type=tel]{
+  width:100%;border:1px solid var(--slate-300);border-radius:8px;padding:8px 10px;font-size:13px;color:var(--slate-800);font-family:inherit;
+}
+.inp:focus,select:focus,textarea:focus,input:focus{outline:2px solid var(--teal-600);outline-offset:0;border-color:var(--teal-600);}
+.btn{border:none;border-radius:8px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-primary{background:var(--teal-700);color:#fff;}
+.btn-primary:hover{background:var(--teal-900);}
+.btn-primary:disabled{background:var(--slate-300);cursor:not-allowed;}
+.btn-sky{background:var(--sky-600);color:#fff;}
+.btn-block{width:100%;padding:11px;}
+.btn-ghost{background:var(--slate-100);color:var(--slate-700);}
+.btn-sm{padding:6px 10px;font-size:12px;border-radius:7px;}
+.btn-danger{background:none;color:var(--rose-500);border:none;cursor:pointer;}
+
+.badge{display:inline-flex;align-items:center;gap:4px;border:1px solid;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;white-space:nowrap;}
+.badge-slate{background:var(--slate-100);color:var(--slate-700);border-color:var(--slate-300);}
+.badge-amber{background:var(--amber-100);color:var(--amber-800);border-color:var(--amber-300);}
+.badge-sky{background:var(--sky-100);color:var(--sky-800);border-color:var(--sky-300);}
+.badge-emerald{background:var(--emerald-100);color:var(--emerald-800);border-color:var(--emerald-300);}
+.badge-violet{background:#ede9fe;color:#5b21b6;border-color:#c4b5fd;}
+.badge-rose{background:var(--rose-100);color:#9f1239;border-color:#fda4af;}
+
+.steps{display:flex;align-items:flex-start;width:100%;margin:10px 0;}
+.step{display:flex;flex-direction:column;align-items:center;gap:4px;flex:none;width:70px;}
+.step-circle{width:26px;height:26px;border-radius:999px;border:2px solid var(--slate-300);color:var(--slate-400);background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;}
+.step-circle.done{background:var(--teal-700);border-color:var(--teal-700);color:#fff;}
+.step-circle.active{border-color:var(--teal-700);color:var(--teal-700);}
+.step-label{font-size:10px;color:var(--slate-400);text-align:center;white-space:nowrap;}
+.step-label.active{color:var(--teal-700);font-weight:600;}
+.step-line{flex:1;height:2px;background:var(--slate-200);margin-top:12px;}
+.step-line.done{background:var(--teal-700);}
+
+.req-row{border:1px solid var(--slate-200);border-radius:10px;padding:12px;margin-bottom:8px;}
+.req-row-top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;cursor:pointer;flex-wrap:wrap;}
+.req-title{font-size:13px;font-weight:600;color:var(--slate-800);}
+.req-sub{font-size:11px;color:var(--slate-400);margin-top:2px;}
+.req-detail{margin-top:12px;padding-top:10px;border-top:1px solid var(--slate-100);display:none;}
+.req-detail.open{display:block;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 16px;font-size:12px;color:var(--slate-500);margin-top:14px;}
+
+.stat-card{display:flex;align-items:center;gap:12px;}
+.stat-icon{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex:none;}
+.stat-val{font-size:22px;font-weight:700;line-height:1.1;}
+.stat-lab{font-size:11px;color:var(--slate-500);}
+
+.pill-group{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.pill{border:1px solid var(--slate-300);background:#fff;color:var(--slate-500);border-radius:999px;padding:6px 14px;font-size:12px;cursor:pointer;}
+.pill.active{background:var(--teal-700);border-color:var(--teal-700);color:#fff;}
+
+.bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px;}
+.bar-label{width:170px;flex:none;color:var(--slate-600);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.bar-track{flex:1;background:var(--slate-100);border-radius:5px;height:14px;overflow:hidden;}
+.bar-fill{height:100%;background:var(--teal-700);border-radius:5px;}
+.bar-val{width:26px;text-align:right;color:var(--slate-500);flex:none;}
+
+table.simple{width:100%;border-collapse:collapse;font-size:12px;}
+table.simple th{text-align:left;color:var(--slate-400);font-weight:500;padding:6px 10px 6px 0;border-bottom:1px solid var(--slate-200);}
+table.simple td{padding:7px 10px 7px 0;border-bottom:1px solid var(--slate-100);color:var(--slate-600);}
+
+.empty{text-align:center;padding:40px 10px;color:var(--slate-400);font-size:13px;}
+
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.45);display:flex;align-items:center;justify-content:center;z-index:100;padding:16px;}
+.modal-box{background:#fff;border-radius:14px;max-width:420px;width:100%;max-height:90vh;overflow-y:auto;}
+.modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--slate-200);}
+.modal-head h3{margin:0;font-size:14px;}
+.modal-close{background:none;border:none;font-size:18px;color:var(--slate-400);cursor:pointer;}
+.modal-body{padding:18px;}
+
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--slate-800);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;z-index:200;box-shadow:0 10px 30px rgba(0,0,0,.3);}
+
+.admin-tabs-content{display:grid;gap:14px;}
+.list-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px solid var(--slate-100);}
+.list-row .sub{color:var(--slate-400);font-size:11px;}
+.inline-form{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.inline-form > *{flex:1;min-width:140px;}
+.small-note{font-size:11px;color:var(--slate-400);display:flex;gap:6px;align-items:flex-start;margin-top:12px;}
+.center-col{max-height:380px;overflow-y:auto;}
+
+.assign-row{display:grid;grid-template-columns:1fr;gap:10px;border:1px solid var(--slate-200);border-radius:10px;padding:14px;margin-bottom:10px;}
+@media(min-width:900px){.assign-row{grid-template-columns:2fr 1fr 1fr;align-items:end;}}
+.assign-actions{display:flex;gap:6px;}
+
+.hidden{display:none !important;}
+.identity-select{background:#fff;color:var(--slate-800);border:1px solid var(--slate-300);border-radius:8px;padding:6px 10px;font-size:12px;max-width:240px;font-weight:600;}
+.identity-select option{color:#1e293b;background:#fff;}
+.lock-note{font-size:11px;color:var(--slate-600);background:var(--slate-100);border:1px solid var(--slate-200);border-radius:7px;padding:6px 10px;display:inline-block;font-weight:600;}
+.clickable{cursor:pointer;}
+.clickable:hover{background:var(--slate-50);}
+.notif-close{background:none;border:none;color:var(--slate-400);cursor:pointer;font-size:13px;}
+.load-more-wrap{text-align:center;margin-top:12px;}
+.techresult-tag{font-size:10px;padding:2px 7px;border-radius:6px;background:var(--slate-100);color:var(--slate-500);margin-left:6px;}
+.guest-banner{background:var(--amber-100);color:var(--amber-800);border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:14px;font-weight:600;}
+.tech-check-list{display:flex;flex-direction:column;gap:4px;max-height:140px;overflow-y:auto;border:1px solid var(--slate-200);border-radius:8px;padding:8px;background:#fff;}
+.tech-check-list label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--slate-700);}
+.row-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
+.row-actions button{font-size:11px;padding:5px 9px;}
+.readonly-banner{background:var(--slate-100);color:var(--slate-700);border:1px solid var(--slate-200);border-radius:8px;padding:9px 12px;font-size:12px;margin-bottom:14px;font-weight:600;}
+.brand-clickable{cursor:pointer;}
+.brand-clickable:hover .brand-title{text-decoration:underline;}
+.logout-btn{background:var(--teal-800);color:#fff;border:1px solid var(--teal-700);border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;font-weight:600;}
+.logout-btn:hover{background:var(--teal-700);}
+
+.login-screen{min-height:560px;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(160deg,var(--teal-900),var(--teal-700));}
+.login-card{background:#fff;border-radius:16px;padding:28px;max-width:420px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.25);}
+.login-card h1{font-size:16px;margin:0 0 4px;color:var(--slate-800);}
+.login-card .sub{font-size:12px;color:var(--slate-500);margin-bottom:18px;}
+.login-guest-link{display:block;text-align:center;font-size:12px;color:var(--slate-400);margin-top:14px;background:none;border:none;cursor:pointer;text-decoration:underline;width:100%;}
+
+
+.msg{color:#b42318;min-height:1.3em;font-size:12px;margin:2px 0 8px}.msg.ok{color:#1f7a3f}
+.mask{color:var(--slate-400);font-style:italic;font-size:11px}
+.pwrow,.pw{display:flex;gap:6px;align-items:center}.pw .inp{flex:1}
+button.eye{border:1px solid var(--slate-300);background:#fff;border-radius:8px;padding:7px 9px;cursor:pointer;flex:none}
+.linkrow{display:flex;gap:14px;justify-content:center;margin-top:8px;flex-wrap:wrap}
+button.lnk{background:none;border:none;color:var(--teal-700);text-decoration:underline;cursor:pointer;font-size:12px;padding:2px}
+button.lnk.guest{display:block;width:100%;margin-top:14px;color:var(--slate-500)}
+.foot{text-align:center;font-size:11px;color:var(--slate-500);padding:14px 10px 22px}.foot a{color:var(--teal-700)}
+.login-card .foot{padding:14px 0 0}
+#gate{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.6);z-index:300;overflow:auto}
+#gate .gov{min-height:100%;display:flex;align-items:center;justify-content:center;padding:16px}
+#gate .gbox{background:#fff;border-radius:14px;padding:22px;max-width:520px;width:100%}
+#gate h3{margin:0 0 12px}.grow{display:flex;gap:8px;margin-top:10px}
+.toast.bad{background:#9f1239}
+.admin-tabs-content{display:block}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="../js/supabase-config.js"></script>
+</head>
+<body>
+<div id="app"><div style="padding:60px 20px;text-align:center;color:#64748b;font-size:14px">กำลังโหลดระบบ...</div></div>
+<script>
+/* ====== ระบบแจ้งซ่อมออนไลน์ (/fix/) — หน้าเว็บ ไม่มีข้อมูลบุคคลฝังอยู่ในไฟล์ ข้อมูลทั้งหมดมาจากฐานข้อมูลหลังเข้าสู่ระบบ ====== */
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const DEF_PW = "123456789";
+const STATUS = {
+  new: { label: "รอส่วนกลางมอบหมาย", step: 1, color: "slate" },
+  assigned: { label: "มอบหมายแล้ว รอส่งซ่อม", step: 2, color: "amber" },
+  writer_sent: { label: "ส่งซ่อมแล้ว รอช่างรับเรื่อง", step: 3, color: "amber" },
+  tech_received: { label: "ช่างรับเรื่อง/ออกเลขแล้ว รอตรวจสอบ", step: 4, color: "sky" },
+  tech_inspected: { label: "ช่างตรวจสอบแล้ว กำลังพิจารณา", step: 4, color: "sky" },
+  tech_done: { label: "ส่งพัสดุแล้ว รอพัสดุดำเนินการ", step: 5, color: "violet" },
+  warehouse_in_progress: { label: "พัสดุอยู่ระหว่างดำเนินการ", step: 5, color: "violet" },
+  tech_final_repair: { label: "พัสดุจัดเตรียมแล้ว ส่งช่างซ่อมขั้นสุดท้าย", step: 5, color: "violet" },
+  completed: { label: "เสร็จสิ้น", step: 6, color: "emerald" },
+  cancelled: { label: "ยกเลิก", step: 0, color: "rose" }
+};
+const STEP_LABELS = ["แจ้งซ่อม", "มอบหมาย", "ส่งซ่อม", "ช่างดำเนินการ", "พัสดุ/ซ่อมขั้นสุดท้าย", "เสร็จสิ้น"];
+const WAREHOUSE_REASONS = ["เบิกวัสดุในคลัง", "จัดซื้อวัสดุ", "จ้างเอกชนดำเนินการ", "แทงชำรุด", "แทงชำรุดเพื่อซื้อทดแทน"];
+const REASONS_RETURN_TO_TECH = ["เบิกวัสดุในคลัง", "จัดซื้อวัสดุ"];
+const GROUPS = [["writer", "ผู้เขียนใบส่งซ่อม"], ["technician", "ช่าง"], ["warehouse", "เจ้าหน้าที่พัสดุ"], ["dispatcher", "ส่วนกลาง (ผู้จ่ายงาน)"], ["supervisor", "ผู้กำกับติดตาม"], ["admin", "ผู้ดูแลระบบ"]];
+const GROUP_LABEL = {}; GROUPS.forEach(function (g) { GROUP_LABEL[g[0]] = g[1]; });
+const ROLES = [
+  { id: "requester", label: "ผู้แจ้งซ่อม", icon: "📷" }, { id: "central", label: "ส่วนกลาง (จ่ายงาน)", icon: "📤" },
+  { id: "writer", label: "ผู้เขียนใบส่งซ่อม", icon: "📋" }, { id: "technician", label: "ช่าง", icon: "🔧" },
+  { id: "warehouse", label: "เจ้าหน้าที่พัสดุ", icon: "📦" }, { id: "assets", label: "ทะเบียนครุภัณฑ์", icon: "📄" },
+  { id: "dashboard", label: "แดชบอร์ด/รายงาน", icon: "📊" }, { id: "admin", label: "ผู้ดูแลระบบ", icon: "🔧" }
+];
+let ME = null, SET = {}, RESP = {}, REQS = [], ASSETS = null, ROLE = "requester", EXPANDED = null;
+let PERIOD = "month", PERIOD_OFFSET = 0, ADMIN_TAB = "members", MODAL = null, ASSIGN_PICKS = {}, ASSET_SHOWN = 300, IDENTITY = "";
+let pollT = null, MEMBERS = [];
+
+const $ = function (id) { return document.getElementById(id); };
+const esc = function (s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); };
+const attr = function (s) { return esc(s).replace(/`/g, "&#96;"); };
+const jsAttr = function (s) { return esc(JSON.stringify(String(s == null ? "" : s))); };
+const fmtDate = function (v) { if (!v) return "-"; var d = new Date(v); return isNaN(d) ? "-" : d.toLocaleDateString("th-TH", { year: "numeric", month: "short", day: "numeric" }); };
+const fmtDateTime = function (v) { if (!v) return "-"; var d = new Date(v); return isNaN(d) ? "-" : d.toLocaleString("th-TH", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); };
+const todayInput = function () { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+const daysBetween = function (a, b) { if (!a || !b) return null; return Math.max(0, Math.round((new Date(b) - new Date(a)) / 86400000)); };
+const dash = function (v) { return v == null || v === "" ? "-" : v; };
+
+function isAdmin() { return !!ME && ME.isAdmin; }
+function hasGroup(g) { return !!ME && (ME.groups || []).indexOf(g) >= 0; }
+function canAct(g) { return isAdmin() || hasGroup(g); }
+function isStaff() { return !!ME && ((ME.groups || []).length > 0); }
+function visibleTabs() { return ROLES.filter(function (r) { return r.id !== "admin" || isAdmin(); }); }
+
+/* ---------- เรียกฐานข้อมูล ---------- */
+async function rpc(name, args) { var r = await sb.rpc(name, args || {}); if (r.error) throw r.error; return r.data; }
+function errMsg(e) {
+  var m = (e && e.message) || "";
+  if (/bad_state/.test(m)) return "สถานะงานนี้เปลี่ยนไปแล้ว (อาจมีผู้อื่นดำเนินการก่อน) กรุณากดรีเฟรชรายการ";
+  if (/not allowed/.test(m)) return "ไม่มีสิทธิ์ทำรายการนี้ หรือสถานะงานไม่เปิดให้ทำรายการ";
+  if (/reason required/.test(m)) return "กรุณาระบุเหตุผล";
+  if (/phone/.test(m)) return "เบอร์โทรศัพท์ไม่ถูกต้อง (ตัวเลข 9-10 หลัก ขึ้นต้นด้วย 0)";
+  if (/date in future/.test(m)) return "วันที่อยู่ในอนาคต";
+  if (/date before request/.test(m)) return "วันที่ต้องไม่ก่อนวันที่แจ้ง";
+  if (/invalid: date/.test(m)) return "วันที่ไม่ถูกต้อง";
+  if (/invalid: ไฟล์/.test(m) || /ไฟล์สำรอง/.test(m)) return m.replace(/^.*invalid: /, "");
+  if (/location/.test(m)) return "กรุณากรอกสถานที่อย่างน้อย 1 ช่อง";
+  if (/quantity/.test(m)) return "จำนวนไม่ถูกต้อง (1-9999)";
+  if (/technicians/.test(m)) return "ต้องเลือกช่าง 1-2 คน";
+  if (/required/.test(m)) return "กรุณากรอกข้อมูลที่จำเป็นให้ครบ";
+  if (/too long/.test(m)) return "ข้อความยาวเกินกำหนด";
+  if (/email/.test(m)) return "อีเมลต้องเป็น @bcnsurin.ac.th";
+  if (/ผู้ดูแลระบบอย่างน้อย/.test(m)) return "ต้องมีผู้ดูแลระบบอย่างน้อย 1 คน";
+  if (/JWT|expired|token/i.test(m)) return "หมดเวลาเข้าสู่ระบบ กรุณาเข้าสู่ระบบใหม่";
+  return "ทำรายการไม่สำเร็จ กรุณาลองใหม่ (ถ้าเป็นอีกให้แจ้งผู้ดูแลระบบ)";
+}
+function showToast(msg, bad) {
+  var root = $("toastRoot"); if (!root) return;
+  root.innerHTML = '<div class="toast' + (bad ? " bad" : "") + '" role="status">' + (bad ? "⚠️ " : "✅ ") + esc(msg) + "</div>";
+  clearTimeout(window.__tt); window.__tt = setTimeout(function () { root.innerHTML = ""; }, bad ? 5000 : 2800);
+}
+async function act(fn, args, okMsg, closeIt) {
+  try { await rpc(fn, args); } catch (e) { showToast(errMsg(e), true); return false; }
+  if (closeIt !== false) closeModal();
+  showToast(okMsg); await reload(); return true;
+}
+async function reload(quiet) {
+  try { REQS = await rpc("fix_list"); } catch (e) { if (!quiet) showToast(errMsg(e), true); return; }
+  if (!$("viewBody")) return;
+  if (ROLE === "requester") refreshReqList(); else if (ROLE !== "admin" && ROLE !== "assets") renderView();
+}
+
+/* ---------- หน้าจอ: เข้าสู่ระบบ / ผู้เยี่ยมชม ---------- */
+function rememberedEmails() { try { return JSON.parse(localStorage.getItem("fixEmails") || "[]").filter(function (x) { return typeof x === "string"; }).slice(0, 5); } catch (e) { return []; } }
+function rememberEmail(em) { try { var l = rememberedEmails().filter(function (x) { return x !== em; }); l.unshift(em); localStorage.setItem("fixEmails", JSON.stringify(l.slice(0, 5))); } catch (e) {} }
+function addEye(inp) {
+  if (inp.dataset.eye) return; inp.dataset.eye = 1;
+  var b = document.createElement("button"); b.type = "button"; b.className = "eye"; b.textContent = "👁"; b.title = "แสดง/ซ่อนรหัสผ่าน"; b.setAttribute("aria-label", "แสดงหรือซ่อนรหัสผ่าน");
+  b.onclick = function () { inp.type = inp.type === "password" ? "text" : "password"; };
+  inp.parentNode.classList.add("pwrow"); inp.after(b);
+}
+function eyes(root) { (root || document).querySelectorAll("input[type=password]").forEach(addEye); }
+function footerHTML() { return '<div class="foot"><a href="#" onclick="openPrivacy();return false">ประกาศความเป็นส่วนตัว (PDPA)</a> · ส่วนพัสดุและทรัพย์สิน วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</div>'; }
+function showLogin(msg) {
+  stopPoll(); ME = null;
+  var opts = rememberedEmails().map(function (e) { return '<option value="' + attr(e) + '">'; }).join("");
+  $("app").innerHTML = '<div class="login-screen"><div class="login-card">' +
+    "<h1>🏥 ระบบแจ้งซ่อมออนไลน์</h1>" +
+    '<div class="sub">วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์ — เข้าสู่ระบบด้วยบัญชีอีเมลองค์กรเพื่อแจ้งซ่อมหรือดำเนินการ</div>' +
+    '<label class="field"><span class="lab">อีเมลองค์กร<span class="req"> *</span></span><input type="email" id="gEmail" class="inp" list="gEmails" autocomplete="username" placeholder="ชื่อ@bcnsurin.ac.th"><datalist id="gEmails">' + opts + "</datalist></label>" +
+    '<label class="field"><span class="lab">รหัสผ่าน<span class="req"> *</span></span><span class="pw"><input type="password" id="gPw" class="inp" autocomplete="current-password"></span></label>' +
+    '<div id="gMsg" class="msg" role="alert"></div>' +
+    '<button class="btn btn-primary btn-block" id="gLogin">เข้าสู่ระบบ</button>' +
+    '<div class="linkrow"><button class="lnk" id="gForgot">ลืมรหัสผ่าน</button>' + (rememberedEmails().length ? '<button class="lnk" id="gClear">ล้างอีเมลที่จำไว้ในเครื่องนี้</button>' : "") + "</div>" +
+    '<button class="lnk guest" id="gGuest">เข้าชมสถานะแบบไม่ระบุตัวตน (ข้อมูลปกปิด ดูได้อย่างเดียว)</button>' +
+    footerHTML() + "</div></div><div id=\"modalRoot\"></div><div id=\"toastRoot\"></div>";
+  eyes($("app"));
+  if (msg) $("gMsg").textContent = msg;
+  var go = async function () {
+    var em = $("gEmail").value.trim().toLowerCase(), pw = $("gPw").value, m = $("gMsg"); m.textContent = ""; m.className = "msg";
+    if (!em || !pw) { m.textContent = "กรอกอีเมลและรหัสผ่าน"; return; }
+    $("gLogin").disabled = true; var r = await sb.auth.signInWithPassword({ email: em, password: pw }); $("gLogin").disabled = false;
+    if (r.error) { m.textContent = /Invalid login/i.test(r.error.message) ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่"; return; }
+    if (pw === DEF_PW) { try { sessionStorage.setItem("mustChangePw", "1"); } catch (e) {} }
+    afterLogin();
+  };
+  $("gLogin").onclick = go; $("gPw").onkeydown = function (e) { if (e.key === "Enter") go(); };
+  $("gForgot").onclick = async function (e) {
+    e.preventDefault(); var em = $("gEmail").value.trim().toLowerCase(), m = $("gMsg");
+    if (!em) { m.className = "msg"; m.textContent = 'พิมพ์อีเมลองค์กรก่อน แล้วกด "ลืมรหัสผ่าน"'; return; }
+    var r = await sb.auth.resetPasswordForEmail(em, { redirectTo: location.origin + location.pathname });
+    m.className = r.error ? "msg" : "msg ok";
+    m.textContent = r.error ? "ส่งลิงก์ไม่สำเร็จ กรุณาลองใหม่ภายหลัง" : "ถ้าอีเมลนี้มีบัญชีในระบบ จะได้รับลิงก์ตั้งรหัสใหม่ทางอีเมลองค์กร (ตรวจกล่องจดหมายขยะด้วย) กดขอครั้งเดียวแล้วรอสักครู่";
+  };
+  if ($("gClear")) $("gClear").onclick = function () { try { localStorage.removeItem("fixEmails"); } catch (e) {} showLogin(); };
+  $("gGuest").onclick = showGuest;
+}
+async function showGuest() {
+  stopPoll(); ME = null;
+  $("app").innerHTML = '<div class="topbar"><div class="brand"><div class="brand-icon">🏥</div><div><div class="brand-title">ระบบแจ้งซ่อมออนไลน์</div><div class="brand-sub">วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</div></div></div>' +
+    '<div style="display:flex;gap:10px;align-items:center"><span class="lock-note">👤 ผู้เยี่ยมชม</span><button class="logout-btn" onclick="showLogin()">เข้าสู่ระบบ</button></div></div>' +
+    '<div class="body" id="viewBody"><div class="guest-banner">👁️ โหมดผู้เยี่ยมชม: แสดงเฉพาะเลขที่แจ้ง รายการ อาคาร/ชั้น และสถานะ ในรอบ 90 วันล่าสุด (ไม่แสดงชื่อ เบอร์โทร หรืออาการเสีย) — ต้องเข้าสู่ระบบจึงจะแจ้งซ่อมหรือดูรายละเอียดงานของท่านได้</div><div id="guestBox" class="empty">กำลังโหลด...</div></div>' + footerHTML() + '<div id="modalRoot"></div><div id="toastRoot"></div>';
+  try {
+    var st = await rpc("fix_public_stats"), list = await rpc("fix_public_list");
+    $("guestBox").className = "";
+    $("guestBox").innerHTML = '<div class="grid grid-4" style="margin-bottom:18px">' + [["📋", "ทั้งหมด (90 วัน)", st.total], ["⏳", "กำลังดำเนินการ", st.pending], ["✅", "เสร็จสิ้น", st.completed], ["🚫", "ยกเลิก", st.cancelled]].map(function (x) {
+      return '<div class="card stat-card"><div class="stat-icon" style="background:var(--sky-100)">' + x[0] + '</div><div><div class="stat-val">' + esc(x[2]) + '</div><div class="stat-lab">' + x[1] + "</div></div></div>"; }).join("") + "</div>" +
+      '<div class="card"><h3>สถานะงานแจ้งซ่อมล่าสุด</h3>' + (list.length === 0 ? '<div class="hint">ยังไม่มีรายการ</div>' :
+      '<div style="overflow-x:auto"><table class="simple"><thead><tr><th>เลขแจ้ง</th><th>วันที่แจ้ง</th><th>รายการ</th><th>สถานที่</th><th>สถานะ</th><th>วันที่เสร็จ</th></tr></thead><tbody>' +
+      list.map(function (r) { return "<tr><td>" + esc(r.requestNo) + "</td><td>" + fmtDate(r.date) + "</td><td>" + esc(r.itemName) + "</td><td>" + esc(dash(r.where)) + "</td><td>" + badgeHTML(r.status) + "</td><td>" + fmtDate(r.completedDate) + "</td></tr>"; }).join("") + "</tbody></table></div>") + "</div>";
+  } catch (e) { $("guestBox").textContent = "โหลดข้อมูลไม่ได้ กรุณาลองใหม่ภายหลัง"; }
+}
+
+/* ---------- รหัสผ่าน / ประกาศความเป็นส่วนตัว ---------- */
+function gate(html) { var el = $("gate"); if (!el) { el = document.createElement("div"); el.id = "gate"; document.body.appendChild(el); } el.innerHTML = '<div class="gov"><div class="gbox">' + html + "</div></div>"; eyes(el); }
+function closeGate() { var el = $("gate"); if (el) el.remove(); }
+function pwView(forced, recovery) {
+  gate("<h3>" + (recovery ? "ตั้งรหัสผ่านใหม่" : forced ? "กรุณาเปลี่ยนรหัสผ่านตั้งต้นก่อนใช้งาน" : "เปลี่ยนรหัสผ่าน") + "</h3>" +
+    (forced || recovery ? "" : '<label class="field"><span class="lab">รหัสผ่านปัจจุบัน</span><span class="pw"><input type="password" id="pCur" class="inp" autocomplete="current-password"></span></label>') +
+    '<label class="field"><span class="lab">รหัสผ่านใหม่ (อย่างน้อย 8 ตัว)</span><span class="pw"><input type="password" id="pNew" class="inp" autocomplete="new-password"></span></label>' +
+    '<label class="field"><span class="lab">ยืนยันรหัสผ่านใหม่</span><span class="pw"><input type="password" id="pNew2" class="inp" autocomplete="new-password"></span></label>' +
+    '<div id="pMsg" class="msg" role="alert"></div><div class="grow"><button class="btn btn-primary" id="pSave">บันทึกรหัสผ่านใหม่</button>' + (forced || recovery ? '<button class="btn btn-ghost" id="pOut">ออกจากระบบ</button>' : '<button class="btn btn-ghost" id="pCancel">ยกเลิก</button>') + "</div>");
+  if ($("pOut")) $("pOut").onclick = logout; if ($("pCancel")) $("pCancel").onclick = closeGate;
+  $("pSave").onclick = async function () {
+    var n = $("pNew").value, n2 = $("pNew2").value, msg = function (t) { $("pMsg").textContent = t; };
+    if (n.length < 8) return msg("รหัสผ่านใหม่ต้องมีอย่างน้อย 8 ตัว"); if (n === DEF_PW) return msg("ห้ามใช้รหัสตั้งต้น"); if (n !== n2) return msg("ยืนยันรหัสผ่านไม่ตรงกัน");
+    if ($("pCur")) { var cur = $("pCur").value; if (cur === n) return msg("รหัสใหม่ต้องไม่ซ้ำรหัสเดิม"); var u = await sb.auth.getUser(); var r0 = await sb.auth.signInWithPassword({ email: u.data.user.email, password: cur }); if (r0.error) return msg("รหัสผ่านปัจจุบันไม่ถูกต้อง"); }
+    var r = await sb.auth.updateUser({ password: n, data: { pw_changed: true } });
+    if (r.error) return msg(/different from the old/i.test(r.error.message) ? "รหัสใหม่ต้องไม่ซ้ำรหัสเดิม" : "เปลี่ยนรหัสไม่สำเร็จ กรุณาลองใหม่");
+    try { sessionStorage.removeItem("mustChangePw"); } catch (e) {}
+    closeGate(); if (ME) showToast("เปลี่ยนรหัสผ่านแล้ว"); else afterLogin();
+  };
+}
+function privacyBody() {
+  return '<div style="line-height:1.7;font-size:14px;max-height:60vh;overflow:auto">' +
+    "<p><b>ผู้ควบคุมข้อมูล:</b> วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์ (ส่วนพัสดุและทรัพย์สิน)</p>" +
+    "<p><b>ข้อมูลที่เก็บ:</b> ชื่อ-สกุล ตำแหน่ง อีเมลองค์กร และเบอร์โทรศัพท์ของผู้แจ้งซ่อม รายละเอียดงานซ่อม (รายการ อาการเสีย สถานที่ เลขครุภัณฑ์) และบันทึกการดำเนินการของเจ้าหน้าที่ (ใคร ทำอะไร เมื่อไร) ไม่เก็บเลขบัตรประชาชนหรือข้อมูลอ่อนไหว</p>" +
+    "<p><b>วัตถุประสงค์และฐานทางกฎหมาย:</b> เพื่อบริหารงานซ่อมบำรุงและพัสดุตามภารกิจของรัฐและหน้าที่ตามกฎหมาย (พ.ร.บ.คุ้มครองข้อมูลส่วนบุคคล ม.24(4) และ (6)) และเพื่อส่งอีเมลแจ้งความคืบหน้างานซ่อม</p>" +
+    "<p><b>การเข้าถึง:</b> ผู้แจ้งเห็นรายละเอียดงานของตนเอง เจ้าหน้าที่เห็นรายละเอียดเฉพาะงานที่เกี่ยวข้องกับหน้าที่ของตน เบอร์โทรเห็นได้เฉพาะผู้ที่ต้องติดต่อกลับ ผู้เยี่ยมชมที่ไม่เข้าสู่ระบบเห็นเฉพาะสถานะโดยรวมแบบปกปิด</p>" +
+    "<p><b>ผู้ให้บริการประมวลผล:</b> Supabase (ฐานข้อมูล ศูนย์ข้อมูลสิงคโปร์), Vercel (หน้าเว็บ), Google (อีเมลแจ้งเตือนและไฟล์สำรองข้อมูลของวิทยาลัย) ไม่เปิดเผยต่อบุคคลภายนอกเว้นแต่กฎหมายกำหนด</p>" +
+    "<p><b>ระยะเวลาเก็บ:</b> ไม่น้อยกว่า 5 ปีงบประมาณ ตามระเบียบงานสารบรรณและพัสดุ จากนั้นลบหรือทำให้ไม่สามารถระบุตัวบุคคลได้</p>" +
+    "<p><b>สิทธิของเจ้าของข้อมูล:</b> ขอเข้าถึง แก้ไข ลบ คัดค้าน หรือถอนความยินยอมได้ที่ส่วนพัสดุและทรัพย์สิน วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์ กรณีข้อมูลรั่วไหลจะแจ้งสำนักงานคณะกรรมการคุ้มครองข้อมูลส่วนบุคคลภายใน 72 ชั่วโมง</p>" +
+    '<p class="hint">ประกาศฉบับนี้เป็นร่าง ควรให้เจ้าหน้าที่คุ้มครองข้อมูลส่วนบุคคล (DPO) ของวิทยาลัยตรวจก่อนใช้งานจริง</p></div>';
+}
+function openPrivacy() { $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:640px"><div class="modal-head"><h3>ประกาศความเป็นส่วนตัว</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' + privacyBody() + "</div></div></div>"; }
+function privacyGate(em) {
+  gate("<h3>ประกาศความเป็นส่วนตัว (ย่อ)</h3>" + privacyBody() + '<div class="grow" style="margin-top:12px"><button class="btn btn-primary" id="pvOk">รับทราบ</button><button class="btn btn-ghost" id="pvOut">ออกจากระบบ</button></div>');
+  $("pvOk").onclick = function () { try { localStorage.setItem("fixPrivacyAck:" + em, "1"); } catch (e) {} closeGate(); afterLogin(); };
+  $("pvOut").onclick = logout;
+}
+
+/* ---------- เริ่มระบบหลังเข้าสู่ระบบ ---------- */
+async function afterLogin() {
+  var u = await sb.auth.getUser(), user = u && u.data && u.data.user; if (!user) return showLogin();
+  var em = (user.email || "").toLowerCase(), must = false;
+  try { must = sessionStorage.getItem("mustChangePw") === "1"; } catch (e) {}
+  if (must || !(user.user_metadata && user.user_metadata.pw_changed)) return pwView(true);
+  var boot;
+  try { boot = await rpc("fix_bootstrap"); } catch (e) { await sb.auth.signOut(); return showLogin("บัญชี " + em + " ยังไม่ได้รับสิทธิ์ใช้ระบบนี้ ติดต่อผู้ดูแลระบบ"); }
+  var ack = false; try { ack = localStorage.getItem("fixPrivacyAck:" + em) === "1"; } catch (e) {}
+  if (!ack) return privacyGate(em);
+  ME = boot.me; SET = boot.settings || {}; RESP = boot.responsible || {}; rememberEmail(em);
+  try { REQS = await rpc("fix_list"); } catch (e) { REQS = []; }
+  ROLE = "requester"; renderShell(); startPoll();
+}
+async function logout() { stopPoll(); await sb.auth.signOut(); ME = null; REQS = []; ASSETS = null; SET = {}; RESP = {}; MEMBERS = []; EXPANDED = null; ASSIGN_PICKS = {}; IDENTITY = ""; ROLE = "requester"; try { sessionStorage.removeItem("mustChangePw"); } catch (e) {} closeGate(); showLogin(); }
+function startPoll() { stopPoll(); pollT = setInterval(function () { if (!document.hidden && !document.querySelector(".modal-overlay") && ME) reload(true); }, 30000); }
+function stopPoll() { if (pollT) { clearInterval(pollT); pollT = null; } }
+
+function renderShell() {
+  $("app").innerHTML = '<div class="topbar"><div class="brand brand-clickable" onclick="setRole(\'requester\')"><div class="brand-icon">🏥</div><div><div class="brand-title">ระบบแจ้งซ่อมออนไลน์</div><div class="brand-sub">วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</div></div></div>' +
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="lock-note" id="whoNote">👤 ' + esc(ME.name) + (isAdmin() ? " (ผู้ดูแลระบบ)" : "") + '</span><button class="logout-btn" style="background:var(--slate-600)" onclick="pwView(false)">🔑 เปลี่ยนรหัสผ่าน</button><button class="logout-btn" onclick="logout()">ออกจากระบบ</button></div></div>' +
+    '<div class="tabs" id="tabsRow"></div><div class="body" id="viewBody"></div>' + footerHTML() + '<div id="modalRoot"></div><div id="toastRoot"></div>';
+  renderTabs(); renderView();
+}
+function renderTabs() { $("tabsRow").innerHTML = visibleTabs().map(function (r) { return '<button class="tab-btn ' + (ROLE === r.id ? "active" : "") + '" onclick="setRole(\'' + r.id + '\')">' + r.icon + " " + r.label + "</button>"; }).join(""); }
+function setRole(role) { ROLE = role; IDENTITY = ""; renderTabs(); renderView(); window.scrollTo(0, 0); }
+function readonlyBanner(label) { return '<div class="readonly-banner">👁️ คุณกำลังดูขั้นตอนนี้แบบอ่านอย่างเดียว — ต้องมีสิทธิ์ "' + esc(label) + '" (หรือเป็นผู้ดูแลระบบ) จึงจะดำเนินการในขั้นนี้ได้</div>'; }
+function renderView() {
+  var body = $("viewBody"); if (!body) return;
+  if (!visibleTabs().some(function (r) { return r.id === ROLE; })) ROLE = "requester";
+  var f = { requester: requesterHTML, central: centralHTML, writer: writerHTML, technician: technicianHTML, warehouse: warehouseHTML, assets: assetsHTML, dashboard: dashboardHTML, admin: adminHTML }[ROLE];
+  body.innerHTML = f();
+  if (ROLE === "requester") { refreshReqList(); bindRequesterForm(); loadAssets(); }
+  if (ROLE === "assets") { ASSET_SHOWN = 300; loadAssets().then(refreshAssetList); }
+  if (ROLE === "admin") loadAdminTab();
+  eyes(body);
+}
+function badgeHTML(status) { var s = STATUS[status] || STATUS.new; return '<span class="badge badge-' + s.color + '">' + s.label + "</span>"; }
+function stepsHTML(status) {
+  var step = (STATUS[status] || STATUS.new).step;
+  return '<div class="steps">' + STEP_LABELS.map(function (label, i) { var idx = i + 1, done = idx < step, active = idx === step;
+    return '<div class="step"><div class="step-circle ' + (done ? "done" : "") + " " + (active ? "active" : "") + '">' + (done ? "✓" : idx) + '</div><div class="step-label ' + (active ? "active" : "") + '">' + label + "</div></div>" + (idx !== STEP_LABELS.length ? '<div class="step-line ' + (done ? "done" : "") + '"></div>' : ""); }).join("") + "</div>";
+}
+function find(id) { return REQS.find(function (x) { return x.id === id; }); }
+function whoCell(r) { return r.requesterName ? esc(r.requesterName) : '<span class="mask">ปกปิด</span>'; }
+
+/* ---------- รายละเอียด + ประวัติ ---------- */
+function viewJobDetail(id) {
+  var r = find(id); if (!r) return;
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:600px"><div class="modal-head"><h3>รายละเอียดงาน ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
+    (r.status === "cancelled" ? '<div class="hint">งานนี้ถูกยกเลิกแล้ว' + (r.cancelledDate ? " เมื่อ " + fmtDateTime(r.cancelledDate) : "") + (r.cancelReason ? " — เหตุผล: " + esc(r.cancelReason) : "") + "</div>" : stepsHTML(r.status)) +
+    '<div class="detail-grid" style="margin-top:14px">' +
+    "<div>รายการ: " + esc(r.itemName) + "</div><div>หมวดหมู่: " + esc(r.category) + "</div>" +
+    "<div>ผู้แจ้ง: " + whoCell(r) + "</div><div>ตำแหน่ง: " + esc(dash(r.requesterPosition)) + "</div>" +
+    "<div>เบอร์โทร: " + (r.requesterPhone ? esc(r.requesterPhone) : '<span class="mask">ปกปิด</span>') + "</div><div>จำนวน: " + esc(r.quantity) + "</div>" +
+    "<div>สถานที่: " + esc(dash(r.location)) + "</div><div>เลขครุภัณฑ์: " + esc(dash(r.assetNo)) + "</div>" +
+    "<div>สาเหตุ: " + (r.cause ? esc(r.cause) : '<span class="mask">ปกปิด</span>') + "</div><div>วันที่แจ้ง: " + fmtDateTime(r.createdAt) + "</div>" +
+    "<div>ผู้เขียนใบส่งซ่อม: " + esc(dash(r.assignedWriter)) + "</div><div>วันที่ส่งซ่อม: " + fmtDate(r.writerSentDate) + "</div>" +
+    "<div>ช่างผู้รับผิดชอบ: " + esc((r.assignedTechnicians || []).join(", ") || "-") + "</div><div>เลขช่าง: " + esc(dash(r.repairOrderNo)) + "</div>" +
+    "<div>เงื่อนไขส่งพัสดุ: " + esc(dash(r.warehouseReason)) + "</div><div>เลขพัสดุ: " + esc(dash(r.warehouseNo)) + "</div>" +
+    "<div>เจ้าหน้าที่พัสดุ: " + esc(dash(r.warehouseStaff)) + "</div><div>วันที่พัสดุส่งกลับช่าง: " + fmtDate(r.warehouseDoneDate) + "</div>" +
+    "<div>วันที่เสร็จสิ้น: " + fmtDate(r.completedDate) + "</div><div>ระยะเวลารวม: " + (r.completedDate ? daysBetween(r.createdAt, r.completedDate) + " วัน" : "-") + "</div></div>" +
+    '<h3 style="margin-top:16px">ประวัติการดำเนินการ</h3><div id="histBox" class="hint">กำลังโหลด...</div></div></div></div>';
+  rpc("fix_history_of", { p_id: id }).then(function (h) {
+    var box = $("histBox"); if (!box) return;
+    if (!h.length) { box.textContent = "แสดงประวัติเฉพาะผู้ที่เกี่ยวข้องกับงานนี้"; return; }
+    var AL = { submit: "แจ้งซ่อม", assign: "มอบหมายงาน", precheck: "ตรวจสอบเบื้องต้น", writer_send: "ส่งซ่อม", tech_receive: "ช่างรับเรื่อง", tech_inspect: "ช่างตรวจสอบ", tech_repaired: "ช่างซ่อมเสร็จ", tech_send_wh: "ส่งพัสดุ", wh_start: "พัสดุรับเรื่อง", wh_complete: "พัสดุดำเนินการเสร็จ", tech_final: "ช่างซ่อมขั้นสุดท้ายเสร็จ", edit: "แก้ไขข้อมูล", cancel: "ยกเลิก", delete: "ลบ" };
+    box.className = ""; box.innerHTML = '<table class="simple"><thead><tr><th>เวลา</th><th>ผู้ทำ</th><th>การดำเนินการ</th><th>เหตุผล</th></tr></thead><tbody>' + h.map(function (x) { return "<tr><td>" + fmtDateTime(x.at) + "</td><td>" + esc(dash(x.by)) + "</td><td>" + esc(AL[x.action] || x.action) + "</td><td>" + esc(dash(x.reason)) + "</td></tr>"; }).join("") + "</tbody></table>";
+  }).catch(function () { var box = $("histBox"); if (box) box.textContent = "โหลดประวัติไม่ได้"; });
+}
+function detailBtn(id) { return '<button class="btn btn-ghost btn-sm" onclick="viewJobDetail(\'' + id + '\')">ℹ️ ดูรายละเอียด</button>'; }
+
+/* ---------- Modal ทั่วไป (วันที่ / เลขที่ / เงื่อนไข) ---------- */
+function openModal(type, id, title, opts) {
+  opts = opts || {}; MODAL = { type: type, id: id };
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box"><div class="modal-head"><h3>' + esc(title) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
+    (opts.numberLabel ? '<label class="field"><span class="lab">' + esc(opts.numberLabel) + '<span class="req"> *</span></span><input type="text" id="modalNo" class="inp" maxlength="60" placeholder="' + attr(opts.numberPlaceholder || "") + '"></label>' : "") +
+    (opts.selectLabel ? '<label class="field"><span class="lab">' + esc(opts.selectLabel) + '<span class="req"> *</span></span><select id="modalSelect" class="inp"><option value="">-- เลือก --</option>' + (opts.selectOptions || []).map(function (o) { return '<option value="' + attr(o) + '">' + esc(o) + "</option>"; }).join("") + "</select></label>" : "") +
+    '<label class="field"><span class="lab">วันที่<span class="req"> *</span></span><input type="date" id="modalDate" class="inp" value="' + todayInput() + '" max="' + todayInput() + '"></label>' +
+    '<div id="modalMsg" class="msg" role="alert"></div><button class="btn btn-primary btn-block" id="modalOk" onclick="modalConfirm()">ยืนยัน</button></div></div></div>';
+}
+function closeModal() { MODAL = null; var m = $("modalRoot"); if (m) m.innerHTML = ""; }
+async function modalConfirm() {
+  if (!MODAL) return; var t = MODAL.type, id = MODAL.id, date = $("modalDate").value || todayInput();
+  var no = $("modalNo") ? $("modalNo").value.trim() : "", sel = $("modalSelect") ? $("modalSelect").value : "", bad = function (m) { $("modalMsg").textContent = m; };
+  if ($("modalNo") && !no) return bad("กรุณากรอกเลขที่");
+  if ($("modalSelect") && !sel) return bad("กรุณาเลือกเงื่อนไข");
+  $("modalOk").disabled = true;
+  var map = {
+    writerSend: ["fix_writer_send", { p_id: id, p_date: date }, "บันทึกวันที่ส่งซ่อมแล้ว"],
+    techReceive: ["fix_tech_receive", { p_id: id, p_date: date, p_no: no }, "รับเรื่องและบันทึกเลขช่างแล้ว"],
+    techInspect: ["fix_tech_inspect", { p_id: id, p_date: date }, "บันทึกว่าตรวจสอบแล้ว"],
+    techRepairedDone: ["fix_tech_repaired", { p_id: id, p_date: date }, "บันทึกซ่อมเสร็จ จบงานแล้ว"],
+    techSendWarehouse: ["fix_tech_send_wh", { p_id: id, p_date: date, p_reason: sel }, "ส่งพัสดุแล้ว"],
+    warehouseStart: ["fix_wh_start", { p_id: id, p_date: date, p_no: no }, "รับเรื่องและบันทึกเลขพัสดุแล้ว"],
+    warehouseComplete: ["fix_wh_complete", { p_id: id, p_date: date }, "บันทึกการดำเนินการของพัสดุแล้ว"],
+    techFinalRepair: ["fix_tech_final", { p_id: id, p_date: date }, "บันทึกซ่อมขั้นสุดท้ายเสร็จ จบงานแล้ว"]
+  }[t];
+  var ok = await act(map[0], map[1], map[2]); if (!ok && $("modalOk")) $("modalOk").disabled = false;
+}
+
+/* ---------- ดาวน์โหลด CSV (กันสูตร Excel) ---------- */
+const DRILLDOWN_COLS = [
+  { key: "requestNo", label: "เลขแจ้ง" }, { key: "createdAt", label: "วันที่แจ้ง", date: true }, { key: "repairOrderNo", label: "เลขส่งซ่อม (เลขช่าง)" },
+  { key: "writerSentDate", label: "วันที่ส่งซ่อม", date: true }, { key: "warehouseNo", label: "เลขพัสดุ" }, { key: "warehouseReceivedDate", label: "วันที่พัสดุรับงานซ่อม", date: true },
+  { key: "itemName", label: "รายการ" }, { key: "requesterName", label: "ผู้แจ้งซ่อม" }, { key: "assignedWriter", label: "ผู้ส่งซ่อม" },
+  { key: "assignedTechnicians", label: "ช่างผู้ซ่อม", join: true }, { key: "warehouseStaff", label: "เจ้าหน้าที่พัสดุ" }, { key: "warehouseReason", label: "เงื่อนไข" },
+  { key: "warehouseDoneDate", label: "วันที่พัสดุส่งกลับช่าง", date: true }, { key: "completedDate", label: "วันที่ซ่อมเสร็จ", date: true },
+  { key: "status", label: "สถานะ", status: true }, { key: "__duration__", label: "รวมเวลา (วัน)" }
+];
+function cellValue(r, c) {
+  if (c.key === "__duration__") return r.completedDate ? String(daysBetween(r.createdAt, r.completedDate)) : "-";
+  if (c.status) return (STATUS[r.status] || {}).label || r.status || "-";
+  if (c.join) return (r[c.key] || []).join(", ") || "-";
+  if (c.date) return r[c.key] ? fmtDate(r[c.key]) : "-";
+  return r[c.key] || "-";
+}
+function csvCell(v) { v = String(v == null ? "" : v); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return '"' + v.replace(/"/g, '""') + '"'; }
+function downloadCSV(rows, title) {
+  var lines = [DRILLDOWN_COLS.map(function (c) { return csvCell(c.label); }).join(",")].concat(rows.map(function (r) { return DRILLDOWN_COLS.map(function (c) { return csvCell(cellValue(r, c)); }).join(","); }));
+  var blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8;" }), url = URL.createObjectURL(blob), a = document.createElement("a");
+  a.href = url; a.download = "รายงาน-" + String(title).replace(/[\\/:*?"<>|]/g, "_") + "-" + todayInput() + ".csv"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+window.__tbl = {}; var __tblSeq = 0;
+function fullHistoryTable(rows, title) {
+  if (!rows.length) return '<div class="hint">ยังไม่มีข้อมูล</div>';
+  var k = "t" + (++__tblSeq); window.__tbl[k] = { rows: rows, title: title };
+  return '<div style="text-align:right;margin-bottom:8px"><button class="btn btn-sky btn-sm" onclick="exportTbl(\'' + k + '\')">⬇️ ส่งออก CSV</button></div><div style="overflow-x:auto"><table class="simple"><thead><tr>' + DRILLDOWN_COLS.map(function (c) { return "<th>" + c.label + "</th>"; }).join("") + "</tr></thead><tbody>" +
+    rows.map(function (r) { return "<tr>" + DRILLDOWN_COLS.map(function (c) { return "<td>" + (c.status ? badgeHTML(r.status) : esc(cellValue(r, c))) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
+}
+function exportTbl(k) { var t = window.__tbl[k]; if (t) downloadCSV(t.rows, t.title); }
+function openDrilldown(title, rows) {
+  if (!isStaff()) return;
+  var k = "t" + (++__tblSeq); window.__tbl[k] = { rows: rows, title: title };
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:96vw;width:1100px"><div class="modal-head"><h3>' + esc(title) + " (" + rows.length + ')</h3><div style="display:flex;gap:8px;align-items:center"><button class="btn btn-sky btn-sm" onclick="exportTbl(\'' + k + '\')">⬇️ ส่งออกรายงาน CSV</button><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div></div><div class="modal-body" style="max-height:65vh;overflow:auto">' +
+    (rows.length === 0 ? '<div class="hint">ไม่มีรายการ</div>' : '<table class="simple"><thead><tr>' + DRILLDOWN_COLS.map(function (c) { return "<th>" + c.label + "</th>"; }).join("") + "</tr></thead><tbody>" + rows.map(function (r) { return "<tr>" + DRILLDOWN_COLS.map(function (c) { return "<td>" + (c.status ? badgeHTML(r.status) : esc(cellValue(r, c))) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>") + "</div></div></div>";
+}
+
+/* ---------- ทะเบียนครุภัณฑ์ (โหลดหลังเข้าระบบเท่านั้น) ---------- */
+async function loadAssets() { if (ASSETS) return ASSETS; try { var d = await rpc("fix_assets"); ASSETS = (d && d.rows) || []; } catch (e) { ASSETS = []; } return ASSETS; }
+function fillAssetDatalists() {
+  var q = ($("reqAsset") ? $("reqAsset").value : "").trim().toLowerCase(), q2 = ($("reqItem") ? $("reqItem").value : "").trim().toLowerCase();
+  if ($("assetNoDatalist") && q.length >= 2 && ASSETS) { var o = [], i; for (i = 0; i < ASSETS.length && o.length < 30; i++) { var a = ASSETS[i]; if (String(a[0]).toLowerCase().indexOf(q) >= 0 || String(a[1]).toLowerCase().indexOf(q) >= 0) o.push('<option value="' + attr(a[0]) + '">' + esc(a[1]) + "</option>"); } $("assetNoDatalist").innerHTML = o.join(""); }
+  if ($("assetDatalist") && q2.length >= 2 && ASSETS) { var seen = {}, o2 = [], j; for (j = 0; j < ASSETS.length && o2.length < 30; j++) { var n = String(ASSETS[j][1]); if (n.toLowerCase().indexOf(q2) >= 0 && !seen[n]) { seen[n] = 1; o2.push('<option value="' + attr(n) + '">'); } } $("assetDatalist").innerHTML = o2.join(""); }
+}
+function onReqAssetInput(v) { fillAssetDatalists(); v = v.trim(); if (!v || !ASSETS) return; var m = ASSETS.find(function (a) { return a[0] === v; }); if (m) { $("reqItem").value = m[1]; if (m[2] && !$("reqRoom").value) $("reqArea").value = $("reqArea").value || m[2]; } }
+function assetsHTML() {
+  return '<div class="card"><h2>📄 ทะเบียนครุภัณฑ์</h2><p class="hint" id="assetHint">กำลังโหลดทะเบียนครุภัณฑ์...</p><input id="assetSearch" class="inp" placeholder="🔍 ค้นหาชื่อครุภัณฑ์ เลขครุภัณฑ์ หรือที่ตั้ง" oninput="ASSET_SHOWN=300;refreshAssetList()" style="margin-bottom:12px"><div id="assetListItems" class="center-col" style="max-height:560px"></div><div id="assetLoadMoreWrap" class="load-more-wrap"></div></div>';
+}
+function refreshAssetList() {
+  var box = $("assetListItems"); if (!box || !ASSETS) return;
+  if ($("assetHint")) $("assetHint").textContent = "ทะเบียนครุภัณฑ์ของวิทยาลัย " + ASSETS.length.toLocaleString() + " รายการ (เฉพาะเลขครุภัณฑ์ ชื่อ และที่ตั้ง)";
+  var term = ($("assetSearch") ? $("assetSearch").value : "").trim().toLowerCase();
+  var all = term ? ASSETS.filter(function (a) { return String(a[0]).toLowerCase().indexOf(term) >= 0 || String(a[1]).toLowerCase().indexOf(term) >= 0 || String(a[2] || "").toLowerCase().indexOf(term) >= 0; }) : ASSETS;
+  var rows = all.slice(0, ASSET_SHOWN);
+  if (!rows.length) { box.innerHTML = '<div class="empty">ไม่พบรายการ</div>'; $("assetLoadMoreWrap").innerHTML = ""; return; }
+  box.innerHTML = '<table class="simple"><thead><tr><th>เลขครุภัณฑ์</th><th>รายการ</th><th>ที่ตั้ง</th></tr></thead><tbody>' + rows.map(function (a) { return "<tr><td>" + esc(a[0]) + "</td><td>" + esc(a[1]) + "</td><td>" + esc(dash(a[2])) + "</td></tr>"; }).join("") + "</tbody></table>";
+  $("assetLoadMoreWrap").innerHTML = all.length > rows.length ? '<button class="btn btn-ghost btn-sm" onclick="ASSET_SHOWN+=300;refreshAssetList()">แสดงเพิ่ม (' + rows.length + " จาก " + all.length.toLocaleString() + ")</button>" : "";
+}
+
+/* ---------- ผู้แจ้งซ่อม ---------- */
+function opts(arr, sel) { return (arr || []).map(function (x) { return '<option value="' + attr(x) + '"' + (sel === x ? " selected" : "") + ">" + esc(x) + "</option>"; }).join(""); }
+function requesterHTML() {
+  return '<div class="grid grid-2"><div class="card"><h2>➕ แจ้งซ่อมใหม่</h2><p class="hint">ผู้แจ้งดึงจากบัญชีที่เข้าสู่ระบบ วันที่/เวลาและเลขแจ้งซ่อมออกให้อัตโนมัติ</p><form id="reqForm" autocomplete="off">' +
+    '<div class="lock-note" style="margin-bottom:12px">👤 ผู้แจ้ง: ' + esc(ME.name) + (ME.position ? " (" + esc(ME.position) + ")" : "") + "</div>" +
+    '<label class="field"><span class="lab">เบอร์โทรศัพท์<span class="req"> *</span></span><input type="tel" id="reqPhone" class="inp" maxlength="15" placeholder="08xxxxxxxx" required></label>' +
+    '<label class="field"><span class="lab">หมวดหมู่งานซ่อม<span class="req"> *</span></span><select id="reqCategory" class="inp" onchange="$(\'reqCategoryCustomWrap\').style.display=this.value===\'__other\'?\'block\':\'none\'" required>' + opts(SET.categories) + '<option value="__other">อื่นๆ (ระบุเอง)</option></select></label>' +
+    '<label class="field" id="reqCategoryCustomWrap" style="display:none"><span class="lab">ระบุหมวดหมู่<span class="req"> *</span></span><input type="text" id="reqCategoryCustom" class="inp" maxlength="100"></label>' +
+    '<label class="field"><span class="lab">รายการที่แจ้งซ่อม<span class="req"> *</span></span><input type="text" id="reqItem" class="inp" list="assetDatalist" maxlength="200" oninput="fillAssetDatalists()" placeholder="พิมพ์เพื่อค้นหา เช่น เครื่องปรับอากาศ (ใช้ชื่อกลาง ไม่ระบุยี่ห้อ)" required></label><datalist id="assetDatalist"></datalist>' +
+    '<label class="field"><span class="lab">จำนวน<span class="req"> *</span></span><input type="number" id="reqQty" class="inp" min="1" max="9999" value="1" required></label>' +
+    '<label class="field"><span class="lab">สาเหตุ / อาการเสีย<span class="req"> *</span></span><textarea id="reqCause" class="inp" rows="2" maxlength="2000" required></textarea></label>' +
+    '<label class="field"><span class="lab">สถานที่<span class="req"> *</span></span></label><p class="hint" style="margin-top:-8px">กรอกอย่างน้อย 1 ใน 4 ช่อง</p>' +
+    '<div class="grid grid-2b" style="gap:10px;margin-bottom:4px"><label class="field"><span class="lab">อาคาร</span><select id="reqBuilding" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts((SET.buildings || [])) + '</select></label>' +
+    '<label class="field"><span class="lab">ชั้น</span><select id="reqFloor" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts(SET.floors) + '</select></label>' +
+    '<label class="field"><span class="lab">ห้อง</span><input type="text" id="reqRoom" class="inp" list="roomDatalist" maxlength="100" placeholder="เช่น 301"></label>' +
+    '<label class="field"><span class="lab">บริเวณ</span><input type="text" id="reqArea" class="inp" maxlength="200" placeholder="เช่น หน้าลิฟต์"></label></div>' +
+    '<datalist id="roomDatalist">' + (SET.rooms || []).map(function (x) { return '<option value="' + attr(x) + '">'; }).join("") + "</datalist>" +
+    '<label class="field"><span class="lab">หมายเลขครุภัณฑ์ (ถ้ามี — เว้นว่างได้)</span><input type="text" id="reqAsset" class="inp" list="assetNoDatalist" maxlength="100" oninput="onReqAssetInput(this.value)" placeholder="พิมพ์เพื่อค้นหา เช่น วพบ.สร.xxxx"></label><datalist id="assetNoDatalist"></datalist>' +
+    '<div id="reqMsg" class="msg" role="alert"></div><button type="submit" class="btn btn-primary btn-block" id="reqSubmit">ส่งคำแจ้งซ่อม</button></form></div>' +
+    '<div class="card"><div style="display:flex;gap:8px;margin-bottom:12px"><input id="reqSearch" class="inp" placeholder="🔍 ค้นหาด้วยเลขแจ้งซ่อม หรือรายการ" oninput="refreshReqList()"><button class="btn btn-ghost btn-sm" onclick="reload()">🔄 รีเฟรช</button></div>' +
+    (!isAdmin() ? '<p class="hint">แสดงเฉพาะรายการที่คุณแจ้งเอง (ผู้อื่นดูได้เฉพาะสถานะโดยรวมในแท็บอื่น)</p>' : "") + '<div id="reqListItems" class="center-col" style="max-height:640px"></div></div></div>';
+}
+function bindRequesterForm() {
+  var f = $("reqForm"); if (!f) return;
+  f.addEventListener("submit", async function (e) {
+    e.preventDefault(); var m = $("reqMsg"); m.textContent = "";
+    var catSel = $("reqCategory").value, category = catSel === "__other" ? $("reqCategoryCustom").value.trim() : catSel;
+    var building = $("reqBuilding").value.trim(), floor = $("reqFloor").value.trim(), room = $("reqRoom").value.trim(), area = $("reqArea").value.trim();
+    if (!building && !floor && !room && !area) { m.textContent = "กรุณากรอกสถานที่อย่างน้อย 1 ช่อง (อาคาร/ชั้น/ห้อง/บริเวณ)"; return; }
+    if (!category) { m.textContent = "กรุณาระบุหมวดหมู่"; return; }
+    $("reqSubmit").disabled = true;
+    try {
+      var r = await rpc("fix_submit", { p: { requesterPhone: $("reqPhone").value.trim(), category: category, itemName: $("reqItem").value.trim(), quantity: $("reqQty").value, cause: $("reqCause").value.trim(), locationBuilding: building, locationFloor: floor, locationRoom: room, locationArea: area, assetNo: $("reqAsset").value.trim() } });
+      showToast("ส่งคำแจ้งซ่อม " + r.requestNo + " สำเร็จ"); var ph = $("reqPhone").value; f.reset(); $("reqPhone").value = ph; $("reqCategoryCustomWrap").style.display = "none"; await reload();
+    } catch (er) { m.textContent = errMsg(er); }
+    $("reqSubmit").disabled = false;
+  });
+}
+function refreshReqList() {
+  var box = $("reqListItems"); if (!box) return;
+  var term = ($("reqSearch") ? $("reqSearch").value : "").trim().toLowerCase();
+  var rows = REQS.filter(function (r) { return (isAdmin() || r.isMine) && (!term || r.requestNo.toLowerCase().indexOf(term) >= 0 || String(r.itemName).toLowerCase().indexOf(term) >= 0); });
+  if (!rows.length) { box.innerHTML = '<div class="empty">📋<br>ยังไม่มีรายการแจ้งซ่อม</div>'; return; }
+  box.innerHTML = rows.map(function (r) {
+    return '<div class="req-row"><div class="req-row-top" onclick="toggleExpand(\'' + r.id + '\')"><div><div class="req-title">' + esc(r.requestNo) + ' <span style="color:var(--slate-400);font-weight:400">· ' + esc(r.itemName) + '</span></div><div class="req-sub">' + whoCell(r) + " · " + fmtDateTime(r.createdAt) + '</div></div><div>' + badgeHTML(r.status) + "</div></div>" +
+      '<div class="req-detail ' + (EXPANDED === r.id ? "open" : "") + '">' + (r.status === "cancelled" ? '<div class="hint">งานนี้ถูกยกเลิกแล้ว' + (r.cancelledDate ? " เมื่อ " + fmtDateTime(r.cancelledDate) : "") + "</div>" : stepsHTML(r.status)) +
+      '<div class="detail-grid"><div>สถานที่: ' + esc(dash(r.location)) + "</div><div>จำนวน: " + esc(r.quantity) + "</div><div>สาเหตุ: " + (r.cause ? esc(r.cause) : '<span class="mask">ปกปิด</span>') + "</div><div>เลขครุภัณฑ์: " + esc(dash(r.assetNo)) + "</div><div>มอบหมายให้: " + esc(dash(r.assignedWriter)) + " / " + esc((r.assignedTechnicians || []).join(", ") || "-") + "</div><div>เลขช่าง: " + esc(dash(r.repairOrderNo)) + "</div><div>เงื่อนไขส่งพัสดุ: " + esc(dash(r.warehouseReason)) + "</div><div>เลขพัสดุ: " + esc(dash(r.warehouseNo)) + "</div><div>วันที่เสร็จสิ้น: " + fmtDate(r.completedDate) + "</div><div>ระยะเวลารวม: " + (r.completedDate ? daysBetween(r.createdAt, r.completedDate) + " วัน" : "-") + "</div></div>" +
+      '<div class="row-actions">' + detailBtn(r.id) + (r.canEdit ? '<button class="btn btn-ghost btn-sm" onclick="openEditRequestModal(\'' + r.id + '\')">✏️ แก้ไข</button>' : "") + (r.canCancel ? '<button class="btn btn-sm" style="background:var(--amber-500);color:#fff" onclick="openCancelModal(\'' + r.id + '\')">🚫 ยกเลิก</button>' : "") + (isAdmin() ? '<button class="btn btn-sm" style="background:var(--rose-500);color:#fff" onclick="deleteRequestAction(\'' + r.id + '\')">🗑️ ลบ</button>' : "") + "</div></div></div>";
+  }).join("");
+}
+function toggleExpand(id) { EXPANDED = EXPANDED === id ? null : id; refreshReqList(); }
+function openEditRequestModal(id) {
+  var r = find(id); if (!r) return; var needReason = !r.isMine && !isAdmin();
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:480px"><div class="modal-head"><h3>แก้ไขคำแจ้งซ่อม ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
+    '<label class="field"><span class="lab">เบอร์โทรศัพท์</span><input type="tel" id="editPhone" class="inp" maxlength="15" value="' + attr(r.requesterPhone || "") + '"' + (r.requesterPhone ? "" : " placeholder=\"ไม่แก้ไข\"") + '></label>' +
+    '<label class="field"><span class="lab">หมวดหมู่งานซ่อม</span><select id="editCategory" class="inp">' + opts((SET.categories || []).indexOf(r.category) < 0 ? [r.category].concat(SET.categories || []) : SET.categories, r.category) + "</select></label>" +
+    '<label class="field"><span class="lab">รายการที่แจ้งซ่อม</span><input type="text" id="editItem" class="inp" maxlength="200" value="' + attr(r.itemName) + '"></label>' +
+    '<label class="field"><span class="lab">จำนวน</span><input type="number" id="editQty" class="inp" min="1" max="9999" value="' + attr(r.quantity) + '"></label>' +
+    '<label class="field"><span class="lab">สาเหตุ / อาการเสีย</span><textarea id="editCause" class="inp" rows="2" maxlength="2000">' + esc(r.cause || "") + "</textarea></label>" +
+    '<div class="grid grid-2b" style="gap:10px"><label class="field"><span class="lab">อาคาร</span><select id="editBuilding" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts(SET.buildings, r.locationBuilding) + '</select></label><label class="field"><span class="lab">ชั้น</span><select id="editFloor" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts(SET.floors, r.locationFloor) + '</select></label><label class="field"><span class="lab">ห้อง</span><input type="text" id="editRoom" class="inp" maxlength="100" value="' + attr(r.locationRoom || "") + '"></label><label class="field"><span class="lab">บริเวณ</span><input type="text" id="editArea" class="inp" maxlength="200" value="' + attr(r.locationArea || "") + '"></label></div>' +
+    '<label class="field"><span class="lab">หมายเลขครุภัณฑ์ (ถ้ามี)</span><input type="text" id="editAsset" class="inp" maxlength="100" value="' + attr(r.assetNo || "") + '"></label>' +
+    '<label class="field"><span class="lab">เหตุผลในการแก้ไข' + (needReason ? '<span class="req"> *</span>' : " (ถ้ามี)") + '</span><input type="text" id="editReason" class="inp" maxlength="1000"></label><div id="modalMsg" class="msg" role="alert"></div><button class="btn btn-primary btn-block" onclick="saveEditRequest(\'' + r.id + '\')">บันทึกการแก้ไข</button></div></div></div>';
+}
+async function saveEditRequest(id) {
+  var r = find(id); if (!r) return; var ph = $("editPhone").value.trim();
+  var p = { category: $("editCategory").value, itemName: $("editItem").value.trim(), quantity: $("editQty").value, cause: $("editCause").value.trim(), locationBuilding: $("editBuilding").value, locationFloor: $("editFloor").value, locationRoom: $("editRoom").value.trim(), locationArea: $("editArea").value.trim(), assetNo: $("editAsset").value.trim() };
+  if (ph) p.requesterPhone = ph;
+  try { await rpc("fix_edit", { p_id: id, p: p, p_reason: $("editReason").value.trim() }); closeModal(); showToast("บันทึกการแก้ไขแล้ว"); await reload(); } catch (e) { $("modalMsg").textContent = errMsg(e); }
+}
+function openCancelModal(id) {
+  var r = find(id); if (!r) return; var need = !r.isMine;
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box"><div class="modal-head"><h3>ยกเลิกคำแจ้งซ่อม ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body"><label class="field"><span class="lab">เหตุผลในการยกเลิก' + (need ? '<span class="req"> *</span>' : " (ถ้ามี)") + '</span><textarea id="cancelReason" class="inp" rows="2" maxlength="1000"></textarea></label><div id="modalMsg" class="msg" role="alert"></div><button class="btn btn-block" style="background:var(--amber-500);color:#fff" onclick="doCancel(\'' + r.id + '\')">ยืนยันยกเลิก</button></div></div></div>';
+}
+async function doCancel(id) { try { await rpc("fix_cancel", { p_id: id, p_reason: $("cancelReason").value.trim() }); closeModal(); showToast("ยกเลิกคำแจ้งซ่อมแล้ว"); await reload(); } catch (e) { $("modalMsg").textContent = errMsg(e); } }
+async function deleteRequestAction(id) {
+  var r = find(id); if (!r) return; if (!confirm("ยืนยันลบคำแจ้งซ่อม " + r.requestNo + " ถาวร? การลบไม่สามารถกู้คืนได้ (ประวัติการลบยังถูกบันทึกไว้)")) return;
+  await act("fix_delete", { p_id: id }, "ลบคำแจ้งซ่อมแล้ว", false);
+}
+
+/* ---------- ส่วนกลาง (จ่ายงาน) ---------- */
+function centralHTML() {
+  var editable = canAct("dispatcher"), queue = REQS.filter(function (r) { return r.status === "new"; });
+  return '<div class="card"><h2>📤 งานแจ้งซ่อมรอมอบหมาย (' + queue.length + ')</h2><p class="hint">เมื่อมอบหมายแล้ว ผู้เขียนใบส่งซ่อมและช่างจะเห็นงานทันที — เลือกช่างได้ 1-2 คนต่องาน</p>' + (!editable ? readonlyBanner("ส่วนกลาง (ผู้จ่ายงาน)") : "") +
+    (queue.length === 0 ? '<div class="empty">✅<br>ไม่มีงานรอมอบหมายในขณะนี้</div>' : queue.map(function (r) {
+      var sug = (SET.category_tech || {})[r.category] || ""; if (!ASSIGN_PICKS[r.id]) ASSIGN_PICKS[r.id] = { writer: "", techs: sug ? [sug] : [] }; var pick = ASSIGN_PICKS[r.id];
+      return '<div class="assign-row"><div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + '</div><div class="req-sub">' + whoCell(r) + " (" + esc(dash(r.requesterPosition)) + ") · " + esc(dash(r.location)) + '</div><div class="req-sub">หมวด: ' + esc(r.category) + " · แจ้งเมื่อ " + fmtDateTime(r.createdAt) + '</div><div style="margin-top:6px">' + detailBtn(r.id) + "</div></div>" +
+        '<div><label class="lab">ผู้เขียนใบส่งซ่อม</label><select class="inp" ' + (editable ? "" : "disabled") + " onchange=\"setWriterPick('" + r.id + '\',this.value)"><option value="">เลือก...</option>' + (RESP.writers || []).map(function (w) { return '<option value="' + attr(w.email) + '"' + (pick.writer === w.email ? " selected" : "") + ">" + esc(w.name) + "</option>"; }).join("") + "</select></div>" +
+        '<div style="width:100%"><label class="lab">ช่างผู้รับผิดชอบ (1-2 คน) ' + (sug ? "(แนะนำตามหมวด)" : "") + '</label><div class="tech-check-list">' + (RESP.technicians || []).map(function (t) { return '<label><input type="checkbox" ' + (editable ? "" : "disabled") + (pick.techs.indexOf(t.email) >= 0 ? " checked" : "") + " onchange=\"toggleTechPick('" + r.id + "'," + jsAttr(t.email) + ',this.checked)"> ' + esc(t.name) + "</label>"; }).join("") + "</div>" +
+        (editable ? '<button id="assignBtn-' + r.id + '" class="btn btn-primary btn-sm" style="margin-top:6px" ' + ((!pick.writer || !pick.techs.length) ? "disabled" : "") + " onclick=\"assignRequest('" + r.id + "')\">มอบหมาย</button>" : "") + "</div></div>";
+    }).join("")) + "</div>";
+}
+function pickBtn(id) { var b = $("assignBtn-" + id), p = ASSIGN_PICKS[id]; if (b) b.disabled = !(p.writer && p.techs.length > 0 && p.techs.length <= 2); }
+function setWriterPick(id, v) { if (!canAct("dispatcher")) return; ASSIGN_PICKS[id].writer = v; pickBtn(id); }
+function toggleTechPick(id, t, on) { if (!canAct("dispatcher")) return; var l = ASSIGN_PICKS[id].techs; if (on) { if (l.indexOf(t) < 0) l.push(t); } else ASSIGN_PICKS[id].techs = l.filter(function (x) { return x !== t; }); pickBtn(id); }
+async function assignRequest(id) { var p = ASSIGN_PICKS[id]; if (!p || !p.writer || !p.techs.length) return; if (p.techs.length > 2) { showToast("เลือกช่างได้ไม่เกิน 2 คน", true); return; } if (await act("fix_assign", { p_id: id, p_writer: p.writer, p_techs: p.techs }, "มอบหมายงานแล้ว", false)) delete ASSIGN_PICKS[id]; }
+
+/* ---------- ผู้เขียนใบส่งซ่อม / ช่าง / พัสดุ ---------- */
+function rowBox(inner) { return '<div class="req-row" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' + inner + "</div>"; }
+function causeLine(r) { return esc(dash(r.location)) + " · สาเหตุ: " + (r.cause ? esc(r.cause) : '<span class="mask">ปกปิด</span>'); }
+function writerHTML() {
+  var editable = canAct("writer"), lockedToMe = hasGroup("writer") && !isAdmin();
+  var mine = function (r) { return lockedToMe ? r.iAmWriter : true; };
+  var queue = REQS.filter(function (r) { return r.status === "assigned" && mine(r) && (!IDENTITY || r.assignedWriter === IDENTITY); });
+  var sent = REQS.filter(function (r) { return ["new", "assigned"].indexOf(r.status) < 0 && mine(r) && (!IDENTITY || r.assignedWriter === IDENTITY); }).slice(0, 10);
+  return '<div class="card" style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><h2 style="margin:0">📋 คิวส่งซ่อม</h2>' + (lockedToMe ? '<span class="lock-note">🔒 แสดงงานของคุณ</span>' : '<select class="inp" style="max-width:260px" onchange="IDENTITY=this.value;renderView()"><option value="">ดูทุกคน</option>' + (RESP.writers || []).map(function (w) { return '<option value="' + attr(w.name) + '"' + (IDENTITY === w.name ? " selected" : "") + ">" + esc(w.name) + "</option>"; }).join("") + "</select>") + "</div>" +
+    (!editable ? readonlyBanner("ผู้เขียนใบส่งซ่อม") : '<p class="hint">บันทึกวันที่ส่งซ่อมเท่านั้น — เลขช่างจะออกโดยช่างตอนรับใบส่งซ่อม</p>') +
+    (queue.length === 0 ? '<div class="empty">✅<br>ไม่มีงานรอส่งซ่อม</div>' : queue.map(function (r) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + '</div><div class="req-sub">รับผิดชอบโดย ' + esc(dash(r.assignedWriter)) + " → ช่าง " + esc((r.assignedTechnicians || []).join(", ")) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (editable && (isAdmin() || r.iAmWriter) ? "<button class=\"btn btn-primary btn-sm\" onclick=\"openModal('writerSend','" + r.id + "','บันทึกวันที่ส่งซ่อม')\">บันทึกส่งซ่อมแล้ว</button>" : "") + "</div>"); }).join("")) +
+    '</div><div class="card"><h3>ประวัติล่าสุด</h3>' + fullHistoryTable(sent, "ประวัติผู้เขียนใบส่งซ่อม") + "</div>";
+}
+function technicianHTML() {
+  var editable = canAct("technician"), lockedToMe = hasGroup("technician") && !isAdmin();
+  var filt = function (st) { return REQS.filter(function (r) { return st(r) && (!lockedToMe || r.iAmTech) && (!IDENTITY || (r.assignedTechnicians || []).indexOf(IDENTITY) >= 0); }); };
+  var can = function (r) { return editable && (isAdmin() || r.iAmTech); };
+  var pre = filt(function (r) { return r.status === "assigned"; }), toRecv = filt(function (r) { return r.status === "writer_sent"; }), recv = filt(function (r) { return r.status === "tech_received"; }), insp = filt(function (r) { return r.status === "tech_inspected"; }), fin = filt(function (r) { return r.status === "tech_final_repair"; });
+  var done = filt(function (r) { return ["tech_done", "warehouse_in_progress"].indexOf(r.status) >= 0 || (r.status === "completed" && r.completionPath); }).slice(0, 10);
+  var row = function (r, label, onclick) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + '</div><div class="req-sub">' + causeLine(r) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (can(r) ? '<button class="btn btn-primary btn-sm" onclick="' + onclick + '">' + label + "</button>" : "") + "</div>"); };
+  var h = function (t, n) { return '<h3 style="margin-top:16px">' + t + " (" + n + ")</h3>"; }, none = '<div class="hint">ไม่มีงาน</div>';
+  return '<div class="card" style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><h2 style="margin:0">🔧 งานของช่าง</h2>' + (lockedToMe ? '<span class="lock-note">🔒 แสดงงานของคุณ</span>' : '<select class="inp" style="max-width:260px" onchange="IDENTITY=this.value;renderView()"><option value="">ดูทุกคน</option>' + (RESP.technicians || []).map(function (t) { return '<option value="' + attr(t.name) + '"' + (IDENTITY === t.name ? " selected" : "") + ">" + esc(t.name) + "</option>"; }).join("") + "</select>") + "</div>" + (!editable ? readonlyBanner("ช่าง") : "") +
+    h("มอบหมายแล้ว รอใบส่งซ่อม — ตรวจสอบเบื้องต้นได้", pre.length) + '<p class="hint">ยังออกเลขช่างไม่ได้จนกว่าใบส่งซ่อมจากผู้เขียนจะมาถึง</p>' + (pre.length === 0 ? none : pre.map(function (r) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + '</div><div class="req-sub">' + causeLine(r) + (r.preCheckDate ? " · ตรวจสอบเบื้องต้นแล้ว " + fmtDateTime(r.preCheckDate) : "") + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (can(r) && !r.preCheckDate ? "<button class=\"btn btn-ghost btn-sm\" onclick=\"techPrecheck('" + r.id + "')\">บันทึกว่าตรวจสอบเบื้องต้นแล้ว</button>" : "") + "</div>"); }).join("")) +
+    h("รอรับใบส่งซ่อม — รับพร้อมออกเลขช่าง", toRecv.length) + (toRecv.length === 0 ? none : toRecv.map(function (r) { return row(r, "รับใบส่งซ่อม + ออกเลข", "openModal('techReceive','" + r.id + "','รับใบส่งซ่อม — กรอกเลขช่าง',{numberLabel:'เลขช่าง (กรอกเอง)',numberPlaceholder:'เช่น ชซ-2569-0001'})"); }).join("")) +
+    h("รอตรวจสอบ", recv.length) + (recv.length === 0 ? none : recv.map(function (r) { return row(r, "ตรวจสอบแล้ว", "openModal('techInspect','" + r.id + "','บันทึกว่าตรวจสอบแล้ว')"); }).join("")) +
+    h("ตรวจสอบแล้ว — เลือกแนวทาง", insp.length) + (insp.length === 0 ? none : insp.map(function (r) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + ' <span style="color:var(--slate-400);font-weight:400">(' + esc(dash(r.repairOrderNo)) + ')</span></div><div class="req-sub">' + causeLine(r) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (can(r) ? "<button class=\"btn btn-primary btn-sm\" onclick=\"openModal('techRepairedDone','" + r.id + "','ซ่อมเองได้ — บันทึกว่าซ่อมเสร็จ (จบงาน)')\">ซ่อมเองได้ ✓ เสร็จแล้ว</button><button class=\"btn btn-sky btn-sm\" onclick=\"openModal('techSendWarehouse','" + r.id + "','ซ่อมเองไม่ได้ — ส่งพัสดุ',{selectLabel:'เงื่อนไขก่อนส่งพัสดุ',selectOptions:WAREHOUSE_REASONS})\">ซ่อมเองไม่ได้ → ส่งพัสดุ</button>" : "") + "</div>"); }).join("")) +
+    h("พัสดุจัดเตรียมแล้ว — รอซ่อมขั้นสุดท้าย", fin.length) + '<p class="hint">เฉพาะกรณีเบิกวัสดุในคลัง / จัดซื้อวัสดุ ที่พัสดุจัดเตรียมของเสร็จแล้วส่งกลับมาให้ช่างซ่อมต่อจนจบงาน</p>' + (fin.length === 0 ? none : fin.map(function (r) { return row(r, "ซ่อมเสร็จแล้ว (จบงาน)", "openModal('techFinalRepair','" + r.id + "','บันทึกว่าซ่อมเสร็จ (จบงาน)')"); }).join("")) +
+    '</div><div class="card"><h3>ประวัติล่าสุด</h3>' + fullHistoryTable(done, "ประวัติงานช่าง") + "</div>";
+}
+async function techPrecheck(id) { await act("fix_precheck", { p_id: id }, "บันทึกว่าไปตรวจสอบเบื้องต้นแล้ว", false); }
+function warehouseHTML() {
+  var editable = canAct("warehouse");
+  var toStart = REQS.filter(function (r) { return r.status === "tech_done"; }), inprog = REQS.filter(function (r) { return r.status === "warehouse_in_progress"; });
+  var back = REQS.filter(function (r) { return r.status === "tech_final_repair"; }).slice(0, 10), done = REQS.filter(function (r) { return r.status === "completed" && (r.completionPath === "warehouse" || r.completionPath === "technician_after_warehouse"); }).slice(0, 15);
+  var none = '<div class="hint">ไม่มีงาน</div>';
+  return '<div class="card" style="margin-bottom:18px"><h2>📦 งานพัสดุ</h2><p class="hint">เฉพาะงานที่ช่างซ่อมเองไม่ได้และต้องเบิก/จัดซื้อ/จ้าง/แทงชำรุด จึงจะมาถึงขั้นนี้ — กรณี "เบิกวัสดุในคลัง" และ "จัดซื้อวัสดุ" เมื่อจัดเตรียมเสร็จจะส่งกลับให้ช่างซ่อมขั้นสุดท้าย</p>' + (!editable ? readonlyBanner("เจ้าหน้าที่พัสดุ") : "") +
+    "<h3>รอดำเนินการ (" + toStart.length + ")</h3>" + (toStart.length === 0 ? none : toStart.map(function (r) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + ' <span style="color:var(--slate-400);font-weight:400">(เลขช่าง ' + esc(dash(r.repairOrderNo)) + ')</span></div><div class="req-sub">เงื่อนไข: ' + esc(dash(r.warehouseReason)) + " · ช่างส่งเมื่อ " + fmtDate(r.techSentDate) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (editable ? "<button class=\"btn btn-primary btn-sm\" onclick=\"openModal('warehouseStart','" + r.id + "','รับเรื่อง — กรอกเลขพัสดุ',{numberLabel:'เลขพัสดุ (กรอกเอง)',numberPlaceholder:'เช่น พด-2569-0001'})\">รับเรื่อง (อยู่ระหว่างดำเนินการ)</button>" : "") + "</div>"); }).join("")) +
+    '<h3 style="margin-top:16px">อยู่ระหว่างดำเนินการ (' + inprog.length + ")</h3>" + (inprog.length === 0 ? none : inprog.map(function (r) { var ret = REASONS_RETURN_TO_TECH.indexOf(r.warehouseReason) >= 0; return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + ' <span style="color:var(--slate-400);font-weight:400">(' + esc(dash(r.warehouseNo)) + ')</span></div><div class="req-sub">เงื่อนไข: ' + esc(dash(r.warehouseReason)) + " · รับเรื่องเมื่อ " + fmtDate(r.warehouseReceivedDate) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (editable ? "<button class=\"btn btn-primary btn-sm\" onclick=\"openModal('warehouseComplete','" + r.id + "','" + (ret ? "จัดเตรียมเสร็จ — ส่งต่อช่างซ่อมขั้นสุดท้าย" : "บันทึกว่าเสร็จสิ้น") + "')\">" + (ret ? "จัดเตรียมเสร็จ (ส่งต่อช่าง)" : "เสร็จสิ้น") + "</button>" : "") + "</div>"); }).join("")) +
+    '<h3 style="margin-top:16px">ส่งต่อช่างแล้ว รอช่างซ่อมขั้นสุดท้าย (' + back.length + ")</h3>" + fullHistoryTable(back, "งานส่งต่อช่าง") + '</div><div class="card"><h3>งานที่เสร็จสิ้นแล้ว</h3>' + fullHistoryTable(done, "งานพัสดุที่เสร็จสิ้นแล้ว") + "</div>";
+}
+
+/* ---------- แดชบอร์ด ---------- */
+const STATUS_GROUP_ORDER = ["แจ้งซ่อมใหม่/รอมอบหมายงาน", "รอผู้เขียนใบส่งซ่อมดำเนินการ", "รอช่างตรวจสอบ/ซ่อมแซม", "รอพัสดุดำเนินการ", "ซ่อมเสร็จเรียบร้อยแล้ว", "ยกเลิก"];
+function statusGroupLabel(s) {
+  if (s === "new") return STATUS_GROUP_ORDER[0]; if (s === "assigned") return STATUS_GROUP_ORDER[1];
+  if (["writer_sent", "tech_received", "tech_inspected", "tech_final_repair"].indexOf(s) >= 0) return STATUS_GROUP_ORDER[2];
+  if (["tech_done", "warehouse_in_progress"].indexOf(s) >= 0) return STATUS_GROUP_ORDER[3]; if (s === "completed") return STATUS_GROUP_ORDER[4]; if (s === "cancelled") return STATUS_GROUP_ORDER[5]; return (STATUS[s] || {}).label || s;
+}
+function periodRange() {
+  var now = new Date(), start, end, label;
+  if (PERIOD === "week") { var b = new Date(now); b.setHours(0, 0, 0, 0); b.setDate(b.getDate() + PERIOD_OFFSET * 7); end = new Date(b); end.setHours(23, 59, 59, 999); start = new Date(b); start.setDate(start.getDate() - 6); label = start.toLocaleDateString("th-TH", { day: "numeric", month: "short" }) + " - " + end.toLocaleDateString("th-TH", { day: "numeric", month: "short", year: "numeric" }); }
+  else if (PERIOD === "month") { var y = now.getFullYear(), m = now.getMonth() + PERIOD_OFFSET; start = new Date(y, m, 1, 0, 0, 0, 0); end = new Date(y, m + 1, 0, 23, 59, 59, 999); label = start.toLocaleDateString("th-TH", { month: "long", year: "numeric" }); }
+  else { var yy = now.getFullYear() + PERIOD_OFFSET; start = new Date(yy, 0, 1); end = new Date(yy, 11, 31, 23, 59, 59, 999); label = String(yy + 543); }
+  return { start: start, end: end, label: label };
+}
+function periodRows() { var p = periodRange(); return REQS.filter(function (r) { var d = new Date(r.createdAt); return d >= p.start && d <= p.end; }); }
+function dashboardHTML() {
+  var f = periodRows(), range = periodRange(), comp = f.filter(function (r) { return r.status === "completed"; }), canc = f.filter(function (r) { return r.status === "cancelled"; }), pend = f.filter(function (r) { return r.status !== "completed" && r.status !== "cancelled"; });
+  var avg = comp.length ? Math.round(comp.reduce(function (s, r) { return s + (daysBetween(r.createdAt, r.completedDate) || 0); }, 0) / comp.length * 10) / 10 : 0;
+  var recent = comp.slice().sort(function (a, b) { return new Date(b.completedDate) - new Date(a.completedDate); }).slice(0, 8);
+  var byCat = {}; f.forEach(function (r) { byCat[r.category] = (byCat[r.category] || 0) + 1; }); var cats = Object.keys(byCat).map(function (k) { return [k, byCat[k]]; }).sort(function (a, b) { return b[1] - a[1]; }), maxC = Math.max.apply(null, [1].concat(cats.map(function (c) { return c[1]; })));
+  var bySt = {}; STATUS_GROUP_ORDER.forEach(function (l) { bySt[l] = 0; }); f.forEach(function (r) { var l = statusGroupLabel(r.status); bySt[l] = (bySt[l] || 0) + 1; }); var sts = Object.keys(bySt).map(function (k) { return [k, bySt[k]]; }), maxS = Math.max.apply(null, [1].concat(sts.map(function (c) { return c[1]; })));
+  var cl = isStaff() ? " clickable" : "", hint = isStaff() ? " (คลิกดูรายละเอียด)" : "";
+  return '<div class="pill-group" style="align-items:center">' + [["week", "รายสัปดาห์"], ["month", "รายเดือน"], ["year", "รายปี"]].map(function (x) { return '<button class="pill ' + (PERIOD === x[0] ? "active" : "") + '" onclick="PERIOD=\'' + x[0] + '\';PERIOD_OFFSET=0;renderView()">' + x[1] + "</button>"; }).join("") +
+    '<button class="btn btn-ghost btn-sm" onclick="PERIOD_OFFSET-=1;renderView()">◀ ก่อนหน้า</button><span style="font-size:13px;font-weight:600">' + esc(range.label) + '</span><button class="btn btn-ghost btn-sm" onclick="PERIOD_OFFSET=Math.min(0,PERIOD_OFFSET+1);renderView()" ' + (PERIOD_OFFSET >= 0 ? "disabled" : "") + ">ถัดไป ▶</button>" + (PERIOD_OFFSET !== 0 ? '<button class="btn btn-ghost btn-sm" onclick="PERIOD_OFFSET=0;renderView()">กลับปัจจุบัน</button>' : "") + "</div>" +
+    (!isStaff() ? '<div class="readonly-banner">แสดงเฉพาะตัวเลขรวม — รายละเอียดรายงานเปิดให้เฉพาะเจ้าหน้าที่ที่เกี่ยวข้อง</div>' : "") +
+    '<div class="grid grid-4" style="margin-bottom:18px">' + [["📋", "var(--sky-100)", f.length, "งานแจ้งซ่อม", "drillAll"], ["⏳", "var(--amber-100)", pend.length, "กำลังดำเนินการ", "drillPending"], ["✅", "var(--emerald-100)", comp.length, "เสร็จสิ้น", "drillCompleted"], ["🚫", "var(--rose-100)", canc.length, "ยกเลิก", "drillCancelled"]].map(function (x) { return '<div class="card stat-card' + cl + '" onclick="' + x[4] + '()"><div class="stat-icon" style="background:' + x[1] + '">' + x[0] + '</div><div><div class="stat-val">' + x[2] + '</div><div class="stat-lab">' + x[3] + hint + "</div></div></div>"; }).join("") +
+    '<div class="card stat-card"><div class="stat-icon" style="background:var(--sky-100)">⏱️</div><div><div class="stat-val">' + avg + ' วัน</div><div class="stat-lab">เวลาเฉลี่ยต่อรายการ (แจ้ง→เสร็จสิ้น)</div></div></div></div>' +
+    '<div class="grid grid-2b" style="margin-bottom:18px"><div class="card"><h3>สัดส่วนตามสถานะ' + hint + "</h3>" + sts.map(function (x) { return '<div class="bar-row' + cl + '" onclick="drillStatus(' + jsAttr(x[0]) + ')"><div class="bar-label">' + esc(x[0]) + '</div><div class="bar-track"><div class="bar-fill" style="width:' + (x[1] / maxS) * 100 + '%"></div></div><div class="bar-val">' + x[1] + "</div></div>"; }).join("") +
+    "</div><div class=\"card\"><h3>จำนวนคำแจ้งซ่อมตามหมวดหมู่" + hint + "</h3>" + (cats.length === 0 ? '<div class="hint">ไม่มีข้อมูลในช่วงนี้</div>' : cats.map(function (x) { return '<div class="bar-row' + cl + '" onclick="drillCat(' + jsAttr(x[0]) + ')"><div class="bar-label">' + esc(x[0]) + '</div><div class="bar-track"><div class="bar-fill" style="width:' + (x[1] / maxC) * 100 + '%"></div></div><div class="bar-val">' + x[1] + "</div></div>"; }).join("")) + "</div></div>" +
+    (isStaff() ? '<div class="card"><h3>งานที่เสร็จสิ้นล่าสุด</h3>' + fullHistoryTable(recent, "งานที่เสร็จสิ้นล่าสุด") + "</div>" : "");
+}
+function drillAll() { openDrilldown("งานแจ้งซ่อมทั้งหมดในช่วงนี้", periodRows()); }
+function drillPending() { openDrilldown("งานที่กำลังดำเนินการ", periodRows().filter(function (r) { return r.status !== "completed" && r.status !== "cancelled"; })); }
+function drillCompleted() { openDrilldown("งานที่เสร็จสิ้นแล้ว", periodRows().filter(function (r) { return r.status === "completed"; })); }
+function drillCancelled() { openDrilldown("งานที่ยกเลิก", periodRows().filter(function (r) { return r.status === "cancelled"; })); }
+function drillStatus(l) { openDrilldown("สถานะ: " + l, periodRows().filter(function (r) { return statusGroupLabel(r.status) === l; })); }
+function drillCat(c) { openDrilldown("หมวดหมู่: " + c, periodRows().filter(function (r) { return r.category === c; })); }
+
+/* ---------- ผู้ดูแลระบบ ---------- */
+function adminHTML() {
+  var tabs = [["members", "ผู้ใช้งานและสิทธิ์"], ["categories", "หมวดหมู่ & ล็อกช่าง"], ["locations", "สถานที่"], ["audit", "ประวัติการใช้งาน (Audit log)"], ["backup", "สำรอง / กู้คืนข้อมูล"]];
+  return '<div class="card"><h2>🔧 ผู้ดูแลระบบ</h2><div class="pill-group" style="margin-top:10px">' + tabs.map(function (t) { return '<button class="pill ' + (ADMIN_TAB === t[0] ? "active" : "") + '" onclick="ADMIN_TAB=\'' + t[0] + '\';renderView()">' + t[1] + "</button>"; }).join("") + '</div><div id="adminBox" class="admin-tabs-content">กำลังโหลด...</div></div>';
+}
+async function loadAdminTab() {
+  var box = $("adminBox"); if (!box) return;
+  try {
+    if (ADMIN_TAB === "members") { MEMBERS = await rpc("fix_admin_members"); box.innerHTML = membersHTML(); }
+    else if (ADMIN_TAB === "audit") { var a = await rpc("fix_admin_audit", { p_limit: 300 }); box.innerHTML = '<p class="hint">แสดง 300 รายการล่าสุด (ใคร ทำอะไร เมื่อไร) เก็บไว้ไม่น้อยกว่า 5 ปีงบประมาณ</p><div style="overflow-x:auto"><table class="simple"><thead><tr><th>เวลา</th><th>ผู้ทำ</th><th>เลขแจ้ง</th><th>การดำเนินการ</th><th>จาก→เป็น</th><th>เหตุผล</th></tr></thead><tbody>' + a.map(function (x) { return "<tr><td>" + fmtDateTime(x.at) + "</td><td>" + esc(dash(x.by)) + "</td><td>" + esc(dash(x.requestNo)) + "</td><td>" + esc(x.action) + "</td><td>" + esc(dash(x.from)) + " → " + esc(dash(x.to)) + "</td><td>" + esc(dash(x.reason)) + "</td></tr>"; }).join("") + "</tbody></table></div>"; }
+    else if (ADMIN_TAB === "backup") box.innerHTML = backupHTML();
+    else if (ADMIN_TAB === "categories") box.innerHTML = categoriesHTML();
+    else box.innerHTML = locationsHTML();
+  } catch (e) { box.textContent = errMsg(e); }
+}
+function membersHTML() {
+  return '<p class="hint">เพิ่มผู้ใช้ใหม่: สร้างบัญชีที่ Supabase > Authentication ก่อน (รหัสตั้งต้น 123456789) แล้วเพิ่มอีเมลและสิทธิ์ที่นี่ ผู้ใช้ที่ไม่มีสิทธิ์พิเศษยังแจ้งซ่อมได้ ผู้ดูแลระบบไม่ตั้งหรือรีเซ็ตรหัสผ่านแทนผู้อื่น (ให้ใช้ "ลืมรหัสผ่าน" ที่หน้าเข้าสู่ระบบ)</p><button class="btn btn-primary btn-sm" onclick="openMemberModal(\'\')">➕ เพิ่มผู้ใช้</button>' +
+    '<div style="overflow-x:auto;margin-top:10px"><table class="simple"><thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th>อีเมล</th><th>สิทธิ์</th><th>สถานะ</th><th></th></tr></thead><tbody>' + MEMBERS.map(function (m) { return "<tr><td>" + esc(m.name) + "</td><td>" + esc(dash(m.position)) + "</td><td>" + esc(m.email) + "</td><td>" + esc((m.groups || []).map(function (g) { return GROUP_LABEL[g] || g; }).join(", ") || "ผู้แจ้งซ่อมทั่วไป") + "</td><td>" + (m.active ? "ใช้งาน" : "ปิดใช้งาน") + "</td><td><button class=\"btn btn-sm btn-ghost\" onclick=\"openMemberModal(" + jsAttr(m.email) + ')">✏️ แก้ไข</button></td></tr>'; }).join("") + "</tbody></table></div>";
+}
+function openMemberModal(email) {
+  var m = MEMBERS.find(function (x) { return x.email === email; }) || { email: "", name: "", position: "", groups: [], active: true };
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box"><div class="modal-head"><h3>' + (email ? "แก้ไขผู้ใช้" : "เพิ่มผู้ใช้") + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
+    '<label class="field"><span class="lab">อีเมลองค์กร (@bcnsurin.ac.th)</span><input type="email" id="mEmail" class="inp" value="' + attr(m.email) + '" ' + (email ? "disabled" : "") + '></label><label class="field"><span class="lab">ชื่อ-สกุล</span><input type="text" id="mName" class="inp" maxlength="200" value="' + attr(m.name) + '"></label><label class="field"><span class="lab">ตำแหน่ง</span><input type="text" id="mPos" class="inp" maxlength="200" value="' + attr(m.position) + '"></label>' +
+    '<div class="lab" style="font-size:13px;margin-bottom:4px">สิทธิ์ (ไม่เลือกเลย = ผู้แจ้งซ่อมทั่วไป)</div><div class="tech-check-list" style="max-height:none">' + GROUPS.map(function (g) { return '<label><input type="checkbox" class="mG" value="' + g[0] + '"' + ((m.groups || []).indexOf(g[0]) >= 0 ? " checked" : "") + "> " + g[1] + "</label>"; }).join("") + '</div><label style="display:flex;gap:6px;margin:10px 0;font-size:13px"><input type="checkbox" id="mActive"' + (m.active ? " checked" : "") + "> ใช้งานอยู่</label>" +
+    '<div id="modalMsg" class="msg" role="alert"></div><button class="btn btn-primary btn-block" onclick="saveMember()">บันทึก</button></div></div></div>';
+}
+async function saveMember() {
+  var g = []; document.querySelectorAll(".mG").forEach(function (c) { if (c.checked) g.push(c.value); });
+  try { await rpc("fix_admin_save_member", { p_email: $("mEmail").value, p_name: $("mName").value, p_position: $("mPos").value, p_groups: g, p_active: $("mActive").checked }); closeModal(); showToast("บันทึกผู้ใช้แล้ว"); loadAdminTab(); var b = await rpc("fix_bootstrap"); SET = b.settings || {}; RESP = b.responsible || {}; ME = b.me; } catch (e) { $("modalMsg").textContent = errMsg(e); }
+}
+async function saveSetting(key, data, msg) { try { await rpc("fix_admin_save_settings", { p_key: key, p_data: data }); SET[key] = data; showToast(msg || "บันทึกแล้ว"); loadAdminTab(); } catch (e) { showToast(errMsg(e), true); } }
+function listEditor(key, title, items) {
+  return '<div><h3>' + title + '</h3><div class="inline-form"><input type="text" id="add-' + key + '" class="inp" maxlength="100" placeholder="เพิ่มรายการใหม่"><button class="btn btn-primary btn-sm" style="flex:none;min-width:0" onclick="addSetting(\'' + key + '\')">เพิ่ม</button></div>' + (items.length ? items.map(function (x, i) { return '<div class="list-row"><span>' + esc(x) + "</span><button class=\"btn btn-sm\" style=\"background:var(--rose-500);color:#fff\" onclick=\"delSetting('" + key + "'," + i + ')">ลบ</button></div>'; }).join("") : '<div class="hint">ยังไม่มีรายการ</div>') + "</div>";
+}
+function addSetting(key) { var v = $("add-" + key).value.trim(); if (!v) return; var l = (SET[key] || []).slice(); if (l.indexOf(v) >= 0) { showToast("มีรายการนี้แล้ว", true); return; } l.push(v); saveSetting(key, l, "เพิ่มแล้ว"); }
+function delSetting(key, i) { var l = (SET[key] || []).slice(); if (!confirm('ลบ "' + l[i] + '" ออกจากรายการ? (งานที่แจ้งไปแล้วไม่ได้รับผลกระทบ)')) return; l.splice(i, 1); saveSetting(key, l, "ลบแล้ว"); }
+function locationsHTML() { return '<div class="grid grid-2b" style="gap:24px">' + listEditor("buildings", "อาคาร", SET.buildings || []) + listEditor("floors", "ชั้น", SET.floors || []) + listEditor("rooms", "ห้อง (ตัวเลือกช่วยพิมพ์)", SET.rooms || []) + "</div>"; }
+function categoriesHTML() {
+  var ct = SET.category_tech || {};
+  return listEditor("categories", "หมวดหมู่งานซ่อม", SET.categories || []) + '<div><h3>ล็อกช่างประจำหมวด (แนะนำช่างให้อัตโนมัติตอนมอบหมายงาน)</h3><table class="simple"><tbody>' + (SET.categories || []).map(function (c) { return "<tr><td>" + esc(c) + '</td><td><select class="inp" onchange="setCatTech(' + jsAttr(c) + ',this.value)"><option value="">-- ไม่ล็อก --</option>' + (RESP.technicians || []).map(function (t) { return '<option value="' + attr(t.email) + '"' + (ct[c] === t.email ? " selected" : "") + ">" + esc(t.name) + "</option>"; }).join("") + "</select></td></tr>"; }).join("") + "</tbody></table></div>";
+}
+function setCatTech(c, email) { var ct = Object.assign({}, SET.category_tech || {}); if (email) ct[c] = email; else delete ct[c]; saveSetting("category_tech", ct, "บันทึกการล็อกช่างแล้ว"); }
+
+function backupHTML() {
+  return '<p class="hint">ระบบสำรองข้อมูลอัตโนมัติทุกคืนลง Google Drive ของวิทยาลัยอยู่แล้ว ปุ่มด้านล่างใช้เมื่อต้องการไฟล์สำรองเพิ่มเอง หรือกู้คืนข้อมูล</p>' +
+    '<div class="card" style="margin-bottom:14px"><h3>ดาวน์โหลดไฟล์สำรอง</h3><p class="hint">ไฟล์มีชื่อ เบอร์โทร และรายละเอียดงานทั้งหมด ห้ามส่งต่อหรือเก็บในที่สาธารณะ ควรย้ายไปเก็บใน Drive ส่วนตัวของวิทยาลัยแล้วลบจากเครื่อง</p><button class="btn btn-sky btn-sm" onclick="downloadBackup()">⬇️ ดาวน์โหลดไฟล์สำรอง (.json)</button></div>' +
+    '<div class="card"><h3>กู้คืนข้อมูลจากไฟล์สำรอง</h3><p class="hint" style="color:#9f1239">คำเตือน: แทนที่ข้อมูลทั้งหมดในระบบด้วยข้อมูลในไฟล์ (งาน ประวัติ สมาชิก การตั้งค่า) ข้อมูลที่เกิดหลังวันที่ของไฟล์จะหายไป แนะนำให้ดาวน์โหลดไฟล์สำรองปัจจุบันเก็บไว้ก่อนเสมอ</p>' +
+    '<input type="file" id="restoreFile" accept=".json,application/json" class="inp" style="margin-bottom:8px"><input type="text" id="restoreConfirm" class="inp" placeholder="พิมพ์คำว่า กู้คืน เพื่อยืนยัน" style="margin-bottom:8px"><div id="restoreMsg" class="msg" role="alert"></div><button class="btn btn-sm" style="background:var(--rose-500);color:#fff" onclick="doRestore()">กู้คืนข้อมูล</button></div>';
+}
+async function downloadBackup() {
+  try {
+    var d = await rpc("fix_admin_export");
+    var blob = new Blob([JSON.stringify(d)], { type: "application/json" }), url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = "fix-backup-" + todayInput() + ".json"; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    showToast("ดาวน์โหลดไฟล์สำรองแล้ว (บันทึกในประวัติการใช้งาน)");
+  } catch (e) { showToast(errMsg(e), true); }
+}
+async function doRestore() {
+  var m = $("restoreMsg"), f = $("restoreFile").files[0]; m.textContent = "";
+  if (!f) { m.textContent = "เลือกไฟล์สำรองก่อน"; return; }
+  if ($("restoreConfirm").value.trim() !== "กู้คืน") { m.textContent = 'พิมพ์คำว่า "กู้คืน" เพื่อยืนยัน'; return; }
+  var obj; try { obj = JSON.parse(await f.text()); } catch (e) { m.textContent = "อ่านไฟล์ไม่ได้ ไม่ใช่ไฟล์ .json"; return; }
+  if (!obj || obj.app !== "fix" || !Array.isArray(obj.requests)) { m.textContent = "ไฟล์นี้ไม่ใช่ไฟล์สำรองของระบบแจ้งซ่อม"; return; }
+  if (!confirm("ยืนยันกู้คืน? ข้อมูลปัจจุบันทั้งหมดจะถูกแทนที่ด้วยไฟล์ที่เลือก (งาน " + obj.requests.length + " รายการ)")) return;
+  try {
+    var msg = await rpc("fix_admin_restore", { p: obj });
+    var b = await rpc("fix_bootstrap"); ME = b.me; SET = b.settings || {}; RESP = b.responsible || {}; REQS = await rpc("fix_list");
+    showToast(msg); renderTabs(); loadAdminTab();
+  } catch (e) { m.textContent = errMsg(e); }
+}
+
+/* ---------- เริ่มทำงาน ---------- */
+(async function boot() {
+  sb.auth.onAuthStateChange(function (ev) { if (ev === "PASSWORD_RECOVERY") pwView(false, true); });
+  if (/type=recovery/.test(location.hash)) return;
+  try { var s = await sb.auth.getSession(); if (s && s.data && s.data.session) return afterLogin(); } catch (e) {}
+  showLogin();
+})();
+
+</script>
+</body>
+</html>
