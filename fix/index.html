@@ -299,7 +299,7 @@ function showLogin(msg) {
     if (!em || !pw) { m.textContent = "กรอกอีเมลและรหัสผ่าน"; return; }
     $("gLogin").disabled = true; var r = await sb.auth.signInWithPassword({ email: em, password: pw }); $("gLogin").disabled = false;
     if (r.error) { m.textContent = /Invalid login/i.test(r.error.message) ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่"; return; }
-    if (pw === DEF_PW) { try { sessionStorage.setItem("mustChangePw", "1"); } catch (e) {} }
+    if (pw === DEF_PW) { try { localStorage.setItem("fixMustChangePw:" + em, "1"); } catch (e) {} }
     afterLogin();
   };
   $("gLogin").onclick = go; $("gPw").onkeydown = function (e) { if (e.key === "Enter") go(); };
@@ -345,7 +345,7 @@ function pwView(forced, recovery) {
     if ($("pCur")) { var cur = $("pCur").value; if (cur === n) return msg("รหัสใหม่ต้องไม่ซ้ำรหัสเดิม"); var u = await sb.auth.getUser(); var r0 = await sb.auth.signInWithPassword({ email: u.data.user.email, password: cur }); if (r0.error) return msg("รหัสผ่านปัจจุบันไม่ถูกต้อง"); }
     var r = await sb.auth.updateUser({ password: n, data: { pw_changed: true } });
     if (r.error) return msg(/different from the old/i.test(r.error.message) ? "รหัสใหม่ต้องไม่ซ้ำรหัสเดิม" : "เปลี่ยนรหัสไม่สำเร็จ กรุณาลองใหม่");
-    try { sessionStorage.removeItem("mustChangePw"); } catch (e) {}
+    try { var uu = await sb.auth.getUser(); localStorage.removeItem("fixMustChangePw:" + String(uu.data.user.email || "").toLowerCase()); } catch (e) {}
     closeGate(); if (ME) showToast("เปลี่ยนรหัสผ่านแล้ว"); else afterLogin();
   };
 }
@@ -371,8 +371,8 @@ function privacyGate(em) {
 async function afterLogin() {
   var u = await sb.auth.getUser(), user = u && u.data && u.data.user; if (!user) return showLogin();
   var em = (user.email || "").toLowerCase(), must = false;
-  try { must = sessionStorage.getItem("mustChangePw") === "1"; } catch (e) {}
-  if (must || !(user.user_metadata && user.user_metadata.pw_changed)) return pwView(true);
+  try { must = localStorage.getItem("fixMustChangePw:" + em) === "1"; } catch (e) {}
+  if (must) return pwView(true); // บังคับเฉพาะเมื่อเข้าด้วยรหัสตั้งต้น (ธงอยู่ในเครื่องจนกว่าจะเปลี่ยนรหัสสำเร็จ)
   var boot;
   try { boot = await rpc("fix_bootstrap"); } catch (e) { await sb.auth.signOut(); return showLogin("บัญชี " + em + " ยังไม่ได้รับสิทธิ์ใช้ระบบนี้ ติดต่อผู้ดูแลระบบ"); }
   var ack = false; try { ack = localStorage.getItem("fixPrivacyAck:" + em) === "1"; } catch (e) {}
@@ -381,7 +381,7 @@ async function afterLogin() {
   try { REQS = await rpc("fix_list"); } catch (e) { REQS = []; }
   ROLE = "requester"; renderShell(); startPoll();
 }
-async function logout() { stopPoll(); await sb.auth.signOut(); ME = null; REQS = []; ASSETS = null; SET = {}; RESP = {}; MEMBERS = []; EXPANDED = null; ASSIGN_PICKS = {}; IDENTITY = ""; ROLE = "requester"; try { sessionStorage.removeItem("mustChangePw"); } catch (e) {} closeGate(); showLogin(); }
+async function logout() { stopPoll(); await sb.auth.signOut(); ME = null; REQS = []; ASSETS = null; SET = {}; RESP = {}; MEMBERS = []; EXPANDED = null; ASSIGN_PICKS = {}; IDENTITY = ""; ROLE = "requester"; closeGate(); showLogin(); }
 function startPoll() { stopPoll(); pollT = setInterval(function () { if (!document.hidden && !document.querySelector(".modal-overlay") && ME) reload(true); }, 30000); }
 function stopPoll() { if (pollT) { clearInterval(pollT); pollT = null; } }
 
