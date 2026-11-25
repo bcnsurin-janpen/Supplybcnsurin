@@ -85,6 +85,19 @@
   .modal{position:fixed;inset:0;background:rgba(18,51,38,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto}
   .modal[hidden]{display:none} .modalbox{background:#fff;border-radius:12px;padding:18px;max-width:760px;width:100%}
   .lg{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle}
+
+  /* ---------- เมนูแถบด้านซ้าย ---------- */
+  #app:not([hidden]){display:grid;grid-template-columns:236px minmax(0,1fr);align-items:start}
+  body.sb{display:grid;grid-template-columns:236px minmax(0,1fr);align-items:start} body.sb>header{grid-column:1/-1} body.sb>nav{grid-column:1} body.sb>main{grid-column:2}
+  nav{background:linear-gradient(180deg,#1F4D3D,#123326);border-bottom:0;position:sticky;top:0;align-self:start;max-height:100vh;overflow-y:auto}
+  nav .wrap{flex-direction:column;gap:2px;padding:10px;overflow:visible}
+  nav button{color:#DCECE3;text-align:left;border-bottom:0;border-radius:8px;padding:9px 12px;white-space:normal;width:100%;font-size:14px}
+  nav button:hover{background:rgba(255,255,255,.1)}
+  nav button[aria-selected=true]{background:#B8863B;color:#fff;font-weight:700;border-bottom:0}
+  @media (max-width:900px){
+    #app:not([hidden]),body.sb{grid-template-columns:1fr} body.sb>main{grid-column:1} nav{position:static;max-height:none}
+    nav .wrap{flex-direction:row;overflow-x:auto} nav button{width:auto;white-space:nowrap}
+  }
 </style>
 </head>
 <body>
