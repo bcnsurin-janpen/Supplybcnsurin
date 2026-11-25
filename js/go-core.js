@@ -143,6 +143,20 @@ window.GO = (function () {
     return el('div', {}, ...rows.map(r => el('div', { class: 'hb' }, el('span', { class: 'hl', title: r.label }, r.label),
       el('span', { class: 'hbar' }, el('i', { style: `width:${(r.value / max * 100).toFixed(1)}%;background:${r.green ? '#2E7D32' : (color || '#B8863B')}` })), el('span', { class: 'hv' }, fmt(r.value)))));
   }
+  function vbars(rows) {                   // แท่งคู่รายเดือน: ทั้งหมด (ทอง) เทียบเป็นมิตรฯ (เขียว)
+    const NS = 'http://www.w3.org/2000/svg', W = 640, H = 230, L = 52, B = 30, T = 14, max = Math.max(1, ...rows.map(r => r.all));
+    const svg = document.createElementNS(NS, 'svg'); svg.setAttribute('viewBox', `0 0 ${W} ${H}`); svg.setAttribute('width', '100%'); svg.setAttribute('role', 'img');
+    const mk = (t, a, txt) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (txt !== undefined) e.textContent = txt; svg.append(e); return e; };
+    for (let i = 0; i <= 4; i++) { const y = T + (H - B - T) * (1 - i / 4); mk('line', { x1: L, x2: W - 6, y1: y, y2: y, stroke: '#C9DBC9' }); mk('text', { x: L - 6, y: y + 4, 'text-anchor': 'end', 'font-size': 11, fill: '#5C6B58' }, fmt(max * i / 4).replace(/\.00$/, '')); }
+    const bw = (W - L - 6) / rows.length;
+    rows.forEach((r, i) => {
+      const x = L + i * bw, h1 = (H - B - T) * r.all / max, h2 = (H - B - T) * r.g / max;
+      mk('rect', { x: x + bw * .12, y: H - B - h1, width: bw * .36, height: Math.max(0, h1), fill: '#B8863B' });
+      mk('rect', { x: x + bw * .52, y: H - B - h2, width: bw * .36, height: Math.max(0, h2), fill: '#2F7A4F' });
+      mk('text', { x: x + bw / 2, y: H - 10, 'text-anchor': 'middle', 'font-size': 11, fill: '#5C6B58' }, r.label);
+    });
+    return el('div', {}, svg, el('div', { class: 'small muted' }, el('span', { class: 'lg', style: 'background:#B8863B' }), ' ทั้งหมด   ', el('span', { class: 'lg', style: 'background:#2F7A4F' }), ' เป็นมิตรกับสิ่งแวดล้อม'));
+  }
   function renderDashboard(out, o) {
     const { items, X, fy } = o; out.textContent = '';
     const pTot = sum(items, 'total'), pGreen = sum(items.filter(i => i.is_green), 'total');
@@ -158,12 +172,12 @@ window.GO = (function () {
       kpi(String(ht.length), `การจัดประชุม/อบรมที่โรงแรม (ครั้ง) — เป็นมิตรฯ ${hGreen} ครั้ง`),
       kpi(fmt(clTot), 'งบประมาณบริการทำความสะอาด (บาท)', 'b'),
       kpi(!cp ? 'ยังไม่บันทึก' : cp.is_green ? '✔ ผ่านเกณฑ์' : '✘ ไม่ผ่านเกณฑ์', 'เครื่องถ่ายเอกสารเช่า เป็นมิตรกับสิ่งแวดล้อม', 'a')));
-    const byMonth = [10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(mo => { const r = sv.filter(x => x.month_no === mo); return { label: TMON[mo - 1].slice(0, 3) + '.', value: sum(r, 'value'), green: false, g: sum(r.filter(x => x.is_green), 'value') }; }).filter(x => x.value > 0);
+    const byMonth = [10, 11, 12, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(mo => { const r = sv.filter(x => x.month_no === mo); return { label: TMON[mo - 1].slice(0, 3) + '.', all: sum(r, 'value'), g: sum(r.filter(x => x.is_green), 'value') }; });
     const top = [...items].sort((a, b) => b.total - a.total).slice(0, 8).map(i => ({ label: i.name, value: +i.total, green: i.is_green }));
     out.append(el('div', { class: 'charts' },
       el('div', { class: 'card' }, el('h3', {}, 'สัดส่วนมูลค่าสินค้า: เป็นมิตรฯ'), el('div', { class: 'c' }, donut(pGreen, pTot, '#2F7A4F'), el('div', { class: 'small muted' }, `เป็นมิตรฯ ${fmt(pGreen)} จาก ${fmt(pTot)} บาท`))),
       el('div', { class: 'card' }, el('h3', {}, 'สัดส่วนมูลค่าจ้างบริการ: เป็นมิตรฯ'), el('div', { class: 'c' }, donut(sGreen, sTot, '#2C6E9E'), el('div', { class: 'small muted' }, `เป็นมิตรฯ ${fmt(sGreen)} จาก ${fmt(sTot)} บาท`))),
-      el('div', { class: 'card wide' }, el('h3', {}, 'มูลค่าจ้างบริการรายเดือน (บาท)'), byMonth.length ? hbars(byMonth, '#B8863B') : el('div', { class: 'muted small' }, '— ยังไม่มีข้อมูล —')),
+      el('div', { class: 'card wide' }, el('h3', {}, 'มูลค่าจ้างบริการรายเดือน (บาท)'), byMonth.some(x => x.all > 0) ? vbars(byMonth) : el('div', { class: 'muted small' }, '— ยังไม่มีข้อมูล —')),
       el('div', { class: 'card wide' }, el('h3', {}, 'สินค้ามูลค่าสูงสุด 8 อันดับแรก (สีเขียว = เป็นมิตรฯ)'), top.length ? hbars(top) : el('div', { class: 'muted small' }, '— ยังไม่มีข้อมูล —'))));
   }
 

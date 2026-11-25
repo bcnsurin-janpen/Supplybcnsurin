@@ -25,18 +25,19 @@ window.GO_EXT = (function () {
       if (f.type === 'select') fill(inp, f.opts(), '— เลือก —');
       inputs[f.k] = inp; form.append(el('div', {}, el('label', {}, f.label + (f.req ? ' *' : '')), inp));
     }
-    const msgId = 'm-' + id, listBox = el('div', { class: 'scroll' }), totBox = el('div', { class: 'tot' });
+    const msgId = 'm-' + id, pmId = 'pm-' + id, listBox = el('div', { class: 'scroll' }), totBox = el('div', { class: 'tot' });
     let editing = null, rows = [];
-    const reset = () => { editing = null; for (const f of spec.fields) { const v = f.def ? f.def() : ''; inputs[f.k].value = v; } saveBtn.textContent = 'บันทึก'; cancelBtn.hidden = true; };
+    const reset = () => { editing = null; for (const f of spec.fields) { const v = f.def ? f.def() : ''; inputs[f.k].value = v; } saveBtn.textContent = 'บันทึก'; };
     const saveBtn = el('button', { class: 'btn pri', type: 'button' }, 'บันทึก');
-    const cancelBtn = el('button', { class: 'btn', type: 'button', hidden: true }, 'ยกเลิกการแก้ไข');
+    const cancelBtn = el('button', { class: 'btn', type: 'button' }, 'ยกเลิก');
+    const modal = el('div', { class: 'modal', hidden: true, role: 'dialog', 'aria-modal': 'true' });
+    const openM = () => { modal.hidden = false; }, closeM = () => { modal.hidden = true; reset(); };
     async function load() {
-      msg('#' + msgId, '');
       try {
         const fy = +fyIn.value; if (!(fy > 2500 && fy < 2700)) throw new Error('ปีงบประมาณไม่ถูกต้อง');
         rows = chk(await client().from(spec.view).select('*').eq('fiscal_year', fy).order(spec.order).order('id'));
         draw();
-      } catch (e) { msg('#' + msgId, e.message + ' (ถ้าข้อความบอกว่าไม่พบตาราง ให้รัน SQL ไฟล์ 04 ใน Supabase ก่อน)', false); }
+      } catch (e) { msg('#' + pmId, e.message + ' (ถ้าข้อความบอกว่าไม่พบตาราง ให้รัน SQL ไฟล์ 04 ใน Supabase ก่อน)', false); }
     }
     function draw() {
       const t = el('table', { class: 'tbl' }, el('thead', {}, el('tr', {}, ...spec.cols.map(c => el('th', {}, c.h)), el('th', {}, ''))));
@@ -52,11 +53,11 @@ window.GO_EXT = (function () {
     function edit(r) {
       editing = r.id;
       for (const f of spec.fields) inputs[f.k].value = f.toInput ? f.toInput(r[f.k]) : (r[f.k] ?? '');
-      saveBtn.textContent = 'บันทึกการแก้ไข'; cancelBtn.hidden = false; window.scrollTo(0, 0);
+      saveBtn.textContent = 'บันทึกการแก้ไข'; openM();
     }
     async function del(r) {
       if (!confirm('ลบรายการนี้?')) return;
-      try { chk(await client().from(spec.table).delete().eq('id', r.id)); msg('#' + msgId, 'ลบแล้ว', true); await load(); } catch (e) { msg('#' + msgId, e.message, false); }
+      try { chk(await client().from(spec.table).delete().eq('id', r.id)); msg('#' + pmId, 'ลบแล้ว', true); await load(); } catch (e) { msg('#' + pmId, e.message, false); }
     }
     saveBtn.addEventListener('click', async () => {
       const row = {};
@@ -72,15 +73,20 @@ window.GO_EXT = (function () {
         if (editing) chk(await client().from(spec.table).update(row).eq('id', editing));
         else chk(await client().from(spec.table).insert(row));
         const keepFy = spec.fyFromRow ? spec.fyFromRow(row) : null; if (keepFy) fyIn.value = keepFy;
-        reset(); msg('#' + msgId, 'บันทึกแล้ว', true); await load();
+        closeM(); msg('#' + pmId, 'บันทึกแล้ว', true); await load();
       } catch (e) { msg('#' + msgId, e.message, false); } finally { saveBtn.disabled = false; }
     });
-    cancelBtn.addEventListener('click', reset);
+    cancelBtn.addEventListener('click', closeM);
+    modal.addEventListener('click', e => { if (e.target === modal) closeM(); });
     fyIn.addEventListener('change', load);
-    sec.append(el('div', { class: 'card' }, el('h2', {}, title), el('div', { class: 'muted small' }, hint),
-      form, el('div', { class: 'row', style: 'margin-top:10px' }, saveBtn, cancelBtn), el('div', { id: msgId, class: 'msg', role: 'status' })),
-      el('div', { class: 'card' }, el('div', { class: 'row' }, el('div', {}, el('label', {}, 'ปีงบประมาณที่แสดง'), fyIn), el('button', { class: 'btn', type: 'button', onclick: load }, 'แสดง')),
-        listBox, totBox));
+    const formMsg = el('div', { id: msgId, class: 'msg', role: 'status' });
+    modal.append(el('div', { class: 'modalbox' }, el('h2', {}, title), el('div', { class: 'muted small' }, hint), form, formMsg,
+      el('div', { class: 'row', style: 'margin-top:12px;justify-content:flex-end' }, cancelBtn, saveBtn)));
+    const addBtn = el('button', { class: 'btn pri', type: 'button' }, '+ เพิ่มรายการ');
+    addBtn.addEventListener('click', () => { reset(); openM(); });
+    sec.append(el('div', { class: 'card' }, el('div', { class: 'toolbar' }, el('div', {}, el('h2', {}, title), el('div', { class: 'muted small' }, hint)), addBtn),
+      el('div', { class: 'row' }, el('div', {}, el('label', {}, 'ปีงบประมาณที่แสดง'), fyIn), el('button', { class: 'btn', type: 'button', onclick: load }, 'แสดง')),
+      el('div', { id: pmId, class: 'msg', role: 'status' }), listBox, totBox), modal);
     reset(); setTimeout(load, 0);
     return sec;
   }
@@ -162,14 +168,15 @@ window.GO_EXT = (function () {
   /* ---------- ภาพรวม ---------- */
   function dashSection() {
     const fy = el('input', { type: 'number', min: 2560, max: 2600, style: 'width:110px' }); fy.value = defaultFY();
-    const out = el('div', {}), go = el('button', { class: 'btn pri', type: 'button' }, 'แสดง');
+    const out = el('div', {}), go = el('button', { class: 'btn pri', type: 'button' }, 'แสดง'), bk = el('button', { class: 'btn', type: 'button' }, '💾 สำรองข้อมูลปีนี้ (ไฟล์)');
+    bk.addEventListener('click', () => exportBackup(bk, fy));
     async function show() {
       msg('#m-dash', ''); go.disabled = true;
       try { const f = +fy.value; const [items, X] = await Promise.all([DB.items(f), loadExtra(f)]); GO.renderDashboard(out, { items, X, fy: f }); }
       catch (e) { msg('#m-dash', e.message, false); } finally { go.disabled = false; }
     }
     go.addEventListener('click', show); fy.addEventListener('change', show);
-    const sec = el('section', { id: 'tab-dash' }, el('div', { class: 'card' }, el('div', { class: 'row' }, el('div', {}, el('label', {}, 'ปีงบประมาณ'), fy), go), el('div', { id: 'm-dash', class: 'msg', role: 'status' })), out);
+    const sec = el('section', { id: 'tab-dash' }, el('div', { class: 'card' }, el('div', { class: 'row' }, el('div', {}, el('label', {}, 'ปีงบประมาณ'), fy), go, bk), el('div', { id: 'm-dash', class: 'msg', role: 'status' })), out);
     sec._show = show; return sec;
   }
 
@@ -233,6 +240,30 @@ window.GO_EXT = (function () {
     return r;
   }
 
+  /* ---------- ข้อ 6-7 แยกหน้า (ใช้ช่องเดิมของหน้าตั้งค่า จึงบันทึกพร้อมกัน) ---------- */
+  function notesSection() {
+    const grid = document.querySelector('#st-prob').closest('.grid');
+    const msgBox = el('div', { id: 'm-notes', class: 'msg', role: 'status' });
+    const save = el('button', { class: 'btn pri', type: 'button' }, 'บันทึกข้อ 6-7');
+    save.addEventListener('click', async () => {
+      document.querySelector('#st-save').click();
+      setTimeout(() => { const t = document.querySelector('#st-msg'); msg('#m-notes', t.textContent, t.classList.contains('ok')); }, 1200);
+    });
+    return el('section', { id: 'tab-notes' }, el('div', { class: 'card' }, el('h2', {}, '6-7. ปัญหา อุปสรรค และข้อเสนอแนะ'),
+      el('div', { class: 'muted small' }, 'พิมพ์แต่ละประเด็นขึ้นบรรทัดใหม่ จะแสดงในรายงานข้อ 6 และข้อ 7'), grid, msgBox, el('div', { class: 'row', style: 'justify-content:flex-end' }, save)));
+  }
+
+  /* ---------- สำรองข้อมูลเป็นไฟล์ JSON (ไฟล์มีชื่อบริษัท/ผู้รับจ้าง ห้ามแชร์) ---------- */
+  async function exportBackup(btn, fyIn) {
+    btn.disabled = true; msg('#m-dash', '');
+    try {
+      const f = +fyIn.value, X = await loadExtra(f), items = await DB.items(f);
+      const data = { exported_at: new Date().toISOString(), fiscal_year: f, items, ...X };
+      const a = el('a', { href: URL.createObjectURL(new Blob([JSON.stringify(data, null, 1)], { type: 'application/json' })), download: `GreenOffice_backup_FY${f}.json` });
+      document.body.append(a); a.click(); a.remove(); msg('#m-dash', 'ดาวน์โหลดไฟล์สำรองแล้ว (เก็บในที่ปลอดภัย ห้ามส่งต่อ เพราะมีชื่อผู้รับจ้าง/บริษัท)', true);
+    } catch (e) { msg('#m-dash', e.message, false); } finally { btn.disabled = false; }
+  }
+
   /* ---------- เริ่มต้น: เพิ่มแท็บและส่วนต่าง ๆ ---------- */
   function setup() {
     const navWrap = document.querySelector('nav .wrap'), main = document.querySelector('main');
@@ -240,7 +271,7 @@ window.GO_EXT = (function () {
     const tabs = [['dash', '📊 ภาพรวม', dash, true], ['svc', '2. จ้างบริการ', crudSection('svc', '2. บันทึกการจ้างบริการ', 'รายการจ้างบริการแต่ละครั้ง (ไม่ใช่การซื้อสินค้า)', SERVICES)],
       ['clean', '3. ทำความสะอาด', crudSection('clean', '3. การจัดจ้างบริการทำความสะอาดในสำนักงาน', 'ผู้รับจ้างทำความสะอาดแต่ละราย', CLEANING)],
       ['hotel', '4. โรงแรม/ประชุม', crudSection('hotel', '4. การใช้บริการโรงแรมจัดประชุม สัมมนา อบรม', 'บันทึกทุกครั้งที่จัดงานที่โรงแรม', HOTELS)],
-      ['copier', '5. เครื่องถ่ายเอกสาร', copierSection()]];
+      ['copier', '5. เครื่องถ่ายเอกสาร', copierSection()], ['notes', '6-7. ปัญหา/ข้อเสนอแนะ', notesSection()]];
     const firstBtn = navWrap.querySelector('[data-tab]');
     for (const [id, label, secEl, first] of tabs) {
       const b = el('button', { role: 'tab', 'data-tab': id, 'aria-selected': 'false' }, label);
@@ -254,6 +285,7 @@ window.GO_EXT = (function () {
     }
     // เมนูเดิมที่ผูกไว้ก่อนหน้า (setupTabs) ต้องปิดแท็บใหม่ด้วย
     document.querySelectorAll('nav [role=tab]').forEach(b => { if (!tabs.find(t => t[0] === b.dataset.tab)) b.addEventListener('click', () => { /* setupTabs จัดการ section เอง */ }); });
+    ['#st-person', '#st-position'].forEach(i => { const d = document.querySelector(i).parentNode; d.hidden = true; });
     const st = document.querySelector('#tab-settings'); const saveBtn = st && st.querySelector('#st-save');
     if (st) { const card = settingsCard(); saveBtn ? saveBtn.parentNode.before(card) : st.append(card); renderSettingsExtra(ST.report); }
   }
