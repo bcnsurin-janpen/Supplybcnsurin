@@ -24,6 +24,11 @@ window.GO = (function () {
   }
 
   /* ---------- ตารางแบบฟอร์ม ข้อ 1-7 ---------- */
+  function machineText(c, admin) {          // รายการเครื่องทีละบรรทัด (หน้าสาธารณะไม่แสดงหมายเลขเครื่อง)
+    const ms = Array.isArray(c.machines) && c.machines.length ? c.machines : ((c.brand || c.model || c.serial) ? [{ brand: c.brand, model: c.model, serial: c.serial }] : []);
+    if (!ms.length) return '—';
+    return ms.map((m, i) => (ms.length > 1 ? `เครื่องที่ ${i + 1}: ` : '') + `ยี่ห้อ ${m.brand || '-'}  รุ่น ${m.model || '-'}` + (admin ? `  หมายเลขเครื่อง ${m.serial || '-'}` : '')).join('\n');
+  }
   function reporterList(R) {
     const a = Array.isArray(R.reporters) ? R.reporters.filter(x => x && (x.name || x.position)) : [];
     if (a.length) return a;
@@ -99,12 +104,16 @@ window.GO = (function () {
 
     /* ข้อ 4 โรงแรม */
     out.append(el('div', { class: 'blk' }, `4. รายละเอียดของการใช้บริการโรงแรมในการจัดประชุม สัมมนา และอบรม ในช่วงเดือน ${m.periodText}`));
-    const t4 = el('table', {}), b4 = el('tbody', {});
-    t4.append(el('thead', {}, el('tr', {}, el('th', {}, 'รายการจัดประชุม/สัมมนา/อบรม'), el('th', {}, 'สถานที่จัดงาน/โรงแรม'), el('th', {}, 'จำนวนผู้เข้าร่วม (คน)'), el('th', {}, 'ระยะเวลา (วัน)'), el('th', {}, 'งบประมาณที่ใช้ (บาท)'), el('th', {}, 'เป็นมิตรกับสิ่งแวดล้อม'))));
-    if (!X.ht.length) b4.append(el('tr', {}, el('td', { colspan: 6, class: 'c' }, '— ไม่มีการจัดงานที่โรงแรมในช่วงนี้ —')));
-    for (const r of X.ht) b4.append(el('tr', {}, el('td', {}, r.project), el('td', {}, r.venue), el('td', { class: 'num' }, fmtQ(r.attendees)), el('td', { class: 'num' }, fmtQ(r.days)),
-      el('td', { class: 'num' }, fmt(r.budget)), el('td', { class: 'c g' }, r.is_green ? r.label + (admin && r.note ? ' (' + r.note + ')' : '') : ' - ')));
-    t4.append(b4); out.append(t4);
+    for (const [ttl, kind] of [['4.1 การจัดประชุม สัมมนา อบรม ภายนอกวิทยาลัย', 'ภายนอก'], ['4.2 การจัดประชุม สัมมนา อบรม ภายในวิทยาลัย', 'ภายใน']]) {
+      const rowsH = X.ht.filter(r => (r.venue_type === 'ภายใน') === (kind === 'ภายใน'));
+      out.append(el('div', { class: 'blk' }, el('b', {}, ttl)));
+      const t4 = el('table', {}), b4 = el('tbody', {});
+      t4.append(el('thead', {}, el('tr', {}, el('th', {}, 'รายการจัดประชุม/สัมมนา/อบรม'), el('th', {}, 'สถานที่จัดงาน/โรงแรม'), el('th', {}, 'จำนวนผู้เข้าร่วม (คน)'), el('th', {}, 'ระยะเวลา (วัน)'), el('th', {}, 'งบประมาณที่ใช้ (บาท)'), el('th', {}, 'เป็นมิตรกับสิ่งแวดล้อม'))));
+      if (!rowsH.length) b4.append(el('tr', {}, el('td', { colspan: 6, class: 'c' }, '— ไม่มีรายการในช่วงนี้ —')));
+      for (const r of rowsH) b4.append(el('tr', {}, el('td', {}, r.project), el('td', {}, r.venue), el('td', { class: 'num' }, fmtQ(r.attendees)), el('td', { class: 'num' }, fmtQ(r.days)),
+        el('td', { class: 'num' }, fmt(r.budget)), el('td', { class: 'c g' }, r.is_green ? r.label + (admin && r.note ? ' (' + r.note + ')' : '') : ' - ')));
+      t4.append(b4); out.append(t4);
+    }
     out.append(el('div', { class: 'small' }, 'หมายเหตุ *กรณีที่เป็นมิตรกับสิ่งแวดล้อมให้ระบุด้วยว่าได้รับเกียรติบัตรใบไม้เขียว หรือ ได้รับการรับรอง ISO 14001 หรือได้รับการรับรอง Green Hotel'));
 
     /* ข้อ 5 เครื่องถ่ายเอกสาร */
@@ -112,9 +121,9 @@ window.GO = (function () {
     const c = X.copier, t5 = el('table', {}), b5 = el('tbody', {});
     if (!c) b5.append(el('tr', {}, el('td', { class: 'c' }, '— ยังไม่ได้บันทึกข้อมูลปีนี้ —')));
     else [['1. ชื่อบริษัทที่ให้บริการเช่าเครื่องถ่ายเอกสาร', admin ? c.company : '(ไม่แสดงต่อสาธารณะ)'], ['2. จำนวนเครื่องถ่ายเอกสารที่เช่าบริการ', c.units], ['3. งบประมาณที่ใช้', fmt(c.budget) + ' บาท/ปี'],
-      ['4. ระบุยี่ห้อและรุ่นที่ใช้บริการ', `ยี่ห้อ ${c.brand}  รุ่น ${c.model}` + (admin ? `  หมายเลขเครื่อง ${c.serial}` : '')],
+      ['4. ระบุยี่ห้อและรุ่นที่ใช้บริการ', machineText(c, admin)],
       ['5. เครื่องถ่ายเอกสารที่เช่าเป็นไปตามเกณฑ์สินค้าที่เป็นมิตรกับสิ่งแวดล้อม', c.is_green ? '☑ เป็นมิตรกับสิ่งแวดล้อม' : '☐ ไม่เป็นมิตรกับสิ่งแวดล้อม']]
-      .forEach(([a, b]) => b5.append(el('tr', {}, el('td', { style: 'width:46%' }, a), el('td', {}, b))));
+      .forEach(([a, b]) => b5.append(el('tr', {}, el('td', { style: 'width:46%' }, a), el('td', { style: 'white-space:pre-line' }, b))));
     t5.append(b5); out.append(t5);
 
     /* ข้อ 6-7 */
@@ -181,5 +190,5 @@ window.GO = (function () {
       el('div', { class: 'card wide' }, el('h3', {}, 'สินค้ามูลค่าสูงสุด 8 อันดับแรก (สีเขียว = เป็นมิตรฯ)'), top.length ? hbars(top) : el('div', { class: 'muted small' }, '— ยังไม่มีข้อมูล —'))));
   }
 
-  return { buildExtra, renderForm, renderDashboard, reporterList, CRITERIA, monthLabel, rowInPeriod, sum };
+  return { buildExtra, renderForm, renderDashboard, reporterList, machineText, CRITERIA, monthLabel, rowInPeriod, sum };
 })();
