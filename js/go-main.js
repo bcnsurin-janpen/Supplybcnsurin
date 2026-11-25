@@ -25,6 +25,7 @@ function safeHttps(u) { try { const x = new URL(u); return x.protocol === 'https
 function makeDb(sb) {
   const chk = ({ data, error }) => { if (error) throw new Error(error.message); return data; };
   return {
+    sb,
     async session() { const { data } = await sb.auth.getSession(); return data.session; },
     async isAdmin() { return chk(await sb.rpc('go_is_admin')); },
     async signOut() { await sb.auth.signOut(); },
@@ -120,6 +121,7 @@ async function init() {
     await loadSettings();
     $('#app').hidden = false;
     setupTabs(); setupEntry(); setupList(); setupReport(); setupSummary(); setupSettings();
+    if (window.GO_EXT) GO_EXT.setup();
     loadHistory();
   } catch (e) {
     $('#gateMsg').textContent = 'เชื่อมต่อระบบไม่สำเร็จ: ' + e.message; $('#gate').hidden = false;
@@ -305,6 +307,7 @@ async function makeReport() {
     const fy = +$('#r-fy').value; if (!(fy > 2500 && fy < 2700)) throw new Error('ปีงบประมาณไม่ถูกต้อง');
     await loadSettings();
     REPORT = buildReport(await DB.items(fy), ST, fy, $('#r-per').value);
+    REPORT.extra = window.GO_EXT ? await GO_EXT.loadExtra(fy) : {};
     renderReport(REPORT); $('#r-print').disabled = false; $('#r-xlsx').disabled = false;
     const inc = REPORT.groups.flatMap(g => g.items).filter(it => it.label === 'รอตรวจสอบ').length;
     if (inc) msg('#r-msg', `มี ${inc} รายการฉลาก "รอตรวจสอบ" (ยังไม่นับเป็นมิตรฯ) ตรวจกล่องสินค้าแล้วแก้ในแท็บรายการซื้อเข้าได้`, false);
@@ -314,44 +317,9 @@ async function makeReport() {
 function names(v) { const a = String(v || '').split(/[;\n]/).map(x => x.trim()).filter(Boolean); return (a.length ? a : ['']).map(n => el('div', {}, `ชื่อ ${n}`)); }
 function ctxGroupsText() { return [...new Set(ST.keywords.map(k => k.grp))].join(' '); }
 function renderReport(m) {
-  const R = ST.report, out = $('#r-out'); out.textContent = '';
-  out.append(el('div', { class: 'r' }, 'หมวด 6 ข้อ 6.1 (2) รายงานจัดซื้อจัดจ้าง'), el('div', { class: 'r' }, 'แบบฟอร์ม 6.1 (2)'),
-    el('div', { class: 't' }, 'แบบรายงานผลการจัดซื้อจัดจ้างสินค้าและบริการที่เป็นมิตรกับสิ่งแวดล้อม'),
-    el('div', { class: 'c' }, `หน่วยงาน ${R.agency || ''}   ปีงบประมาณ พ.ศ. ${m.fy}`),
-    el('div', {}, `1. รายการจัดซื้อสินค้าในช่วงเดือน ${m.periodText} (${m.period} ปีงบประมาณ พ.ศ. ${m.fy})`));
-  const t = el('table', {});
-  t.append(el('thead', {},
-    el('tr', {}, el('th', { rowspan: 2 }, 'ที่'), el('th', { rowspan: 2 }, 'รายการ'), el('th', { rowspan: 2 }, 'ยี่ห้อ'), el('th', { rowspan: 2 }, 'รุ่นสินค้า'),
-      el('th', {}, 'ความเป็นมิตร'), el('th', { colspan: 4 }, 'ปริมาณสินค้า (หน่วย)'), el('th', { colspan: 2 }, 'มูลค่าสินค้า (บาท)'), el('th', {}, 'เอกสาร/หลักฐาน')),
-    el('tr', {}, el('th', {}, 'กับสิ่งแวดล้อม'), el('th', { colspan: 2 }, 'ทั้งหมด'), el('th', { colspan: 2 }, 'เป็นมิตรฯ'), el('th', {}, 'ทั้งหมด'), el('th', {}, 'เป็นมิตรฯ'), el('th', {}, 'รูปภาพ'))));
-  const tb = el('tbody', {}); let n = 0;
-  for (const g of m.groups) {
-    tb.append(el('tr', { class: 'cat' }, el('td', {}), el('td', { colspan: 11 }, g.cat)));
-    for (const it of g.items) {
-      n++; const gr = it.is_green;
-      const ev = it.evidence_path ? el('button', { class: 'btn sm noprint-btn', type: 'button', onclick: () => openEvidence(it.evidence_path) }, 'มี (ดู)')
-        : safeHttps(it.evidence_url) ? el('a', { href: safeHttps(it.evidence_url), target: '_blank', rel: 'noopener' }, 'ดูหลักฐาน') : '';
-      tb.append(el('tr', {}, el('td', { class: 'c' }, n), el('td', {}, it.name), el('td', {}, it.brand), el('td', {}, it.model),
-        el('td', { class: 'c g' }, gr ? it.label : ''), el('td', { class: 'num' }, fmtQ(it.qty)), el('td', { class: 'c' }, it.unit),
-        el('td', { class: 'num g' }, gr ? fmtQ(it.qty) : ''), el('td', { class: 'c g' }, gr ? it.unit : ''),
-        el('td', { class: 'num' }, fmt(it.total)), el('td', { class: 'num g' }, gr ? fmt(it.total) : ''), el('td', { class: 'c' }, ev)));
-    }
-  }
-  if (!n) tb.append(el('tr', {}, el('td', { colspan: 12, class: 'c' }, '— ไม่มีการจัดซื้อในช่วงนี้ —')));
-  t.append(tb); out.append(t);
-  const s = m.sum, st = el('table', { class: 'sum' });
-  const srow = (lab, a, b, pct) => el('tr', {}, el('td', { style: 'width:52%' }, lab), el('td', { class: 'c' }, pct ? fmt(a) : fmt(a)), el('td', { class: 'c' }, fmt(b)));
-  st.append(el('thead', {}, el('tr', {}, el('th', {}, 'สรุปผล'), el('th', {}, 'ปริมาณ (หน่วย)'), el('th', {}, 'มูลค่า (บาท)'))),
-    el('tbody', {}, srow('รวมการซื้อสินค้าที่เป็นมิตรกับสิ่งแวดล้อม', s.gQty, s.gVal),
-      srow(`รวมการซื้อสินค้าของสำนักงานภายใต้บริบทการขอการรับรองสำนักงานสีเขียว (กลุ่มสินค้า: ${ctxGroupsText()})`, s.cQty, s.cVal),
-      srow('สัดส่วนการซื้อสินค้าที่เป็นมิตรกับสิ่งแวดล้อมของสำนักงานที่อยู่ภายใต้บริบทการขอการรับรองสำนักงานสีเขียว (ร้อยละ)', s.ctxPctQty, s.ctxPctVal, true),
-      srow('รวมการซื้อสินค้าทั้งหมดขององค์กร', s.tQty, s.tVal),
-      srow('สัดส่วนการซื้อสินค้าที่เป็นมิตรกับสิ่งแวดล้อมขององค์กร (ร้อยละ)', s.orgPctQty, s.orgPctVal, true)));
-  out.append(el('div', { class: 'blk' }, st));
-  const list = (title, arr) => el('div', { class: 'blk' }, el('div', {}, title), ...(arr || []).map((t, i) => el('p', {}, `${i + 1}) ${t}`)));
-  out.append(list('6. ปัญหาและอุปสรรคในการจัดซื้อจัดจ้างสินค้าและบริการที่เป็นมิตรกับสิ่งแวดล้อมมาใช้', R.problems), list('7. ข้อเสนอแนะเพิ่มเติมเกี่ยวกับการจัดซื้อจัดจ้าง', R.suggestions));
-  out.append(el('div', { class: 'blk', style: 'margin-left:28px' }, el('b', {}, 'ผู้ให้ข้อมูล'), ...names(R.person), el('div', {}, `ตำแหน่ง ${R.position || ''}`),
-    el('div', {}, `หน่วยงาน ${R.agency || ''}`), el('div', {}, `โทรศัพท์ ${R.tel || ''}`), el('div', {}, `โทรสาร ${R.fax || ''}`)));
+  const evidence = it => it.evidence_path ? el('button', { class: 'btn sm noprint-btn', type: 'button', onclick: () => openEvidence(it.evidence_path) }, 'มี (ดู)')
+    : safeHttps(it.evidence_url) ? el('a', { href: safeHttps(it.evidence_url), target: '_blank', rel: 'noopener' }, 'ดูหลักฐาน') : '';
+  GO.renderForm($('#r-out'), { m, X: GO.buildExtra(m.extra || {}, m.fy, m.period), R: ST.report, keywords: ST.keywords, admin: true, evidence });
 }
 function periodCode(p) { if (p === 'ทั้งปี') return 'Year'; const q = p.match(/ไตรมาสที่ (\d)/); if (q) return 'Q' + q[1]; return 'M' + String(TMON.indexOf(p) + 1).padStart(2, '0'); }
 function loadScript(src) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('โหลดไลบรารี Excel ไม่สำเร็จ')); document.head.append(s); }); }
@@ -405,12 +373,12 @@ async function reportXlsxBlob(m, st, ExcelJS) {
     if (k !== 'h') ws.getRow(r).height = 48; r++;
   }
   r++;
+  r = GO_EXT.xlsxExtra(ws, put, mg, r, m, m.extra, R);
   const para = (t, ind) => { ws.mergeCells(`${ind ? 'B' : 'A'}${r}:K${r}`); put((ind ? 'B' : 'A') + r, t, { h: 'left' }); if (ind) ws.getRow(r).height = 42; r++; };
   para('6. ปัญหาและอุปสรรคในการจัดซื้อจัดจ้างสินค้าและบริการที่เป็นมิตรกับสิ่งแวดล้อมมาใช้'); (R.problems || []).forEach((t, i) => para(`${i + 1}) ${t}`, true));
   para('7. ข้อเสนอแนะเพิ่มเติมเกี่ยวกับการจัดซื้อจัดจ้าง'); (R.suggestions || []).forEach((t, i) => para(`${i + 1}) ${t}`, true));
   r++;
-  [['ผู้ให้ข้อมูล', true], ...String(R.person || '').split(/[;\n]/).map(x => x.trim()).filter(Boolean).map(x => [`ชื่อ ${x}`]), [`ตำแหน่ง ${R.position || ''}`], [`หน่วยงาน ${R.agency || ''}`], [`โทรศัพท์ ${R.tel || ''}`], [`โทรสาร ${R.fax || ''}`]]
-    .forEach(([t, b]) => { put('B' + r, t, { b: !!b, h: 'left', wrap: false }); r++; });
+  r = GO_EXT.xlsxFooter(put, r, R);
   const buf = await wb.xlsx.writeBuffer();
   return new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
@@ -454,6 +422,7 @@ function renderSettings() {
   const lb = $('#st-labels tbody'); lb.textContent = '';
   ST.labels.forEach(l => labelRow(l.name, l.is_green));
   $('#st-kw tbody').textContent = ''; ST.keywords.forEach(k => kwRow(k.keyword, k.grp));
+  if (window.GO_EXT) GO_EXT.renderSettingsExtra(R);
 }
 function labelRow(name, green) {
   const cb = el('input', { type: 'checkbox', style: 'width:auto', 'aria-label': 'นับเป็นมิตรฯ ' + name }); cb.checked = !!green;
@@ -468,7 +437,7 @@ function kwRow(k, g) {
 async function saveSettings() {
   const lines = id => $(id).value.split('\n').map(s => s.trim()).filter(Boolean);
   const report = { agency: $('#st-agency').value.trim(), person: $('#st-person').value.trim(), position: $('#st-position').value.trim(), tel: $('#st-tel').value.trim(), fax: $('#st-fax').value.trim(),
-    problems: lines('#st-prob'), suggestions: lines('#st-sug') };
+    problems: lines('#st-prob'), suggestions: lines('#st-sug'), ...GO_EXT.readSettingsExtra() };
   const labels = $$('#st-labels tbody tr').map((tr, i) => ({ name: tr.dataset.name, is_green: $('input', tr).checked, sort: i + 1 }));
   const keywords = $$('#st-kw tbody tr').map(tr => { const [a, b] = $$('input', tr); return { keyword: a.value.trim(), grp: b.value.trim() }; }).filter(k => k.keyword && k.grp);
   const dup = keywords.map(k => k.keyword).find((k, i, arr) => arr.indexOf(k) !== i);

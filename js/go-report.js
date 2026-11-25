@@ -48,60 +48,39 @@ function buildReport(items, st, fy, period) {
   return { fy, period, periodText: periodText(fy, period), groups, sum: summarize(sel) };
 }
 
-let ST, REPORT = null;
+let DATA = null, DFY = null;
 const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-// ผู้ให้ข้อมูลหลายคน: คั่นด้วย ; หรือขึ้นบรรทัดใหม่
-function names(v) { const a = String(v || '').split(/[;\n]/).map(x => x.trim()).filter(Boolean); return (a.length ? a : ['']).map(n => el('div', {}, `ชื่อ ${n}`)); }
-function ctxGroupsText() { return [...new Set(ST.keywords.map(k => k.grp))].join(' '); }
-function renderReport(m) {
-  const R = ST.report, out = $('#r-out'); out.textContent = '';
-  out.append(el('div', { class: 'r' }, 'หมวด 6 ข้อ 6.1 (2) รายงานจัดซื้อจัดจ้าง'), el('div', { class: 'r' }, 'แบบฟอร์ม 6.1 (2)'),
-    el('div', { class: 't' }, 'แบบรายงานผลการจัดซื้อจัดจ้างสินค้าและบริการที่เป็นมิตรกับสิ่งแวดล้อม'),
-    el('div', { class: 'c' }, `หน่วยงาน ${R.agency || ''}   ปีงบประมาณ พ.ศ. ${m.fy}`),
-    el('div', {}, `1. รายการจัดซื้อสินค้าในช่วงเดือน ${m.periodText} (${m.period} ปีงบประมาณ พ.ศ. ${m.fy})`));
-  const t = el('table', {});
-  t.append(el('thead', {},
-    el('tr', {}, el('th', { rowspan: 2 }, 'ที่'), el('th', { rowspan: 2 }, 'รายการ'), el('th', { rowspan: 2 }, 'ยี่ห้อ'), el('th', { rowspan: 2 }, 'รุ่นสินค้า'),
-      el('th', {}, 'ความเป็นมิตร'), el('th', { colspan: 4 }, 'ปริมาณสินค้า (หน่วย)'), el('th', { colspan: 2 }, 'มูลค่าสินค้า (บาท)'), el('th', {}, 'เอกสาร/หลักฐาน')),
-    el('tr', {}, el('th', {}, 'กับสิ่งแวดล้อม'), el('th', { colspan: 2 }, 'ทั้งหมด'), el('th', { colspan: 2 }, 'เป็นมิตรฯ'), el('th', {}, 'ทั้งหมด'), el('th', {}, 'เป็นมิตรฯ'), el('th', {}, 'รูปภาพ'))));
-  const tb = el('tbody', {}); let n = 0;
-  for (const g of m.groups) {
-    tb.append(el('tr', { class: 'cat' }, el('td', {}), el('td', { colspan: 11 }, g.cat)));
-    for (const it of g.items) {
-      n++; const gr = it.is_green;
-      const ev = '';
-      tb.append(el('tr', {}, el('td', { class: 'c' }, n), el('td', {}, it.name), el('td', {}, it.brand), el('td', {}, it.model),
-        el('td', { class: 'c g' }, gr ? it.label : ''), el('td', { class: 'num' }, fmtQ(it.qty)), el('td', { class: 'c' }, it.unit),
-        el('td', { class: 'num g' }, gr ? fmtQ(it.qty) : ''), el('td', { class: 'c g' }, gr ? it.unit : ''),
-        el('td', { class: 'num' }, fmt(it.total)), el('td', { class: 'num g' }, gr ? fmt(it.total) : ''), el('td', { class: 'c' }, ev)));
-    }
-  }
-  if (!n) tb.append(el('tr', {}, el('td', { colspan: 12, class: 'c' }, '— ไม่มีการจัดซื้อในช่วงนี้ —')));
-  t.append(tb); out.append(t);
-  const s = m.sum, st = el('table', { class: 'sum' });
-  const srow = (lab, a, b, pct) => el('tr', {}, el('td', { style: 'width:52%' }, lab), el('td', { class: 'c' }, pct ? fmt(a) : fmt(a)), el('td', { class: 'c' }, fmt(b)));
-  st.append(el('thead', {}, el('tr', {}, el('th', {}, 'สรุปผล'), el('th', {}, 'ปริมาณ (หน่วย)'), el('th', {}, 'มูลค่า (บาท)'))),
-    el('tbody', {}, srow('รวมการซื้อสินค้าที่เป็นมิตรกับสิ่งแวดล้อม', s.gQty, s.gVal),
-      srow(`รวมการซื้อสินค้าของสำนักงานภายใต้บริบทการขอการรับรองสำนักงานสีเขียว (กลุ่มสินค้า: ${ctxGroupsText()})`, s.cQty, s.cVal),
-      srow('สัดส่วนการซื้อสินค้าที่เป็นมิตรกับสิ่งแวดล้อมของสำนักงานที่อยู่ภายใต้บริบทการขอการรับรองสำนักงานสีเขียว (ร้อยละ)', s.ctxPctQty, s.ctxPctVal, true),
-      srow('รวมการซื้อสินค้าทั้งหมดขององค์กร', s.tQty, s.tVal),
-      srow('สัดส่วนการซื้อสินค้าที่เป็นมิตรกับสิ่งแวดล้อมขององค์กร (ร้อยละ)', s.orgPctQty, s.orgPctVal, true)));
-  out.append(el('div', { class: 'blk' }, st));
-  const list = (title, arr) => el('div', { class: 'blk' }, el('div', {}, title), ...(arr || []).map((t, i) => el('p', {}, `${i + 1}) ${t}`)));
-  out.append(list('6. ปัญหาและอุปสรรคในการจัดซื้อจัดจ้างสินค้าและบริการที่เป็นมิตรกับสิ่งแวดล้อมมาใช้', R.problems), list('7. ข้อเสนอแนะเพิ่มเติมเกี่ยวกับการจัดซื้อจัดจ้าง', R.suggestions));
-  out.append(el('div', { class: 'blk', style: 'margin-left:28px' }, el('b', {}, 'ผู้ให้ข้อมูล'), ...names(R.person), el('div', {}, `ตำแหน่ง ${R.position || ''}`),
-    el('div', {}, `หน่วยงาน ${R.agency || ''}`), el('div', {}, `โทรศัพท์ ${R.tel || ''}`), el('div', {}, `โทรสาร ${R.fax || ''}`)));
+async function loadData(fy) {
+  if (!(fy > 2500 && fy < 2700)) throw new Error('ปีงบประมาณไม่ถูกต้อง');
+  if (DATA && DFY === fy) return DATA;
+  const { data, error } = await sb.rpc('go_public_report', { p_fy: fy });
+  if (error) throw new Error(error.message);
+  DATA = data; DFY = fy; return data;
+}
+async function showDashboard() {
+  msg('#r-msg', ''); $('#r-go').disabled = true;
+  try {
+    const fy = +$('#r-fy').value, d = await loadData(fy);
+    GO.renderDashboard($('#d-out'), { items: d.items || [], X: d, fy });
+  } catch (e) { msg('#r-msg', 'โหลดข้อมูลไม่สำเร็จ: ' + e.message, false); } finally { $('#r-go').disabled = false; }
 }
 async function makeReport() {
   msg('#r-msg', ''); $('#r-go').disabled = true;
   try {
-    const fy = +$('#r-fy').value; if (!(fy > 2500 && fy < 2700)) throw new Error('ปีงบประมาณไม่ถูกต้อง');
-    const { data, error } = await sb.rpc('go_public_report', { p_fy: fy });
-    if (error) throw new Error(error.message);
-    ST = { categories: data.categories || [], keywords: data.keywords || [], report: data.report || {} };
-    REPORT = buildReport(data.items || [], ST, fy, $('#r-per').value);
-    renderReport(REPORT); $('#r-print').disabled = false;
+    const fy = +$('#r-fy').value, d = await loadData(fy), per = $('#r-per').value;
+    const ST = { categories: d.categories || [], keywords: d.keywords || [], report: d.report || {} };
+    const m = buildReport(d.items || [], ST, fy, per);
+    GO.renderForm($('#r-out'), { m, X: GO.buildExtra(d, fy, per), R: ST.report, keywords: ST.keywords, admin: false });
+    $('#r-print').disabled = false;
   } catch (e) { msg('#r-msg', 'สร้างรายงานไม่สำเร็จ: ' + e.message, false); } finally { $('#r-go').disabled = false; }
 }
+function showTab(id) {
+  $$('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', x.dataset.tab === id));
+  $$('main section').forEach(s => s.classList.toggle('on', s.id === 'tab-' + id));
+  $('#r-perbox').hidden = id === 'dash';
+}
+$$('nav [role=tab]').forEach(b => b.addEventListener('click', () => { showTab(b.dataset.tab); (b.dataset.tab === 'dash' ? showDashboard : makeReport)(); }));
 fill($('#r-per'), PERIODS); $('#r-per').value = 'ทั้งปี'; $('#r-fy').value = defaultFY();
-$('#r-go').addEventListener('click', makeReport); $('#r-print').addEventListener('click', () => window.print());
+$('#r-go').addEventListener('click', () => ($('#tab-dash').classList.contains('on') ? showDashboard : makeReport)());
+$('#r-print').addEventListener('click', () => window.print());
+showDashboard();
