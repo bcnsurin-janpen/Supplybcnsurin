@@ -64,6 +64,14 @@
     #tab-report{display:block!important} #tab-report .card{border:0;padding:0;margin:0}
     .form612{font-size:12.5pt} .form612 thead{display:table-header-group} .form612 tr{page-break-inside:avoid}
   }
+  /* ---------- ภาพรวม ---------- */
+  .kpis.k6{grid-template-columns:repeat(3,minmax(0,1fr))} @media (max-width:760px){.kpis.k6{grid-template-columns:1fr 1fr}}
+  .kpi.b{border-left:5px solid #2C6E9E} .kpi.a{border-left:5px solid #B8863B}
+  .charts{display:grid;grid-template-columns:1fr 1fr;gap:12px} .charts .wide{grid-column:1/-1} @media (max-width:760px){.charts{grid-template-columns:1fr}}
+  .hb{display:grid;grid-template-columns:minmax(90px,32%) 1fr 110px;gap:8px;align-items:center;margin:4px 0;font-size:13.5px}
+  .hb .hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .hb .hbar{background:#E6ECF2;border-radius:6px;height:14px;overflow:hidden} .hb .hbar i{display:block;height:100%}
+  .hb .hv{text-align:right}
+  @media print{.noprint{display:none!important}}
 </style>
 </head>
 <body>
@@ -209,5 +217,7 @@
 
 <script src="js/go-config.js"></script>
 <script src="js/go-main.js"></script>
+<script src="js/go-core.js"></script>
+<script src="js/go-sections.js"></script>
 </body>
 </html>
