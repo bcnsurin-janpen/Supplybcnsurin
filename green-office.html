@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
-<title>Green Office 6.1(2) • งานพัสดุ</title>
+<title>Green Office หมวดที่ 6 การจัดซื้อจัดจ้าง • บันทึกข้อมูล</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -98,16 +98,29 @@
     #app:not([hidden]),body.sb{grid-template-columns:1fr} body.sb>main{grid-column:1} nav{position:static;max-height:none}
     nav .wrap{flex-direction:row;overflow-x:auto} nav button{width:auto;white-space:nowrap}
   }
+
+  /* ---------- หน้าเข้าสู่ระบบ ---------- */
+  #login{max-width:420px;margin:48px auto;padding:0 12px}
+  .login-card h2{margin:0 0 4px;color:#1F4D3D}
+  .login-card .field{display:block;margin-top:12px}
+  .field .lab{display:block;font-size:13px;margin-bottom:3px;color:#35523f}
+  .field input{width:100%;box-sizing:border-box}
+  .pw{position:relative;display:block}.pw input{padding-right:40px}
+  .eye{position:absolute;right:4px;top:50%;transform:translateY(-50%);border:0;background:transparent;cursor:pointer;font-size:16px;padding:4px 8px}
+  .linkrow{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .lnk{background:none;border:0;color:#1F4D3D;text-decoration:underline;cursor:pointer;font:inherit;font-size:13px;padding:2px}
+  header .who a{color:#fff;margin-left:10px}
 </style>
 </head>
 <body>
-<header><div class="wrap"><h1>🌿 Green Office • รายงานการจัดซื้อที่เป็นมิตรกับสิ่งแวดล้อม (แบบฟอร์ม 6.1 (2))</h1>
-  <div class="who"><span id="who"></span> <a href="#" id="logout" hidden>ออกจากระบบ</a></div></div></header>
+<header><div class="wrap"><h1>⚡ Green Office หมวดที่ 6 การจัดซื้อจัดจ้าง <small style="font-weight:400;font-size:12px;display:block;opacity:.85">สำนักงานสีเขียว — สารสนเทศการจัดซื้อจัดจ้างสินค้าและบริการที่เป็นมิตรกับสิ่งแวดล้อม</small></h1>
+  <div class="who"><span id="who"></span> <a href="#" id="chpw" hidden>เปลี่ยนรหัสผ่าน</a> <a href="#" id="logout" hidden>ออกจากระบบ</a></div></div></header>
 
+<div id="login" hidden></div>
 <div id="gate" class="card" hidden>
-  <h2>ต้องเข้าสู่ระบบก่อน</h2>
+  <h2>ยังใช้งานหน้านี้ไม่ได้</h2>
   <p class="muted" id="gateMsg">หน้านี้สำหรับผู้ดูแลงานพัสดุเท่านั้น</p>
-  <a class="btn pri" id="gateLogin" href="admin.html">ไปหน้าเข้าสู่ระบบ</a>
+  <button type="button" class="btn" id="gateOut">ออกจากระบบ</button>
 </div>
 
 <div id="app" hidden>
@@ -242,6 +255,7 @@
 </dialog>
 
 <script src="js/go-config.js"></script>
+<script src="js/go-auth.js"></script>
 <script src="js/go-main.js"></script>
 <script src="js/go-core.js"></script>
 <script src="js/go-sections.js"></script>
