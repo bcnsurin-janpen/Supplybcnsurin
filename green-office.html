@@ -72,6 +72,19 @@
   .hb .hl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .hb .hbar{background:#E6ECF2;border-radius:6px;height:14px;overflow:hidden} .hb .hbar i{display:block;height:100%}
   .hb .hv{text-align:right}
   @media print{.noprint{display:none!important}}
+
+  /* ---------- ธีมเขียวเข้ม-ครีม (แบบหน้าเดิม) ---------- */
+  :root{--navy:#1F4D3D;--navy2:#2F7A4F;--ink:#20261F;--mute:#5C6B58;--line:#C9DBC9;--bg:#FBFAF6;--green:#2F7A4F;--greenbg:#E8EFE6}
+  header{background:linear-gradient(90deg,#123326,#1F4D3D)}
+  nav button[aria-selected=true]{color:#1F4D3D;border-bottom-color:#B8863B}
+  h2{color:#123326} .btn.pri{background:#1F4D3D} .btn.pri:hover{background:#123326}
+  .card{box-shadow:0 1px 2px rgba(18,51,38,.06)} .tbl th{background:#E8EFE6;color:#123326}
+  input:focus,select:focus,textarea:focus{outline:2px solid #B9D3BE;border-color:#1F4D3D}
+  .kpi{border-left:5px solid #2F7A4F} .kpi.b{border-left-color:#2C6E9E} .kpi.a{border-left-color:#B8863B}
+  .toolbar{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .modal{position:fixed;inset:0;background:rgba(18,51,38,.45);z-index:50;display:flex;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto}
+  .modal[hidden]{display:none} .modalbox{background:#fff;border-radius:12px;padding:18px;max-width:760px;width:100%}
+  .lg{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:middle}
 </style>
 </head>
 <body>
