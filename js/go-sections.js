@@ -249,6 +249,23 @@ window.GO_EXT = (function () {
       el('table', { class: 'tbl' }, el('thead', {}, el('tr', {}, el('th', {}, 'ชื่อ-สกุล'), el('th', {}, 'ตำแหน่ง'))), repBody),
       el('h3', { style: 'margin-top:14px' }, 'เกณฑ์การคัดเลือกบริการทำความสะอาด (ข้อ 3)'));
     critSel = GO.CRITERIA.map(c => { const s = el('select', {}, el('option', { value: '' }, 'ไม่ระบุ'), el('option', { value: 'y' }, 'มี'), el('option', { value: 'n' }, 'ไม่มี')); card.append(el('div', { class: 'small', style: 'margin-top:6px' }, c), s); return s; });
+    const rf = el('input', { type: 'file', accept: '.json,application/json', 'aria-label': 'ไฟล์สำรองข้อมูล' }), rb = el('button', { class: 'btn', type: 'button' }, 'กู้คืนข้อมูลจากไฟล์สำรอง'), rm = el('div', { class: 'msg', role: 'status' });
+    rb.addEventListener('click', async () => {
+      const f = rf.files && rf.files[0]; rm.textContent = '';
+      if (!f) { rm.textContent = 'เลือกไฟล์สำรอง (.json) ก่อน'; rm.className = 'msg err'; return; }
+      if (!confirm('ระบบจะ "เติมเฉพาะรายการที่หายไป" จากไฟล์สำรอง ไม่ลบและไม่ทับข้อมูลที่มีอยู่ ยืนยันหรือไม่?')) return;
+      rb.disabled = true;
+      try {
+        const data = JSON.parse(await f.text());
+        const res = await client().rpc('go_restore', { p_data: data });
+        if (res.error) throw new Error(res.error.message);
+        const n = res.data || {}, tot = Object.keys(n).reduce((a, k) => a + n[k], 0);
+        rm.className = 'msg ok'; rm.textContent = 'กู้คืนแล้ว เพิ่มรายการที่หายไป ' + tot + ' รายการ' + (tot ? ' (' + Object.keys(n).filter(k => n[k]).map(k => k + ' ' + n[k]).join(', ') + ')' : ' (ข้อมูลครบอยู่แล้ว)');
+      } catch (e) { rm.className = 'msg err'; rm.textContent = 'กู้คืนไม่สำเร็จ: ' + e.message; } finally { rb.disabled = false; }
+    });
+    card.append(el('h3', { style: 'margin-top:18px' }, 'กู้คืนข้อมูลจากไฟล์สำรอง'),
+      el('div', { class: 'muted small' }, 'ใช้ไฟล์ .json ที่สคริปต์สำรองอัตโนมัติสร้างไว้ใน Google Drive ระบบจะเติมเฉพาะรายการที่หายไป ไม่ลบ/ไม่ทับของเดิม (ไม่กู้คืนรายชื่อผู้ดูแล) • รูปหลักฐานกู้คืนด้วยสคริปต์ (ดูคู่มือ)'),
+      el('div', { class: 'row', style: 'margin-top:6px' }, rf, rb), rm);
     return card;
   }
   function renderSettingsExtra(R) {

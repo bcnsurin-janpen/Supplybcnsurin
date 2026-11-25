@@ -110,14 +110,17 @@ let DB, ST, HIST = {}, LIST = [], REPORT = null;
 
 async function init() {
   const factory = window.GO_DB_FACTORY || (() => makeDb(supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY)));
-  $('#gateLogin').href = CONFIG.LOGIN_PAGE;
   try {
     DB = factory();
+    const AUTH = window.GO_AUTH, sbc = DB.sb;
+    if (AUTH && sbc) sbc.auth.onAuthStateChange(ev => { if (ev === 'PASSWORD_RECOVERY') AUTH.pwDialog(sbc, { recovery: true }); });
+    $('#gateOut').addEventListener('click', async () => { await DB.signOut(); location.reload(); });
     const ses = await DB.session();
-    if (!ses) { $('#gate').hidden = false; return; }
+    if (!ses) { if (AUTH && sbc) AUTH.showLogin(sbc, $('#login')); else { $('#gateMsg').textContent = 'ต้องเข้าสู่ระบบก่อน'; $('#gate').hidden = false; } return; }
     if (!(await DB.isAdmin())) { $('#gateMsg').textContent = `บัญชี ${ses.user.email} ยังไม่มีสิทธิ์ใช้งานหน้านี้ (ให้ผู้ดูแลเพิ่มอีเมลในตาราง go_admins)`; $('#gate').hidden = false; return; }
     $('#who').textContent = ses.user.email; $('#logout').hidden = false;
-    $('#logout').addEventListener('click', async e => { e.preventDefault(); await DB.signOut(); location.href = CONFIG.LOGIN_PAGE; });
+    $('#logout').addEventListener('click', async e => { e.preventDefault(); await DB.signOut(); location.reload(); });
+    if (window.GO_AUTH && DB.sb) { const cp = $('#chpw'); cp.hidden = false; cp.addEventListener('click', e => { e.preventDefault(); GO_AUTH.pwDialog(DB.sb, { done: t => { const w = $('#who'); const old = w.textContent; w.textContent = t; setTimeout(() => { w.textContent = old; }, 3000); } }); }); }
     await loadSettings();
     $('#app').hidden = false;
     setupTabs(); setupEntry(); setupList(); setupReport(); setupSummary(); setupSettings();
