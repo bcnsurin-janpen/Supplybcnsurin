@@ -775,7 +775,11 @@ function categoriesHTML() {
 function setCatTech(c, email) { var ct = Object.assign({}, SET.category_tech || {}); if (email) ct[c] = email; else delete ct[c]; saveSetting("category_tech", ct, "บันทึกการล็อกช่างแล้ว"); }
 
 /* ---------- QR ประจำห้อง (ผู้ดูแล): สร้างและพิมพ์ QR ที่พาไปฟอร์มแจ้งซ่อมพร้อมสถานที่ ---------- */
-var QR_LIST = [], QR_LIB_URL = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js", QR_LIB_SRI = "sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k";
+var QR_LIST = qrLoad(), QR_LIB_URL = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js", QR_LIB_SRI = "sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k";
+function qrLoad() { try { var x = JSON.parse(localStorage.getItem("fixQrList") || "[]"); return Array.isArray(x) ? x.filter(function (o) { return o && typeof o === "object"; }).slice(0, 500) : []; } catch (e) { return []; } }
+function qrSave() { try { localStorage.setItem("fixQrList", JSON.stringify(QR_LIST)); } catch (e) { /* เก็บไม่ได้ก็ใช้ต่อได้ */ } }
+function qrKey(o) { return [o.b, o.f, o.r, o.a].join("\u0001"); }
+function qrSelectAll(v) { QR_LIST.forEach(function (o) { o.sel = v; }); qrSave(); qrRenderList(); }
 function qrLib() {
   if (window.qrcode) return Promise.resolve(window.qrcode);
   return new Promise(function (ok, fail) {
@@ -806,14 +810,14 @@ function qrAdminHTML() {
     '<button class="btn btn-primary btn-sm" onclick="qrAddOne()">+ เพิ่มลงรายการพิมพ์</button></div>' +
     '<div class="card" style="margin-bottom:14px"><h3>เพิ่มหลายห้องพร้อมกัน</h3><p class="hint">วางบรรทัดละ 1 ห้อง รูปแบบ อาคาร,ชั้น,ห้อง (คัดลอก 3 คอลัมน์จาก Excel มาวางได้เลย) เช่น 4,3,301</p>' +
     '<textarea id="qrBulk" class="inp" rows="4" placeholder="4,3,301&#10;4,3,302&#10;4,G,ห้องพัสดุ"></textarea><button class="btn btn-sm" style="margin-top:8px" onclick="qrAddBulk()">+ เพิ่มทั้งหมด</button></div>' +
-    '<div id="qrMsg" class="msg" role="alert"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button class="btn btn-primary" onclick="qrPrint()">🖨️ พิมพ์ QR (A4 หน้าละ 6 ดวง)</button><button class="btn btn-ghost btn-sm" onclick="QR_LIST=[];qrRenderList()">ล้างรายการ</button></div>' +
+    '<div id="qrMsg" class="msg" role="alert"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button class="btn btn-primary" onclick="qrPrint()">🖨️ พิมพ์ QR ที่ติ๊กไว้ (A4 หน้าละ 6 ดวง)</button><button class="btn btn-ghost btn-sm" onclick="if(confirm(\'ล้างรายการ QR ทั้งหมดในเครื่องนี้?\')){QR_LIST=[];qrSave();qrRenderList()}">ล้างรายการ</button><button class="btn btn-ghost btn-sm" onclick="qrSelectAll(true)">☑ เลือกทั้งหมด</button><button class="btn btn-ghost btn-sm" onclick="qrSelectAll(false)">☐ ไม่เลือกเลย</button></div>' +
     '<div id="qrListBox"></div>';
 }
 function qrAdd(o) {
   o = { b: String(o.b || "").trim().slice(0, 100), f: String(o.f || "").trim().slice(0, 100), r: String(o.r || "").trim().slice(0, 100), a: String(o.a || "").trim().slice(0, 200) };
   if (!o.b && !o.f && !o.r && !o.a) return false;
-  var key = JSON.stringify(o); if (QR_LIST.some(function (x) { return JSON.stringify(x) === key; })) return false;
-  QR_LIST.push(o); return true;
+  var key = qrKey(o); if (QR_LIST.some(function (x) { return qrKey(x) === key; })) return false;
+  o.sel = true; o.printed = false; QR_LIST.push(o); qrSave(); return true;
 }
 function qrAddOne() { if (!qrAdd({ b: $("qrB").value, f: $("qrF").value, r: $("qrR").value, a: $("qrA").value })) { $("qrMsg").textContent = "เลือกอย่างน้อย 1 ช่อง หรือห้องนี้อยู่ในรายการแล้ว"; return; } $("qrMsg").textContent = ""; $("qrR").value = ""; $("qrA").value = ""; qrRenderList(); }
 function qrAddBulk() {
@@ -831,24 +835,28 @@ async function qrRenderList() {
   var lib; try { lib = await qrLib(); } catch (e) { box.textContent = e.message; return; }
   var wrap = document.createElement("div"); wrap.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px";
   QR_LIST.forEach(function (o, i) {
-    var c = document.createElement("div"); c.style.cssText = "border:1px solid #ddd;border-radius:10px;padding:8px;text-align:center;background:#fff";
+    var c = document.createElement("div"); c.style.cssText = "border:2px solid " + (o.sel ? "#0f766e" : "#ddd") + ";border-radius:10px;padding:8px;text-align:center;background:" + (o.sel ? "#f0fdfa" : "#fff");
+    var lb = document.createElement("label"); lb.style.cssText = "display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;cursor:pointer;margin-bottom:4px";
+    var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!o.sel; cb.addEventListener("change", function () { o.sel = cb.checked; qrSave(); qrRenderList(); });
+    lb.appendChild(cb); lb.appendChild(document.createTextNode(o.printed ? "พิมพ์ (พิมพ์แล้ว ✓)" : "พิมพ์")); c.appendChild(lb);
     var img = document.createElement("img"); img.src = qrData(lib, qrUrl(o), 3); img.alt = "QR " + qrLabel(o); img.style.width = "120px";
     var t = document.createElement("div"); t.style.cssText = "font-size:13px;font-weight:600;margin-top:4px"; qrLines(o).forEach(function (x) { var dv = document.createElement("div"); dv.textContent = x; t.appendChild(dv); });
-    var del = document.createElement("button"); del.className = "btn btn-ghost btn-sm"; del.textContent = "ลบ"; del.addEventListener("click", function () { QR_LIST.splice(i, 1); qrRenderList(); });
+    var del = document.createElement("button"); del.className = "btn btn-ghost btn-sm"; del.textContent = "ลบ"; del.addEventListener("click", function () { QR_LIST.splice(i, 1); qrSave(); qrRenderList(); });
     c.appendChild(img); c.appendChild(t); c.appendChild(del); wrap.appendChild(c);
   });
-  var h = document.createElement("p"); h.className = "hint"; h.textContent = "ในรายการพิมพ์ " + QR_LIST.length + " ห้อง";
+  var h = document.createElement("p"); h.className = "hint"; h.textContent = "ในรายการ " + QR_LIST.length + " ห้อง • ติ๊กไว้จะพิมพ์ " + QR_LIST.filter(function (o) { return o.sel; }).length + " ห้อง (รายการเก็บไว้ในเบราว์เซอร์เครื่องนี้ หลังพิมพ์จะติดป้าย \"พิมพ์แล้ว\" และเอาติ๊กออกให้)";
   box.appendChild(h); box.appendChild(wrap);
 }
 function qrData(lib, url, cell) { var q = lib(0, "M"); q.addData(url); q.make(); return q.createDataURL(cell, 4); }
 async function qrPrint() {
-  if (!QR_LIST.length) { $("qrMsg").textContent = "ยังไม่มีห้องในรายการพิมพ์"; return; }
+  var pick = QR_LIST.filter(function (o) { return o.sel; });
+  if (!pick.length) { $("qrMsg").textContent = "ยังไม่ได้ติ๊กห้องที่จะพิมพ์"; return; }
   var lib; try { lib = await qrLib(); } catch (e) { $("qrMsg").textContent = e.message; return; }
   var old = document.getElementById("qrPrintArea"); if (old) old.remove();
   var st = document.getElementById("qrPrintStyle");
   if (!st) { st = document.createElement("style"); st.id = "qrPrintStyle"; st.textContent = "#qrPrintArea{display:none}@media print{@page{size:A4;margin:10mm}body>*{display:none!important}body>#qrPrintArea{display:grid!important;grid-template-columns:1fr 1fr;gap:6mm}#qrPrintArea .qrc{break-inside:avoid;page-break-inside:avoid;height:84mm;border:1px dashed #999;border-radius:4mm;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;color:#000}#qrPrintArea .qrc h4{margin:0 0 2mm;font-size:16pt}#qrPrintArea .qrc img{width:52mm;height:52mm;image-rendering:pixelated}#qrPrintArea .qrc b{font-size:15pt;margin-top:2mm;text-align:center;line-height:1.3}#qrPrintArea .qrc small{font-size:8pt;color:#444}}"; document.head.appendChild(st); }
   var area = document.createElement("div"); area.id = "qrPrintArea";
-  QR_LIST.forEach(function (o) {
+  pick.forEach(function (o) {
     var c = document.createElement("div"); c.className = "qrc";
     var h = document.createElement("h4"); h.textContent = "สแกนเพื่อแจ้งซ่อม";
     var img = document.createElement("img"); img.src = qrData(lib, qrUrl(o), 8); img.alt = "";
@@ -857,7 +865,10 @@ async function qrPrint() {
     c.appendChild(h); c.appendChild(img); c.appendChild(b); c.appendChild(sm); area.appendChild(c);
   });
   document.body.appendChild(area);
-  setTimeout(function () { window.print(); }, 300);
+  setTimeout(function () {
+    window.print();
+    if (confirm("พิมพ์เรียบร้อยแล้วใช่ไหม? กด ตกลง เพื่อติดป้าย \"พิมพ์แล้ว\" และเอาติ๊กออกจาก " + pick.length + " ห้องนี้")) { pick.forEach(function (o) { o.printed = true; o.sel = false; }); qrSave(); qrRenderList(); }
+  }, 300);
 }
 
 function backupHTML() {
