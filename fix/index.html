@@ -507,12 +507,15 @@ function openDrilldown(title, rows) {
 
 /* ---------- ทะเบียนครุภัณฑ์ (โหลดหลังเข้าระบบเท่านั้น) ---------- */
 async function loadAssets() { if (ASSETS) return ASSETS; try { var d = await rpc("fix_assets"); ASSETS = (d && d.rows) || []; } catch (e) { ASSETS = []; } return ASSETS; }
-function fillAssetDatalists() {
-  var q = ($("reqAsset") ? $("reqAsset").value : "").trim().toLowerCase(), q2 = ($("reqItem") ? $("reqItem").value : "").trim().toLowerCase();
-  if ($("assetNoDatalist") && q.length >= 2 && ASSETS) { var o = [], i; for (i = 0; i < ASSETS.length && o.length < 30; i++) { var a = ASSETS[i]; if (String(a[0]).toLowerCase().indexOf(q) >= 0 || String(a[1]).toLowerCase().indexOf(q) >= 0) o.push('<option value="' + attr(a[0]) + '">' + esc(a[1]) + "</option>"); } $("assetNoDatalist").innerHTML = o.join(""); }
-  if ($("assetDatalist") && q2.length >= 2 && ASSETS) { var seen = {}, o2 = [], j; for (j = 0; j < ASSETS.length && o2.length < 30; j++) { var n = String(ASSETS[j][1]); if (n.toLowerCase().indexOf(q2) >= 0 && !seen[n]) { seen[n] = 1; o2.push('<option value="' + attr(n) + '">'); } } $("assetDatalist").innerHTML = o2.join(""); }
+/* ids ของช่องค้นหาครุภัณฑ์: ฟอร์มแจ้งซ่อม (req) และหน้าต่างแก้ไข (edit) */
+var ASSET_FIELDS = { req: ["reqAsset", "reqItem", "assetNoDatalist", "assetDatalist", "reqRoom", "reqArea"], edit: ["editAsset", "editItem", "editAssetNoDatalist", "editItemDatalist", "editRoom", "editArea"] };
+function fillAssetDatalists(px) {
+  var F = ASSET_FIELDS[px || "req"];
+  var q = ($(F[0]) ? $(F[0]).value : "").trim().toLowerCase(), q2 = ($(F[1]) ? $(F[1]).value : "").trim().toLowerCase();
+  if ($(F[2]) && q.length >= 2 && ASSETS) { var o = [], i; for (i = 0; i < ASSETS.length && o.length < 30; i++) { var a = ASSETS[i]; if (String(a[0]).toLowerCase().indexOf(q) >= 0 || String(a[1]).toLowerCase().indexOf(q) >= 0) o.push('<option value="' + attr(a[0]) + '">' + esc(a[1]) + "</option>"); } $(F[2]).innerHTML = o.join(""); }
+  if ($(F[3]) && q2.length >= 2 && ASSETS) { var seen = {}, o2 = [], j; for (j = 0; j < ASSETS.length && o2.length < 30; j++) { var n = String(ASSETS[j][1]); if (n.toLowerCase().indexOf(q2) >= 0 && !seen[n]) { seen[n] = 1; o2.push('<option value="' + attr(n) + '">'); } } $(F[3]).innerHTML = o2.join(""); }
 }
-function onReqAssetInput(v) { fillAssetDatalists(); v = v.trim(); if (!v || !ASSETS) return; var m = ASSETS.find(function (a) { return a[0] === v; }); if (m) { $("reqItem").value = m[1]; if (m[2] && !$("reqRoom").value) $("reqArea").value = $("reqArea").value || m[2]; } }
+function onReqAssetInput(v, px) { var F = ASSET_FIELDS[px || "req"]; fillAssetDatalists(px); v = v.trim(); if (!v || !ASSETS) return; var m = ASSETS.find(function (a) { return a[0] === v; }); if (m) { $(F[1]).value = m[1]; if (m[2] && !$(F[4]).value) $(F[5]).value = $(F[5]).value || m[2]; } }
 function assetsHTML() {
   return '<div class="card"><h2>📄 ทะเบียนครุภัณฑ์</h2><p class="hint" id="assetHint">กำลังโหลดทะเบียนครุภัณฑ์...</p><input id="assetSearch" class="inp" placeholder="🔍 ค้นหาชื่อครุภัณฑ์ เลขครุภัณฑ์ หรือที่ตั้ง" oninput="ASSET_SHOWN=300;refreshAssetList()" style="margin-bottom:12px"><div id="assetListItems" class="center-col" style="max-height:560px"></div><div id="assetLoadMoreWrap" class="load-more-wrap"></div></div>';
 }
@@ -579,15 +582,16 @@ function refreshReqList() {
 }
 function toggleExpand(id) { EXPANDED = EXPANDED === id ? null : id; refreshReqList(); }
 function openEditRequestModal(id) {
+  loadAssets();
   var r = find(id); if (!r) return; var needReason = !r.isMine && !isAdmin();
   $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:480px"><div class="modal-head"><h3>แก้ไขคำแจ้งซ่อม ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
     '<label class="field"><span class="lab">เบอร์โทรศัพท์</span><input type="tel" id="editPhone" class="inp" maxlength="15" value="' + attr(r.requesterPhone || "") + '"' + (r.requesterPhone ? "" : " placeholder=\"ไม่แก้ไข\"") + '></label>' +
     '<label class="field"><span class="lab">หมวดหมู่งานซ่อม</span><select id="editCategory" class="inp">' + opts((SET.categories || []).indexOf(r.category) < 0 ? [r.category].concat(SET.categories || []) : SET.categories, r.category) + "</select></label>" +
-    '<label class="field"><span class="lab">รายการที่แจ้งซ่อม</span><input type="text" id="editItem" class="inp" maxlength="200" value="' + attr(r.itemName) + '"></label>' +
+    '<label class="field"><span class="lab">รายการที่แจ้งซ่อม</span><input type="text" id="editItem" class="inp" list="editItemDatalist" maxlength="200" oninput="fillAssetDatalists(\'edit\')" value="' + attr(r.itemName) + '"></label><datalist id="editItemDatalist"></datalist>' +
     '<label class="field"><span class="lab">จำนวน</span><input type="number" id="editQty" class="inp" min="1" max="9999" value="' + attr(r.quantity) + '"></label>' +
     '<label class="field"><span class="lab">สาเหตุ / อาการเสีย</span><textarea id="editCause" class="inp" rows="2" maxlength="2000">' + esc(r.cause || "") + "</textarea></label>" +
     '<div class="grid grid-2b" style="gap:10px"><label class="field"><span class="lab">อาคาร</span><select id="editBuilding" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts(SET.buildings, r.locationBuilding) + '</select></label><label class="field"><span class="lab">ชั้น</span><select id="editFloor" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts(SET.floors, r.locationFloor) + '</select></label><label class="field"><span class="lab">ห้อง</span><input type="text" id="editRoom" class="inp" maxlength="100" value="' + attr(r.locationRoom || "") + '"></label><label class="field"><span class="lab">บริเวณ</span><input type="text" id="editArea" class="inp" maxlength="200" value="' + attr(r.locationArea || "") + '"></label></div>' +
-    '<label class="field"><span class="lab">หมายเลขครุภัณฑ์ (ถ้ามี)</span><input type="text" id="editAsset" class="inp" maxlength="100" value="' + attr(r.assetNo || "") + '"></label>' +
+    '<label class="field"><span class="lab">หมายเลขครุภัณฑ์ (ถ้ามี)</span><input type="text" id="editAsset" class="inp" list="editAssetNoDatalist" maxlength="100" oninput="onReqAssetInput(this.value,\'edit\')" placeholder="พิมพ์เพื่อค้นหา เช่น วพบ.สร.xxxx" value="' + attr(r.assetNo || "") + '"></label><datalist id="editAssetNoDatalist"></datalist>' +
     '<label class="field"><span class="lab">เหตุผลในการแก้ไข' + (needReason ? '<span class="req"> *</span>' : " (ถ้ามี)") + '</span><input type="text" id="editReason" class="inp" maxlength="1000"></label><div id="modalMsg" class="msg" role="alert"></div><button class="btn btn-primary btn-block" onclick="saveEditRequest(\'' + r.id + '\')">บันทึกการแก้ไข</button></div></div></div>';
 }
 async function saveEditRequest(id) {
