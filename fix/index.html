@@ -779,6 +779,12 @@ var QR_LIST = qrLoad(), QR_LIB_URL = "https://cdn.jsdelivr.net/npm/qrcode-genera
 function qrLoad() { try { var x = JSON.parse(localStorage.getItem("fixQrList") || "[]"); return Array.isArray(x) ? x.filter(function (o) { return o && typeof o === "object"; }).slice(0, 500) : []; } catch (e) { return []; } }
 function qrSave() { try { localStorage.setItem("fixQrList", JSON.stringify(QR_LIST)); } catch (e) { /* เก็บไม่ได้ก็ใช้ต่อได้ */ } }
 function qrKey(o) { return [o.b, o.f, o.r, o.a].join("\u0001"); }
+function qrMarkPrinted(v) {
+  var pick = QR_LIST.filter(function (o) { return o.sel; });
+  if (!pick.length) { $("qrMsg").textContent = "ติ๊กห้องที่ต้องการก่อน แล้วกดปุ่มนี้"; return; }
+  pick.forEach(function (o) { o.printed = v; if (v) o.sel = false; }); qrSave();
+  $("qrMsg").textContent = (v ? "ทำเครื่องหมายว่าพิมพ์แล้ว " : "เอาป้ายพิมพ์แล้วออก ") + pick.length + " ห้อง"; qrRenderList();
+}
 function qrSelectAll(v) { QR_LIST.forEach(function (o) { o.sel = v; }); qrSave(); qrRenderList(); }
 function qrLib() {
   if (window.qrcode) return Promise.resolve(window.qrcode);
@@ -810,7 +816,7 @@ function qrAdminHTML() {
     '<button class="btn btn-primary btn-sm" onclick="qrAddOne()">+ เพิ่มลงรายการพิมพ์</button></div>' +
     '<div class="card" style="margin-bottom:14px"><h3>เพิ่มหลายห้องพร้อมกัน</h3><p class="hint">วางบรรทัดละ 1 ห้อง รูปแบบ อาคาร,ชั้น,ห้อง (คัดลอก 3 คอลัมน์จาก Excel มาวางได้เลย) เช่น 4,3,301</p>' +
     '<textarea id="qrBulk" class="inp" rows="4" placeholder="4,3,301&#10;4,3,302&#10;4,G,ห้องพัสดุ"></textarea><button class="btn btn-sm" style="margin-top:8px" onclick="qrAddBulk()">+ เพิ่มทั้งหมด</button></div>' +
-    '<div id="qrMsg" class="msg" role="alert"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button class="btn btn-primary" onclick="qrPrint()">🖨️ พิมพ์ QR ที่ติ๊กไว้ (A4 หน้าละ 6 ดวง)</button><button class="btn btn-ghost btn-sm" onclick="if(confirm(\'ล้างรายการ QR ทั้งหมดในเครื่องนี้?\')){QR_LIST=[];qrSave();qrRenderList()}">ล้างรายการ</button><button class="btn btn-ghost btn-sm" onclick="qrSelectAll(true)">☑ เลือกทั้งหมด</button><button class="btn btn-ghost btn-sm" onclick="qrSelectAll(false)">☐ ไม่เลือกเลย</button></div>' +
+    '<div id="qrMsg" class="msg" role="alert"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button class="btn btn-primary" onclick="qrPrint()">🖨️ พิมพ์ QR ที่ติ๊กไว้ (A4 หน้าละ 6 ดวง)</button><button class="btn btn-ghost btn-sm" onclick="if(confirm(\'ล้างรายการ QR ทั้งหมดในเครื่องนี้?\')){QR_LIST=[];qrSave();qrRenderList()}">ล้างรายการ</button><button class="btn btn-ghost btn-sm" onclick="qrSelectAll(true)">☑ เลือกทั้งหมด</button><button class="btn btn-ghost btn-sm" onclick="qrSelectAll(false)">☐ ไม่เลือกเลย</button><button class="btn btn-ghost btn-sm" onclick="qrMarkPrinted(true)">✓ ทำเครื่องหมายว่าพิมพ์แล้ว</button><button class="btn btn-ghost btn-sm" onclick="qrMarkPrinted(false)">↺ เอาป้ายพิมพ์แล้วออก</button></div>' +
     '<div id="qrListBox"></div>';
 }
 function qrAdd(o) {
