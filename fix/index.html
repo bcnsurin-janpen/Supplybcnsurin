@@ -542,7 +542,7 @@ function requesterHTML() {
     '<label class="field"><span class="lab">จำนวน<span class="req"> *</span></span><input type="number" id="reqQty" class="inp" min="1" max="9999" value="1" required></label>' +
     '<label class="field"><span class="lab">สาเหตุ / อาการเสีย<span class="req"> *</span></span><textarea id="reqCause" class="inp" rows="2" maxlength="2000" required></textarea></label>' +
     '<label class="field"><span class="lab">สถานที่<span class="req"> *</span></span></label><p class="hint" style="margin-top:-8px">กรอกอย่างน้อย 1 ใน 4 ช่อง</p>' +
-    '<div class="grid grid-2b" style="gap:10px;margin-bottom:4px"><label class="field"><span class="lab">อาคาร</span><select id="reqBuilding" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts((SET.buildings || [])) + '</select></label>' +
+    '<div id="reqQrLoc" style="display:none;margin-bottom:10px"></div><div id="reqLocGrid" class="grid grid-2b" style="gap:10px;margin-bottom:4px"><label class="field"><span class="lab">อาคาร</span><select id="reqBuilding" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts((SET.buildings || [])) + '</select></label>' +
     '<label class="field"><span class="lab">ชั้น</span><select id="reqFloor" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts(SET.floors) + '</select></label>' +
     '<label class="field"><span class="lab">ห้อง</span><input type="text" id="reqRoom" class="inp" list="roomDatalist" maxlength="100" placeholder="เช่น 301"></label>' +
     '<label class="field"><span class="lab">บริเวณ</span><input type="text" id="reqArea" class="inp" maxlength="200" placeholder="เช่น หน้าลิฟต์"></label></div>' +
@@ -552,8 +552,32 @@ function requesterHTML() {
     '<div class="card"><div style="display:flex;gap:8px;margin-bottom:12px"><input id="reqSearch" class="inp" placeholder="🔍 ค้นหาด้วยเลขแจ้งซ่อม หรือรายการ" oninput="refreshReqList()"><button class="btn btn-ghost btn-sm" onclick="reload()">🔄 รีเฟรช</button></div>' +
     (!isAdmin() ? '<p class="hint">แสดงเฉพาะรายการที่คุณแจ้งเอง (ผู้อื่นดูได้เฉพาะสถานะโดยรวมในแท็บอื่น)</p>' : "") + '<div id="reqListItems" class="center-col" style="max-height:640px"></div></div></div>';
 }
+/* ---------- QR ประจำห้อง: /fix/?b=อาคาร&f=ชั้น&r=ห้อง&a=บริเวณ → เติมสถานที่ให้ (แก้ได้) ---------- */
+function qrLocation() {
+  var p, o, k; try { p = new URLSearchParams(location.search); } catch (e) { return null; }
+  o = { b: p.get("b") || "", f: p.get("f") || "", r: p.get("r") || "", a: p.get("a") || "" };
+  for (k in o) o[k] = String(o[k]).trim().slice(0, k === "a" ? 200 : 100);
+  return (o.b || o.f || o.r || o.a) ? o : null;
+}
+function setSelectValue(id, v) {
+  var s = $(id); if (!s || !v) return;
+  var has = Array.prototype.some.call(s.options, function (op) { return op.value === v; });
+  if (!has) { var op = document.createElement("option"); op.value = v; op.textContent = v; s.appendChild(op); }
+  s.value = v;
+}
+function applyQrLocation() {
+  var o = qrLocation(), box = $("reqQrLoc"), grid = $("reqLocGrid"); if (!o || !box || !grid) return;
+  setSelectValue("reqBuilding", o.b); setSelectValue("reqFloor", o.f); $("reqRoom").value = o.r; $("reqArea").value = o.a;
+  var parts = []; if (o.b) parts.push("อาคาร " + o.b); if (o.f) parts.push("ชั้น " + o.f); if (o.r) parts.push(/^ห้อง/.test(o.r) ? o.r : "ห้อง " + o.r); if (o.a) parts.push(o.a);
+  box.textContent = "";
+  var t = document.createElement("div"); t.className = "msg ok"; t.style.margin = "0 0 6px"; t.textContent = "📍 " + parts.join(" ") + " (จาก QR ประจำห้อง)";
+  var b = document.createElement("button"); b.type = "button"; b.className = "btn btn-ghost btn-sm"; b.textContent = "เปลี่ยนสถานที่";
+  b.addEventListener("click", function () { box.style.display = "none"; grid.style.display = ""; });
+  box.appendChild(t); box.appendChild(b); box.style.display = "block"; grid.style.display = "none";
+}
 function bindRequesterForm() {
   var f = $("reqForm"); if (!f) return;
+  applyQrLocation();
   f.addEventListener("submit", async function (e) {
     e.preventDefault(); var m = $("reqMsg"); m.textContent = "";
     var catSel = $("reqCategory").value, category = catSel === "__other" ? $("reqCategoryCustom").value.trim() : catSel;
@@ -563,7 +587,7 @@ function bindRequesterForm() {
     $("reqSubmit").disabled = true;
     try {
       var r = await rpc("fix_submit", { p: { requesterPhone: $("reqPhone").value.trim(), category: category, itemName: $("reqItem").value.trim(), quantity: $("reqQty").value, cause: $("reqCause").value.trim(), locationBuilding: building, locationFloor: floor, locationRoom: room, locationArea: area, assetNo: $("reqAsset").value.trim() } });
-      showToast("ส่งคำแจ้งซ่อม " + r.requestNo + " สำเร็จ"); var ph = $("reqPhone").value; f.reset(); $("reqPhone").value = ph; $("reqCategoryCustomWrap").style.display = "none"; await reload();
+      showToast("ส่งคำแจ้งซ่อม " + r.requestNo + " สำเร็จ"); var ph = $("reqPhone").value; f.reset(); $("reqPhone").value = ph; $("reqCategoryCustomWrap").style.display = "none"; applyQrLocation(); await reload();
     } catch (er) { m.textContent = errMsg(er); }
     $("reqSubmit").disabled = false;
   });
@@ -708,7 +732,7 @@ function drillCat(c) { openDrilldown("หมวดหมู่: " + c, periodRow
 
 /* ---------- ผู้ดูแลระบบ ---------- */
 function adminHTML() {
-  var tabs = [["members", "ผู้ใช้งานและสิทธิ์"], ["categories", "หมวดหมู่ & ล็อกช่าง"], ["locations", "สถานที่"], ["audit", "ประวัติการใช้งาน (Audit log)"], ["backup", "สำรอง / กู้คืนข้อมูล"]];
+  var tabs = [["members", "ผู้ใช้งานและสิทธิ์"], ["categories", "หมวดหมู่ & ล็อกช่าง"], ["locations", "สถานที่"], ["qr", "QR ประจำห้อง"], ["audit", "ประวัติการใช้งาน (Audit log)"], ["backup", "สำรอง / กู้คืนข้อมูล"]];
   return '<div class="card"><h2>🔧 ผู้ดูแลระบบ</h2><div class="pill-group" style="margin-top:10px">' + tabs.map(function (t) { return '<button class="pill ' + (ADMIN_TAB === t[0] ? "active" : "") + '" onclick="ADMIN_TAB=\'' + t[0] + '\';renderView()">' + t[1] + "</button>"; }).join("") + '</div><div id="adminBox" class="admin-tabs-content">กำลังโหลด...</div></div>';
 }
 async function loadAdminTab() {
@@ -718,6 +742,7 @@ async function loadAdminTab() {
     else if (ADMIN_TAB === "audit") { var a = await rpc("fix_admin_audit", { p_limit: 300 }); box.innerHTML = '<p class="hint">แสดง 300 รายการล่าสุด (ใคร ทำอะไร เมื่อไร) เก็บไว้ไม่น้อยกว่า 5 ปีงบประมาณ</p><div style="overflow-x:auto"><table class="simple"><thead><tr><th>เวลา</th><th>ผู้ทำ</th><th>เลขแจ้ง</th><th>การดำเนินการ</th><th>จาก→เป็น</th><th>เหตุผล</th></tr></thead><tbody>' + a.map(function (x) { return "<tr><td>" + fmtDateTime(x.at) + "</td><td>" + esc(dash(x.by)) + "</td><td>" + esc(dash(x.requestNo)) + "</td><td>" + esc(x.action) + "</td><td>" + esc(dash(x.from)) + " → " + esc(dash(x.to)) + "</td><td>" + esc(dash(x.reason)) + "</td></tr>"; }).join("") + "</tbody></table></div>"; }
     else if (ADMIN_TAB === "backup") box.innerHTML = backupHTML();
     else if (ADMIN_TAB === "categories") box.innerHTML = categoriesHTML();
+    else if (ADMIN_TAB === "qr") { box.innerHTML = qrAdminHTML(); qrRenderList(); }
     else box.innerHTML = locationsHTML();
   } catch (e) { box.textContent = errMsg(e); }
 }
@@ -748,6 +773,87 @@ function categoriesHTML() {
   return listEditor("categories", "หมวดหมู่งานซ่อม", SET.categories || []) + '<div><h3>ล็อกช่างประจำหมวด (แนะนำช่างให้อัตโนมัติตอนมอบหมายงาน)</h3><table class="simple"><tbody>' + (SET.categories || []).map(function (c) { return "<tr><td>" + esc(c) + '</td><td><select class="inp" onchange="setCatTech(' + jsAttr(c) + ',this.value)"><option value="">-- ไม่ล็อก --</option>' + (RESP.technicians || []).map(function (t) { return '<option value="' + attr(t.email) + '"' + (ct[c] === t.email ? " selected" : "") + ">" + esc(t.name) + "</option>"; }).join("") + "</select></td></tr>"; }).join("") + "</tbody></table></div>";
 }
 function setCatTech(c, email) { var ct = Object.assign({}, SET.category_tech || {}); if (email) ct[c] = email; else delete ct[c]; saveSetting("category_tech", ct, "บันทึกการล็อกช่างแล้ว"); }
+
+/* ---------- QR ประจำห้อง (ผู้ดูแล): สร้างและพิมพ์ QR ที่พาไปฟอร์มแจ้งซ่อมพร้อมสถานที่ ---------- */
+var QR_LIST = [], QR_LIB_URL = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js", QR_LIB_SRI = "sha384-8FWZA6BGMXhsfO+BLtrJK0We6gg5o1JyO8xQm6peWDEUs17ACA5ziE/NIAkl9z2k";
+function qrLib() {
+  if (window.qrcode) return Promise.resolve(window.qrcode);
+  return new Promise(function (ok, fail) {
+    var sc = document.createElement("script"); sc.src = QR_LIB_URL; sc.integrity = QR_LIB_SRI; sc.crossOrigin = "anonymous";
+    sc.onload = function () { window.qrcode ? ok(window.qrcode) : fail(new Error("โหลดตัวสร้าง QR ไม่สำเร็จ")); };
+    sc.onerror = function () { fail(new Error("โหลดตัวสร้าง QR ไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่")); };
+    document.head.appendChild(sc);
+  });
+}
+function qrUrl(o) {
+  var q = []; ["b", "f", "r", "a"].forEach(function (k) { if (o[k]) q.push(k + "=" + encodeURIComponent(o[k])); });
+  return location.origin + location.pathname + (q.length ? "?" + q.join("&") : "");
+}
+function qrLabel(o) { var p = []; if (o.b) p.push("อาคาร " + o.b); if (o.f) p.push("ชั้น " + o.f); if (o.r) p.push(/^ห้อง/.test(o.r) ? o.r : "ห้อง " + o.r); if (o.a) p.push(o.a); return p.join(" "); }
+function qrAdminHTML() {
+  return '<p class="hint">สร้าง QR ติดหน้าห้อง สแกนแล้ว (หลังเข้าสู่ระบบ) ฟอร์มแจ้งซ่อมจะเติมอาคาร ชั้น ห้องให้เอง ผู้แจ้งกรอกแค่รายการและอาการ (แก้สถานที่ได้) — อาคารและชั้นใช้ตัวเลือกในแท็บ "สถานที่"</p>' +
+    '<div class="card" style="margin-bottom:14px"><h3>เพิ่มทีละห้อง</h3><div class="grid grid-2b" style="gap:10px">' +
+    '<label class="field"><span class="lab">อาคาร</span><select id="qrB" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts(SET.buildings || []) + '</select></label>' +
+    '<label class="field"><span class="lab">ชั้น</span><select id="qrF" class="inp"><option value="">-- ไม่ระบุ --</option>' + opts(SET.floors || []) + '</select></label>' +
+    '<label class="field"><span class="lab">ห้อง</span><input id="qrR" class="inp" list="qrRoomDl" maxlength="100" placeholder="เช่น 301"></label>' +
+    '<label class="field"><span class="lab">บริเวณ (ถ้ามี)</span><input id="qrA" class="inp" maxlength="200" placeholder="เช่น หน้าลิฟต์"></label></div>' +
+    '<datalist id="qrRoomDl">' + (SET.rooms || []).map(function (x) { return '<option value="' + attr(x) + '">'; }).join("") + "</datalist>" +
+    '<button class="btn btn-primary btn-sm" onclick="qrAddOne()">+ เพิ่มลงรายการพิมพ์</button></div>' +
+    '<div class="card" style="margin-bottom:14px"><h3>เพิ่มหลายห้องพร้อมกัน</h3><p class="hint">วางบรรทัดละ 1 ห้อง รูปแบบ อาคาร,ชั้น,ห้อง (คัดลอก 3 คอลัมน์จาก Excel มาวางได้เลย) เช่น 4,3,301</p>' +
+    '<textarea id="qrBulk" class="inp" rows="4" placeholder="4,3,301&#10;4,3,302&#10;4,G,ห้องพัสดุ"></textarea><button class="btn btn-sm" style="margin-top:8px" onclick="qrAddBulk()">+ เพิ่มทั้งหมด</button></div>' +
+    '<div id="qrMsg" class="msg" role="alert"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:8px 0"><button class="btn btn-primary" onclick="qrPrint()">🖨️ พิมพ์ QR (A4 หน้าละ 6 ดวง)</button><button class="btn btn-ghost btn-sm" onclick="QR_LIST=[];qrRenderList()">ล้างรายการ</button></div>' +
+    '<div id="qrListBox"></div>';
+}
+function qrAdd(o) {
+  o = { b: String(o.b || "").trim().slice(0, 100), f: String(o.f || "").trim().slice(0, 100), r: String(o.r || "").trim().slice(0, 100), a: String(o.a || "").trim().slice(0, 200) };
+  if (!o.b && !o.f && !o.r && !o.a) return false;
+  var key = JSON.stringify(o); if (QR_LIST.some(function (x) { return JSON.stringify(x) === key; })) return false;
+  QR_LIST.push(o); return true;
+}
+function qrAddOne() { if (!qrAdd({ b: $("qrB").value, f: $("qrF").value, r: $("qrR").value, a: $("qrA").value })) { $("qrMsg").textContent = "เลือกอย่างน้อย 1 ช่อง หรือห้องนี้อยู่ในรายการแล้ว"; return; } $("qrMsg").textContent = ""; $("qrR").value = ""; $("qrA").value = ""; qrRenderList(); }
+function qrAddBulk() {
+  var lines = $("qrBulk").value.split(/\r?\n/), n = 0, warn = [];
+  var B = SET.buildings || [], F = SET.floors || [];
+  lines.forEach(function (ln) { var c = ln.split(/\t|,/).map(function (x) { return x.trim(); }); if (!c.join("")) return;
+    if (c[0] && B.indexOf(c[0]) < 0 || c[1] && F.indexOf(c[1]) < 0) warn.push(ln.trim());
+    if (qrAdd({ b: c[0], f: c[1], r: c[2], a: c[3] })) n++; });
+  $("qrBulk").value = ""; $("qrMsg").textContent = "เพิ่ม " + n + " ห้อง" + (warn.length ? " — อาคาร/ชั้นไม่ตรงตัวเลือกในแท็บสถานที่ " + warn.length + " บรรทัด เช่น " + warn[0] : ""); qrRenderList();
+}
+async function qrRenderList() {
+  var box = $("qrListBox"); if (!box) return;
+  box.textContent = "";
+  if (!QR_LIST.length) { box.innerHTML = '<div class="empty">ยังไม่มีห้องในรายการพิมพ์</div>'; return; }
+  var lib; try { lib = await qrLib(); } catch (e) { box.textContent = e.message; return; }
+  var wrap = document.createElement("div"); wrap.style.cssText = "display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px";
+  QR_LIST.forEach(function (o, i) {
+    var c = document.createElement("div"); c.style.cssText = "border:1px solid #ddd;border-radius:10px;padding:8px;text-align:center;background:#fff";
+    var img = document.createElement("img"); img.src = qrData(lib, qrUrl(o), 3); img.alt = "QR " + qrLabel(o); img.style.width = "120px";
+    var t = document.createElement("div"); t.style.cssText = "font-size:13px;font-weight:600;margin-top:4px"; t.textContent = qrLabel(o);
+    var del = document.createElement("button"); del.className = "btn btn-ghost btn-sm"; del.textContent = "ลบ"; del.addEventListener("click", function () { QR_LIST.splice(i, 1); qrRenderList(); });
+    c.appendChild(img); c.appendChild(t); c.appendChild(del); wrap.appendChild(c);
+  });
+  var h = document.createElement("p"); h.className = "hint"; h.textContent = "ในรายการพิมพ์ " + QR_LIST.length + " ห้อง";
+  box.appendChild(h); box.appendChild(wrap);
+}
+function qrData(lib, url, cell) { var q = lib(0, "M"); q.addData(url); q.make(); return q.createDataURL(cell, 4); }
+async function qrPrint() {
+  if (!QR_LIST.length) { $("qrMsg").textContent = "ยังไม่มีห้องในรายการพิมพ์"; return; }
+  var lib; try { lib = await qrLib(); } catch (e) { $("qrMsg").textContent = e.message; return; }
+  var old = document.getElementById("qrPrintArea"); if (old) old.remove();
+  var st = document.getElementById("qrPrintStyle");
+  if (!st) { st = document.createElement("style"); st.id = "qrPrintStyle"; st.textContent = "#qrPrintArea{display:none}@media print{@page{size:A4;margin:10mm}body>*{display:none!important}body>#qrPrintArea{display:grid!important;grid-template-columns:1fr 1fr;gap:6mm}#qrPrintArea .qrc{break-inside:avoid;page-break-inside:avoid;height:84mm;border:1px dashed #999;border-radius:4mm;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;color:#000}#qrPrintArea .qrc h4{margin:0 0 2mm;font-size:16pt}#qrPrintArea .qrc img{width:52mm;height:52mm;image-rendering:pixelated}#qrPrintArea .qrc b{font-size:15pt;margin-top:2mm}#qrPrintArea .qrc small{font-size:8pt;color:#444}}"; document.head.appendChild(st); }
+  var area = document.createElement("div"); area.id = "qrPrintArea";
+  QR_LIST.forEach(function (o) {
+    var c = document.createElement("div"); c.className = "qrc";
+    var h = document.createElement("h4"); h.textContent = "สแกนเพื่อแจ้งซ่อม";
+    var img = document.createElement("img"); img.src = qrData(lib, qrUrl(o), 8); img.alt = "";
+    var b = document.createElement("b"); b.textContent = qrLabel(o);
+    var sm = document.createElement("small"); sm.textContent = "ระบบแจ้งซ่อมออนไลน์ วพบ.สุรินทร์ (เข้าสู่ระบบด้วยอีเมลองค์กร)";
+    c.appendChild(h); c.appendChild(img); c.appendChild(b); c.appendChild(sm); area.appendChild(c);
+  });
+  document.body.appendChild(area);
+  setTimeout(function () { window.print(); }, 300);
+}
 
 function backupHTML() {
   return '<p class="hint">ระบบสำรองข้อมูลอัตโนมัติทุกคืนลง Google Drive ของวิทยาลัยอยู่แล้ว ปุ่มด้านล่างใช้เมื่อต้องการไฟล์สำรองเพิ่มเอง หรือกู้คืนข้อมูล</p>' +
