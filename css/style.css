@@ -471,6 +471,7 @@ h1, h2, h3, h4 {
   border-radius: 999px;
   white-space: nowrap;
 }
+.system-card .lock-badge.public-badge { color: #1F4D3D; background: #DDEFE3; }
 .system-card h3 { margin: 0; font-size: 1.05rem; }
 .system-card p { margin: 0; color: var(--ink-soft); font-size: 0.9rem; flex-grow: 1; }
 .system-card .status {

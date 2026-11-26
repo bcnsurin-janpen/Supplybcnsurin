@@ -65,6 +65,9 @@ const TABLE_SCHEMAS = {
         ['sky', 'ฟ้า'], ['sage', 'เขียว'], ['amber', 'ส้ม'], ['lilac', 'ม่วง'], ['blush', 'ชมพู']
       ] },
       { name: 'login_url', label: 'ลิงก์เข้าระบบ (ว่างไว้ถ้ายังไม่พร้อม)', type: 'text' },
+      { name: 'access', label: 'การเข้าดู', type: 'select', options: [
+        ['login', '🔒 ต้องเข้าสู่ระบบ'], ['public', '🌐 เปิดดูได้ทุกคน']
+      ] },
       { name: 'status', label: 'ข้อความสถานะ', type: 'text' },
       { name: 'sort_order', label: 'ลำดับการแสดง', type: 'number' },
     ]

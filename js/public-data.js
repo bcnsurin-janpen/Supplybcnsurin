@@ -114,14 +114,16 @@ async function renderSystems() {
   container.innerHTML = data.map(sys => {
     const bg = colorVarMap[sys.color] || 'var(--tab-sky)';
     const hasLink = sys.login_url && sys.login_url.trim();
+    const isPublic = sys.access === 'public';
+    const btnText = isPublic ? 'เปิดดู →' : 'เข้าสู่ระบบ →';
     const linkHtml = hasLink
-      ? `<a class="btn btn-ghost" href="${escapeHtml(sys.login_url)}">เข้าสู่ระบบ →</a>`
-      : `<span class="btn btn-ghost" aria-disabled="true">เข้าสู่ระบบ →</span>`;
+      ? `<a class="btn btn-ghost" href="${escapeHtml(sys.login_url)}">${btnText}</a>`
+      : `<span class="btn btn-ghost" aria-disabled="true">${btnText}</span>`;
     return `
       <div class="system-card">
         <div class="top">
           <div class="icon" style="background: ${bg};" aria-hidden="true">${escapeHtml(sys.icon || '🗂️')}</div>
-          <span class="lock-badge">🔒 ต้องเข้าสู่ระบบ</span>
+          ${isPublic ? '<span class="lock-badge public-badge">🌐 เปิดดูได้ทุกคน</span>' : '<span class="lock-badge">🔒 ต้องเข้าสู่ระบบ</span>'}
         </div>
         <h3>${escapeHtml(sys.name)}</h3>
         <p>${escapeHtml(sys.description || '')}</p>
