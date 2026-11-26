@@ -285,6 +285,7 @@ function showLogin(msg) {
   $("app").innerHTML = '<div class="login-screen"><div class="login-card">' +
     "<h1>🏥 ระบบแจ้งซ่อมออนไลน์</h1>" +
     '<div class="sub">วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์ — เข้าสู่ระบบด้วยบัญชีอีเมลองค์กรเพื่อแจ้งซ่อมหรือดำเนินการ</div>' +
+    '<details class="first-help" open style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:13.5px;line-height:1.6"><summary style="cursor:pointer;font-weight:700">เข้าครั้งแรก / ใส่รหัสอีเมลแล้วเข้าไม่ได้?</summary><div style="margin-top:6px">รหัสผ่านของระบบ<b>แยกจากรหัสอีเมล</b> ตั้งรหัสของท่านเองได้ดังนี้</div><ol style="margin:6px 0 4px;padding-left:20px"><li>กรอกอีเมลองค์กร (@bcnsurin.ac.th) ด้านล่าง</li><li>กดปุ่ม <b>ลืมรหัสผ่าน</b></li><li>เปิดอีเมล (ถ้าไม่พบ ดูในกล่องจดหมายขยะ) แล้วกดลิงก์</li><li>ตั้งรหัสใหม่อย่างน้อย 8 ตัว จะใช้รหัสเดียวกับอีเมลก็ได้</li><li>ครั้งต่อไปเข้าด้วยอีเมลและรหัสนี้ได้เลย</li></ol><div style="color:#555">เจ้าหน้าที่จะไม่ถามรหัสผ่านของท่าน • ติดปัญหาแจ้งงานพัสดุ</div></details>' +
     '<label class="field"><span class="lab">อีเมลองค์กร<span class="req"> *</span></span><input type="email" id="gEmail" class="inp" list="gEmails" autocomplete="username" placeholder="ชื่อ@bcnsurin.ac.th"><datalist id="gEmails">' + opts + "</datalist></label>" +
     '<label class="field"><span class="lab">รหัสผ่าน<span class="req"> *</span></span><span class="pw"><input type="password" id="gPw" class="inp" autocomplete="current-password"></span></label>' +
     '<div id="gMsg" class="msg" role="alert"></div>' +
@@ -298,7 +299,7 @@ function showLogin(msg) {
     var em = $("gEmail").value.trim().toLowerCase(), pw = $("gPw").value, m = $("gMsg"); m.textContent = ""; m.className = "msg";
     if (!em || !pw) { m.textContent = "กรอกอีเมลและรหัสผ่าน"; return; }
     $("gLogin").disabled = true; var r = await sb.auth.signInWithPassword({ email: em, password: pw }); $("gLogin").disabled = false;
-    if (r.error) { m.textContent = /Invalid login/i.test(r.error.message) ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง" : "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่"; return; }
+    if (r.error) { m.textContent = /Invalid login/i.test(r.error.message) ? "อีเมลหรือรหัสผ่านไม่ถูกต้อง — ถ้ายังไม่เคยตั้งรหัสของระบบ กด \"ลืมรหัสผ่าน\" เพื่อตั้งรหัสของท่านเอง" : "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่"; return; }
     if (pw === DEF_PW) { try { localStorage.setItem("fixMustChangePw:" + em, "1"); } catch (e) {} }
     afterLogin();
   };

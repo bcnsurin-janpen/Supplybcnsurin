@@ -18,6 +18,15 @@ window.GO_AUTH = (function () {
     return h('label', { class: 'field' }, h('span', { class: 'lab' }, label), h('span', { class: 'pw' }, inp, eye));
   }
   const $ = (root, id) => root.querySelector('#' + id);
+  function firstHelp() {
+    const d = h('details', { open: '', style: 'background:#f0fdfa;border:1px solid #99f6e4;border-radius:10px;padding:10px 12px;margin:10px 0 4px;font-size:13.5px;line-height:1.6' },
+      h('summary', { style: 'cursor:pointer;font-weight:700' }, 'เข้าครั้งแรก / ใส่รหัสอีเมลแล้วเข้าไม่ได้?'),
+      h('div', { style: 'margin-top:6px' }, 'รหัสผ่านของระบบแยกจากรหัสอีเมล ตั้งรหัสของท่านเองได้ดังนี้'));
+    const ol = h('ol', { style: 'margin:6px 0 4px;padding-left:20px' });
+    ['กรอกอีเมลองค์กร (@bcnsurin.ac.th) ด้านล่าง', 'กดปุ่ม "ลืมรหัสผ่าน"', 'เปิดอีเมล (ถ้าไม่พบ ดูในกล่องจดหมายขยะ) แล้วกดลิงก์', 'ตั้งรหัสใหม่อย่างน้อย 8 ตัว จะใช้รหัสเดียวกับอีเมลก็ได้', 'ครั้งต่อไปเข้าด้วยอีเมลและรหัสนี้ได้เลย'].forEach(t => ol.append(h('li', {}, t)));
+    d.append(ol, h('div', { style: 'color:#555' }, 'เจ้าหน้าที่จะไม่ถามรหัสผ่านของท่าน • ติดปัญหาแจ้งงานพัสดุ'));
+    return d;
+  }
 
   /* ---- หน้าเข้าสู่ระบบ (แทนการส่งไปหน้า admin.html) ---- */
   function showLogin(sb, mount, note) {
@@ -32,6 +41,7 @@ window.GO_AUTH = (function () {
     const card = h('div', { class: 'card login-card' },
       h('h2', {}, '⚡ Green Office หมวดที่ 6 การจัดซื้อจัดจ้าง'),
       h('div', { class: 'muted small' }, 'เข้าสู่ระบบเพื่อบันทึกข้อมูล — สำหรับเจ้าหน้าที่ที่ได้รับสิทธิ์ ใช้อีเมลองค์กรและรหัสผ่านของระบบ'),
+      firstHelp(),
       h('label', { class: 'field' }, h('span', { class: 'lab' }, 'อีเมลองค์กร'), em, list),
       pwField('gPw', 'รหัสผ่าน', 'current-password'), msg, login, row);
     mount.append(card);
@@ -42,7 +52,7 @@ window.GO_AUTH = (function () {
       login.disabled = true;
       try {
         const r = await sb.auth.signInWithPassword({ email: e, password: pw });
-        if (r.error) return say(/Invalid login/i.test(r.error.message) ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' : 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่');
+        if (r.error) return say(/Invalid login/i.test(r.error.message) ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง — ถ้ายังไม่เคยตั้งรหัสของระบบ กด "ลืมรหัสผ่าน" เพื่อตั้งรหัสของท่านเอง' : 'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่');
         remember(e); location.reload();
       } catch (x) { say('เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่'); } finally { login.disabled = false; }
     }
