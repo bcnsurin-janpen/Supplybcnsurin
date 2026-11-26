@@ -789,6 +789,11 @@ function qrUrl(o) {
   var q = []; ["b", "f", "r", "a"].forEach(function (k) { if (o[k]) q.push(k + "=" + encodeURIComponent(o[k])); });
   return location.origin + location.pathname + (q.length ? "?" + q.join("&") : "");
 }
+function qrLines(o) {
+  var l1 = [], l2 = []; if (o.b) l1.push("อาคาร " + o.b); if (o.f) l1.push("ชั้น " + o.f);
+  if (o.r) l2.push(/^ห้อง/.test(o.r) ? o.r : "ห้อง " + o.r); if (o.a) l2.push(o.a);
+  return [l1.join(" "), l2.join(" ")].filter(function (x) { return x; });
+}
 function qrLabel(o) { var p = []; if (o.b) p.push("อาคาร " + o.b); if (o.f) p.push("ชั้น " + o.f); if (o.r) p.push(/^ห้อง/.test(o.r) ? o.r : "ห้อง " + o.r); if (o.a) p.push(o.a); return p.join(" "); }
 function qrAdminHTML() {
   return '<p class="hint">สร้าง QR ติดหน้าห้อง สแกนแล้ว (หลังเข้าสู่ระบบ) ฟอร์มแจ้งซ่อมจะเติมอาคาร ชั้น ห้องให้เอง ผู้แจ้งกรอกแค่รายการและอาการ (แก้สถานที่ได้) — อาคารและชั้นใช้ตัวเลือกในแท็บ "สถานที่"</p>' +
@@ -828,7 +833,7 @@ async function qrRenderList() {
   QR_LIST.forEach(function (o, i) {
     var c = document.createElement("div"); c.style.cssText = "border:1px solid #ddd;border-radius:10px;padding:8px;text-align:center;background:#fff";
     var img = document.createElement("img"); img.src = qrData(lib, qrUrl(o), 3); img.alt = "QR " + qrLabel(o); img.style.width = "120px";
-    var t = document.createElement("div"); t.style.cssText = "font-size:13px;font-weight:600;margin-top:4px"; t.textContent = qrLabel(o);
+    var t = document.createElement("div"); t.style.cssText = "font-size:13px;font-weight:600;margin-top:4px"; qrLines(o).forEach(function (x) { var dv = document.createElement("div"); dv.textContent = x; t.appendChild(dv); });
     var del = document.createElement("button"); del.className = "btn btn-ghost btn-sm"; del.textContent = "ลบ"; del.addEventListener("click", function () { QR_LIST.splice(i, 1); qrRenderList(); });
     c.appendChild(img); c.appendChild(t); c.appendChild(del); wrap.appendChild(c);
   });
@@ -841,13 +846,13 @@ async function qrPrint() {
   var lib; try { lib = await qrLib(); } catch (e) { $("qrMsg").textContent = e.message; return; }
   var old = document.getElementById("qrPrintArea"); if (old) old.remove();
   var st = document.getElementById("qrPrintStyle");
-  if (!st) { st = document.createElement("style"); st.id = "qrPrintStyle"; st.textContent = "#qrPrintArea{display:none}@media print{@page{size:A4;margin:10mm}body>*{display:none!important}body>#qrPrintArea{display:grid!important;grid-template-columns:1fr 1fr;gap:6mm}#qrPrintArea .qrc{break-inside:avoid;page-break-inside:avoid;height:84mm;border:1px dashed #999;border-radius:4mm;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;color:#000}#qrPrintArea .qrc h4{margin:0 0 2mm;font-size:16pt}#qrPrintArea .qrc img{width:52mm;height:52mm;image-rendering:pixelated}#qrPrintArea .qrc b{font-size:15pt;margin-top:2mm}#qrPrintArea .qrc small{font-size:8pt;color:#444}}"; document.head.appendChild(st); }
+  if (!st) { st = document.createElement("style"); st.id = "qrPrintStyle"; st.textContent = "#qrPrintArea{display:none}@media print{@page{size:A4;margin:10mm}body>*{display:none!important}body>#qrPrintArea{display:grid!important;grid-template-columns:1fr 1fr;gap:6mm}#qrPrintArea .qrc{break-inside:avoid;page-break-inside:avoid;height:84mm;border:1px dashed #999;border-radius:4mm;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:sans-serif;color:#000}#qrPrintArea .qrc h4{margin:0 0 2mm;font-size:16pt}#qrPrintArea .qrc img{width:52mm;height:52mm;image-rendering:pixelated}#qrPrintArea .qrc b{font-size:15pt;margin-top:2mm;text-align:center;line-height:1.3}#qrPrintArea .qrc small{font-size:8pt;color:#444}}"; document.head.appendChild(st); }
   var area = document.createElement("div"); area.id = "qrPrintArea";
   QR_LIST.forEach(function (o) {
     var c = document.createElement("div"); c.className = "qrc";
     var h = document.createElement("h4"); h.textContent = "สแกนเพื่อแจ้งซ่อม";
     var img = document.createElement("img"); img.src = qrData(lib, qrUrl(o), 8); img.alt = "";
-    var b = document.createElement("b"); b.textContent = qrLabel(o);
+    var b = document.createElement("b"); qrLines(o).forEach(function (x) { var dv = document.createElement("div"); dv.textContent = x; b.appendChild(dv); });
     var sm = document.createElement("small"); sm.textContent = "ระบบแจ้งซ่อมออนไลน์ วพบ.สุรินทร์ (เข้าสู่ระบบด้วยอีเมลองค์กร)";
     c.appendChild(h); c.appendChild(img); c.appendChild(b); c.appendChild(sm); area.appendChild(c);
   });
