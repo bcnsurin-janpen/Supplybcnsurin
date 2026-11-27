@@ -453,6 +453,118 @@ function lineCopy() {
   else { ta.select(); document.execCommand("copy"); ok(); }
 }
 
+/* ---------- ใบส่งซ่อม: แก้ข้อมูลก่อนพิมพ์ → พิมพ์/บันทึกเป็น PDF หรือดาวน์โหลด Word ----------
+   ข้อมูลหลัก (รายการ อาการ จำนวน สถานที่ เลขครุภัณฑ์) มาจากระบบ แก้ผ่าน "แก้ไขคำแจ้งซ่อม" (บันทึกประวัติ)
+   ช่องเฉพาะบนกระดาษเก็บไว้กับใบแจ้งซ่อม (fix_print_save) • ปีที่จัดซื้อ/ราคาดึงจากทะเบียนครุภัณฑ์ได้ */
+var PF_SIGNERS = { head: ["นางพัชรพิมล ดีรุณ", "นักจัดการงานทั่วไปปฏิบัติการ", "หัวหน้าหน่วยบริหารทั่วไป"], deputy: ["นายวรรณชาติ ตาเลิศ", "รองผู้อำนวยการด้านบริหารและยุทธศาสตร์"] };
+var PF_TYPES = [["material", "ซ่อมแซมวัสดุ/ครุภัณฑ์"], ["building", "ซ่อมแซมอาคารสิ่งก่อสร้าง"], ["improve", "ปรับปรุงและต่อเติม"], ["other", "อื่น ๆ"]];
+var PF_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+var PF = null;
+function canPrintForm(r) { return !!r && r.status !== "cancelled" && (isAdmin() || hasGroup("dispatcher") || r.iAmWriter || r.iAmTech); }
+function printFormBtn(r) { return canPrintForm(r) ? "<button class=\"btn btn-ghost btn-sm\" onclick=\"openPrintForm('" + r.id + "')\">🖨️ ใบส่งซ่อม</button>" : ""; }
+function pfMoney(v) { var n = Number(String(v || "").replace(/,/g, "")); return isFinite(n) && String(v).trim() !== "" ? n.toLocaleString("th-TH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : String(v || ""); }
+async function openPrintForm(id) {
+  var r = find(id); if (!r) return;
+  var info; try { info = await rpc("fix_print_get", { p_id: id }); } catch (e) { showToast("เปิดใบส่งซ่อมไม่ได้: " + (e.message || e), true); return; }
+  var f = info.fields || {}, a = info.asset, now = new Date(), d0 = r.writerSentDate ? new Date(r.writerSentDate) : now;
+  var acqYear = a && a.acquired ? String(a.acquired).split("/").pop() : "";
+  PF = { id: id, r: r, info: info, v: {
+    types: Array.isArray(f.types) ? f.types : ["material"], typeOther: f.typeOther || "",
+    docDay: f.docDay || String(d0.getDate()), docMonth: f.docMonth || PF_MONTHS[d0.getMonth()], docYear: f.docYear || String(d0.getFullYear() + 543),
+    unit: f.unit || "", purchaseYear: f.purchaseYear != null ? f.purchaseYear : acqYear, price: f.price != null ? f.price : (a && a.price ? pfMoney(a.price) : ""),
+    repairCount: f.repairCount || "", repairTotal: f.repairTotal || "",
+    materials: Array.isArray(f.materials) ? f.materials.map(function (m) { return { name: m.name || "", qty: m.qty || "", price: m.price || "" }; }) : [],
+    senderName: f.senderName != null ? f.senderName : (info.writerName || ""), senderPosition: f.senderPosition != null ? f.senderPosition : (info.writerPosition || "") } };
+  var can = info.can || {}, HIST = { repairCount: 1, repairTotal: 1 };
+  var inp = function (k, lab, ph, w) { var ok = HIST[k] ? can.history : can.header; return '<label class="field" style="' + (w ? "grid-column:span " + w : "") + '"><span class="lab">' + lab + (ok ? "" : " 🔒") + '</span><input class="inp" data-pf="' + k + '" maxlength="200" placeholder="' + attr(ph || "") + '" value="' + attr(PF.v[k]) + '"' + (ok ? "" : " disabled") + "></label>"; };
+  var assetNote = a ? '<div class="hint" style="grid-column:1/-1">ตามทะเบียนครุภัณฑ์: ' + esc(a.name || "") + (a.price ? " · ราคา " + esc(pfMoney(a.price)) + " บาท" : "") + (a.acquired ? " · ได้มา " + esc(a.acquired) : "") + ' <button class="btn btn-ghost btn-sm" onclick="pfFromAsset()">ดึงปีที่จัดซื้อและราคาจากทะเบียน</button></div>'
+    : '<div class="hint" style="grid-column:1/-1">' + (r.assetNo ? "ไม่พบเลขครุภัณฑ์ " + esc(r.assetNo) + " ในทะเบียนครุภัณฑ์ — กรอกปีที่จัดซื้อและราคาเอง หรือแก้เลขครุภัณฑ์ในระบบ" : "งานนี้ไม่มีเลขครุภัณฑ์ — ถ้าเป็นครุภัณฑ์ ใส่เลขผ่าน \"แก้ข้อมูลหลักในระบบ\" แล้วระบบจะดึงปีที่จัดซื้อและราคาให้") + "</div>";
+  $("modalRoot").innerHTML = '<div class="modal-overlay"><div class="modal-box" style="max-width:980px"><div class="modal-head"><h3>🖨️ ใบส่งซ่อม — ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
+    '<p class="hint">ตรวจและแก้ข้อมูลก่อนพิมพ์ — ช่องด้านล่างบันทึกไว้กับใบแจ้งซ่อม (ทุกคนที่เกี่ยวข้องเห็นค่าเดียวกัน) ส่วนรายการ อาการ จำนวน สถานที่ และเลขครุภัณฑ์ แก้ที่ "แก้ข้อมูลหลักในระบบ"</p>' +
+    '<div class="card" style="margin-bottom:10px;padding:10px"><b>ข้อมูลหลักจากระบบ</b><div class="detail-grid" style="margin-top:6px"><div>รายการ: ' + esc(r.itemName) + "</div><div>จำนวน: " + esc(r.quantity) + "</div><div>สาเหตุ/อาการ: " + esc(dash(r.cause)) + "</div><div>สถานที่: " + esc(dash(r.location)) + "</div><div>เลขครุภัณฑ์: " + esc(dash(r.assetNo)) + "</div></div>" +
+    (r.canEdit ? "<button class=\"btn btn-ghost btn-sm\" style=\"margin-top:6px\" onclick=\"closeModal();openEditRequestModal('" + r.id + "')\">✏️ แก้ข้อมูลหลักในระบบ</button>" : "") + "</div>" +
+    '<div class="grid" style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px">' +
+    '<div class="field" style="grid-column:1/-1"><span class="lab">เรื่อง ขออนุมัติ</span><div style="display:flex;gap:14px;flex-wrap:wrap">' + PF_TYPES.map(function (t) { return '<label><input type="checkbox" data-pft="' + t[0] + '"' + (PF.v.types.indexOf(t[0]) >= 0 ? " checked" : "") + "> " + t[1] + "</label>"; }).join("") + '<input class="inp" data-pf="typeOther" style="max-width:220px" maxlength="200" placeholder="อื่น ๆ (ระบุ)" value="' + attr(PF.v.typeOther) + '"></div></div>' +
+    inp("docDay", "วันที่", "", 1) + inp("docMonth", "เดือน", "", 1) + inp("docYear", "พ.ศ.", "", 1) + '<div></div>' +
+    inp("unit", "ด้วยส่วน/หน่วย/งาน", "เช่น งานพัสดุ ส่วนพัสดุและทรัพย์สิน", 4) + assetNote +
+    inp("purchaseYear", "ปีที่จัดซื้อ", "", 1) + inp("price", "ราคา (บาท)", "", 1) + '<div class="hint" style="grid-column:span 2;align-self:end">ประวัติการซ่อม และรายการวัสดุที่ใช้ซ่อม เว้นว่างไว้ให้พัสดุและช่างเขียนบนกระดาษ</div>' +
+    inp("senderName", "ลงชื่อผู้ส่งซ่อม (ชื่อในวงเล็บ)", "", 2) + inp("senderPosition", "ตำแหน่ง", "", 2) + "</div>" +
+    '<div id="pfMsg" class="msg" role="status"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn btn-primary" onclick="pfSave()">💾 บันทึก</button><button class="btn" onclick="pfPrint()">🖨️ พิมพ์ / บันทึกเป็น PDF</button><button class="btn" onclick="pfWord()">⬇️ ดาวน์โหลด Word</button></div>' +
+    '<p class="hint">PDF: กด "พิมพ์" แล้วเลือกเครื่องพิมพ์ "บันทึกเป็น PDF" • Word: ได้ไฟล์ .doc เปิดแก้ใน Microsoft Word ได้ (หน้าตาใกล้เคียงแบบฟอร์ม อาจต้องจัดบรรทัดเล็กน้อย)</p>' +
+    '<div style="border:1px solid #ddd;border-radius:8px;overflow:auto;max-height:480px;background:#f4f4f4;padding:10px"><div id="pfPreview" style="background:#fff;width:190mm;margin:0 auto;padding:6mm;box-shadow:0 1px 4px rgba(0,0,0,.15)"></div></div></div></div></div>';
+  Array.prototype.forEach.call(document.querySelectorAll("[data-pf]"), function (el) { el.addEventListener("input", function () { PF.v[el.getAttribute("data-pf")] = el.value; pfRender(); }); });
+  PF.can = can; pfMatRender();
+  Array.prototype.forEach.call(document.querySelectorAll("[data-pft]"), function (el) { if (!can.header) el.disabled = true; el.addEventListener("change", function () { var k = el.getAttribute("data-pft"); PF.v.types = PF.v.types.filter(function (x) { return x !== k; }); if (el.checked) PF.v.types.push(k); pfRender(); }); });
+  pfRender();
+}
+function pfMatRender() {
+  var box = $("pfMat"); if (!box) return; var can = PF.can || {}, M = PF.v.materials;
+  box.textContent = "";
+  var t = document.createElement("table"); t.className = "simple"; t.style.width = "100%";
+  t.innerHTML = "<thead><tr><th style=\"width:40px\">ลำดับ</th><th>รายการ</th><th style=\"width:90px\">จำนวน</th><th style=\"width:120px\">ราคา (บาท)</th><th style=\"width:50px\"></th></tr></thead>";
+  var tb = document.createElement("tbody");
+  M.forEach(function (m, i) {
+    var tr = document.createElement("tr"), td0 = document.createElement("td"); td0.textContent = String(i + 1); tr.appendChild(td0);
+    [["name", can.materials], ["qty", can.materials], ["price", can.prices]].forEach(function (c) {
+      var td = document.createElement("td"), el = document.createElement("input"); el.className = "inp"; el.maxLength = c[0] === "name" ? 200 : 30; el.value = m[c[0]] || ""; el.disabled = !c[1];
+      el.addEventListener("input", function () { m[c[0]] = el.value; pfRender(); }); td.appendChild(el); tr.appendChild(td);
+    });
+    var tdx = document.createElement("td");
+    if (can.materials) { var x = document.createElement("button"); x.className = "btn btn-ghost btn-sm"; x.textContent = "ลบ"; x.addEventListener("click", function () { M.splice(i, 1); pfMatRender(); pfRender(); }); tdx.appendChild(x); }
+    tr.appendChild(tdx); tb.appendChild(tr);
+  });
+  t.appendChild(tb); box.appendChild(t);
+  if (!M.length) { var e = document.createElement("div"); e.className = "hint"; e.textContent = "ยังไม่มีรายการวัสดุ"; box.appendChild(e); }
+  if (can.materials && M.length < 8) { var add = document.createElement("button"); add.className = "btn btn-ghost btn-sm"; add.style.marginTop = "6px"; add.textContent = "+ เพิ่มรายการวัสดุ"; add.addEventListener("click", function () { M.push({ name: "", qty: "", price: "" }); pfMatRender(); }); box.appendChild(add); }
+}
+function pfFromAsset() { var a = PF && PF.info.asset; if (!a) return; PF.v.purchaseYear = a.acquired ? String(a.acquired).split("/").pop() : ""; PF.v.price = a.price ? pfMoney(a.price) : ""; ["purchaseYear", "price"].forEach(function (k) { var el = document.querySelector('[data-pf="' + k + '"]'); if (el) el.value = PF.v[k]; }); pfRender(); }
+async function pfSave() { try { await rpc("fix_print_save", { p_id: PF.id, p_fields: PF.v }); $("pfMsg").className = "msg ok"; $("pfMsg").textContent = "บันทึกแล้ว"; } catch (e) { $("pfMsg").className = "msg err"; $("pfMsg").textContent = "บันทึกไม่สำเร็จ: " + (e.message || e); } }
+function pfDots(v, n) { v = String(v == null ? "" : v).trim(); return v ? '<span class="pf-v">' + esc(v) + "</span>" : '<span class="pf-d">' + new Array(n || 20).join(".") + "</span>"; }
+function pfBox(on) { return '<span class="pf-box">' + (on ? "✓" : "&nbsp;") + "</span>"; }
+/* มีฟอนต์ TH Sarabun ในเครื่องไหม (ถ้าไม่มี ใช้ Tahoma ตัวเล็กลงให้พอดี A4 หน้าเดียว) */
+function pfHasThaiFont() {
+  try { var c = document.createElement("canvas").getContext("2d"), t = "ใบส่งซ่อมทดสอบ";
+    c.font = "40px monospace"; var w0 = c.measureText(t).width;
+    return ["TH SarabunPSK", "TH Sarabun New", "Sarabun"].some(function (f) { c.font = "40px '" + f + "', monospace"; return c.measureText(t).width !== w0; });
+  } catch (e) { return false; }
+}
+function pfFormHTML() {
+  var r = PF.r, v = PF.v, T = function (k) { return v.types.indexOf(k) >= 0; }, S = PF_SIGNERS, emp = '<span class="pf-box">&nbsp;</span>';
+  return '<div class="pf' + (pfHasThaiFont() ? "" : " pf-fb") + '">' +
+    '<div class="pf-top"><div class="pf-small">เลขแจ้งซ่อม ' + esc(r.requestNo) + '</div><table class="pf-rcv"><tr><td><b>ส่วนซ่อมบำรุง/ส่วนเทคโนโลยีสารสนเทศ</b><br>รับเลขที่ ' + pfDots(r.repairOrderNo, 30) + "<br>วันที่ " + pfDots(r.techReceivedDate ? fmtDate(r.techReceivedDate) : "", 34) + '</td><td><b>ส่วนพัสดุและทรัพย์สิน</b><br>รับเลขที่ ' + pfDots(r.warehouseNo, 22) + "<br>วันที่ " + pfDots(r.warehouseReceivedDate ? fmtDate(r.warehouseReceivedDate) : "", 24) + "</td></tr></table></div>" +
+    '<div class="pf-title"><b style="font-size:1.35em">ใบส่งซ่อม</b> <span style="float:right">วันที่ ' + pfDots(v.docDay, 10) + " เดือน " + pfDots(v.docMonth, 22) + " พ.ศ. " + pfDots(v.docYear, 12) + "</span></div>" +
+    "<div style=\"white-space:nowrap\">เรื่อง ขออนุมัติ &nbsp;" + PF_TYPES.map(function (t) { return pfBox(T(t[0])) + " " + t[1] + (t[0] === "other" ? " " + pfDots(v.typeOther, 14) : ""); }).join(" &nbsp;") + "</div>" +
+    "<div>เรียน ผู้อำนวยการวิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</div>" +
+    '<div style="text-indent:2em">ด้วยส่วน/หน่วย/งาน ' + pfDots(v.unit, 60) + " มีความประสงค์ที่จะส่งซ่อมแซมปรับปรุงโดยมีรายการดังนี้</div>" +
+    '<table class="pf-t"><tr><th style="width:38%">รายการที่แจ้งซ่อมแซม</th><th style="width:30%">สาเหตุ/อาการเสีย</th><th style="width:10%">จำนวน</th><th>สถานที่</th></tr>' +
+    '<tr><td style="height:16mm;vertical-align:top">' + esc(r.itemName) + '<br><span class="pf-small">หมายเลขครุภัณฑ์ (' + (r.assetNo ? esc(r.assetNo) : "................................") + ")</span></td><td style=\"vertical-align:top\">" + esc(r.cause || "") + '</td><td style="text-align:center;vertical-align:top">' + esc(r.quantity) + '</td><td style="vertical-align:top">' + esc(r.location || "") + "</td></tr></table>" +
+    '<table class="pf-plain"><tr><td style="width:55%;vertical-align:top"><div style="text-indent:2em">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</div>ปีที่จัดซื้อ ' + pfDots(v.purchaseYear, 16) + " ราคา " + pfDots(v.price, 18) + " บาท<br>ประวัติการซ่อม จำนวน " + pfDots(v.repairCount, 6) + " ครั้ง ยอดเงินรวม " + pfDots(v.repairTotal, 16) + ' บาท<br><span class="pf-small">หมายเหตุ 1. ขอความกรุณาเขียน 1 รายการ/1 ใบส่งซ่อม<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2. ผู้ตรวจรับงานซ่อม ควรจะเป็นผู้ที่ส่งซ่อม</span></td>' +
+    '<td style="text-align:center;vertical-align:bottom;white-space:nowrap"><br>ลงชื่อ......................................ผู้ส่งซ่อม<br>(' + (v.senderName ? esc(v.senderName) : "..........................................................") + ")<br>ตำแหน่ง " + pfDots(v.senderPosition, 36) + "</td></tr></table>" +
+    '<table class="pf-t pf-low"><tr><td style="width:52%;vertical-align:top">1. ช่างได้ตรวจสอบตามรายการที่ขออนุมัติซ่อมแล้วผลปรากฏว่า<br>' + emp + " ซ่อมได้ " + emp + " ไม่ใช้อะไหล่ " + emp + " เบิกวัสดุในคลัง " + emp + " จัดซื้อวัสดุ<br>" + emp + " ซ่อมไม่ได้ " + emp + " จ้างเอกชน " + emp + " แทงชำรุด " + emp + " ซื้อทดแทน<br>บันทึกการซ่อมแซม/เหตุผล<br>..................................................................................<br>..................................................................................<br>" +
+    'รายการวัสดุที่ใช้ซ่อมแซม/วัสดุที่ขอจัดซื้อ<table class="pf-t"><tr><th style="width:12%">ลำดับ</th><th>รายการ</th><th style="width:15%">จำนวน</th><th style="width:18%">ราคา</th></tr>' + (function () { var M = (v.materials || []).filter(function (m) { return m.name || m.qty || m.price; }), out = ""; for (var i = 0; i < Math.max(4, M.length); i++) { var m = M[i]; out += m ? "<tr><td style=\"text-align:center\">" + (i + 1) + "</td><td>" + esc(m.name) + "</td><td style=\"text-align:center\">" + esc(m.qty) + "</td><td style=\"text-align:right\">" + esc(m.price ? pfMoney(m.price) : "") + "</td></tr>" : "<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>"; } return out; })() + "</table>" +
+    "สรุปงาน<br>" + emp + " ซ่อมเสร็จแล้ว<br>" + emp + ' รอดำเนินการ (เบิกวัสดุ/จัดซื้อวัสดุ/จ้างเอกชน/ซื้อทดแทน)<div style="text-align:center;margin-top:4px">ลงชื่อ..................................................<br>(....................................................)<br>ช่างผู้ดำเนินการตรวจสอบและซ่อมแซม<br>วันที่..................................................</div></td>' +
+    '<td style="vertical-align:top">2. ความเห็นของเจ้าหน้าที่ส่วนพัสดุและสินทรัพย์<br>' + emp + " เพื่อโปรดพิจารณาอนุมัติตามที่ช่างเสนอ<br>" + emp + ' อื่นๆ......................................................<div style="text-align:center">ลงชื่อ.............................................<br>(.............................................)<br>วันที่.............................................</div><hr>' +
+    "3. เรียน รองผู้อำนวยการด้านบริหารและยุทธศาสตร์<br>" + emp + " เพื่อโปรดพิจารณาอนุมัติตามที่ช่างเสนอ<br>" + emp + ' อื่นๆ......................................................<div style="text-align:center">ลงชื่อ.............................................<br>(' + esc(S.head[0]) + ")<br>" + esc(S.head[1]) + "<br>" + esc(S.head[2]) + "<br>วันที่.............................................</div><hr>" +
+    "4. เรียน ผู้อำนวยการวิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>" + emp + " เห็นควรอนุมัติตามที่หัวหน้าหน่วยบริหารทั่วไปเสนอ<br>" + emp + ' อื่นๆ......................................................<div style="text-align:center">ลงชื่อ.............................................<br>(' + esc(S.deputy[0]) + ")<br>" + esc(S.deputy[1]) + "<br>วันที่.............................................</div></td></tr>" +
+    '<tr><td colspan="2" style="text-align:center">5. ความเห็นของผู้อำนวยการวิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>' + emp + " อนุมัติให้ดำเนินการตามเสนอ &nbsp; " + emp + " ไม่อนุมัติ เนื่องจาก ......................................................<br>ลงชื่อ.......................................................<br>(...........................................................)<br>ตำแหน่ง.......................................................<br>วันที่.......................................................</td></tr>" +
+    '<tr><td colspan="2" style="text-align:center">' + emp + " เจ้าหน้าที่ได้มาดำเนินการซ่อมให้เรียบร้อยแล้ว<br>(ลงชื่อ)...........................................................<br>(.............................................................) ผู้ตรวจรับงานซ่อม<br>วันที่..............................................................</td></tr></table></div>";
+}
+var PF_CSS = ".pf{font-family:'TH SarabunPSK','TH Sarabun New','Sarabun',Tahoma,sans-serif;font-size:15pt;line-height:1.15;color:#000}.pf.pf-fb{font-family:Tahoma,sans-serif;font-size:9.5pt;line-height:1.3}.pf.pf-fb .pf-small,.pf.pf-fb .pf-rcv td,.pf.pf-fb .pf-low,.pf.pf-fb .pf-low .pf-t{font-size:8.5pt}.pf.pf-fb .pf-title span{font-size:9.5pt}.pf .pf-small{font-size:13pt}.pf-top{overflow:hidden}.pf-top .pf-small{float:left}.pf-rcv{float:right;border-collapse:separate;border-spacing:4px 0}.pf-rcv td{border:1px solid #000;padding:1px 6px;font-size:13pt;vertical-align:top}.pf-title{margin:4px 0 2px;text-align:center}.pf-title span{font-size:15pt}.pf-t{width:100%;border-collapse:collapse;margin:3px 0}.pf-t th,.pf-t td{border:1px solid #000;padding:2px 5px}.pf-t th{font-weight:400}.pf-plain{width:100%;border-collapse:collapse}.pf-plain td{padding:2px 4px}.pf-low{font-size:14pt}.pf-low .pf-t{font-size:13pt}.pf-box{display:inline-block;width:11pt;height:11pt;border:1px solid #000;text-align:center;line-height:11pt;font-size:10pt;vertical-align:middle}.pf-v{border-bottom:1px dotted #000;padding:0 4px}.pf-d{color:#000;letter-spacing:-1px}.pf hr{border:0;border-top:1px solid #000;margin:4px -5px}";
+function pfRender() { var p = $("pfPreview"); if (!p) return; if (!document.getElementById("pfCss")) { var st = document.createElement("style"); st.id = "pfCss"; st.textContent = PF_CSS; document.head.appendChild(st); } p.innerHTML = pfFormHTML(); }
+function pfPrint() {
+  var old = document.getElementById("pfPrintArea"); if (old) old.remove();
+  var st = document.getElementById("pfPrintStyle");
+  if (!st) { st = document.createElement("style"); st.id = "pfPrintStyle"; st.textContent = "#pfPrintArea{display:none}@media print{@page{size:A4;margin:10mm 12mm}body>*{display:none!important}body>#pfPrintArea{display:block!important}}"; document.head.appendChild(st); }
+  var area = document.createElement("div"); area.id = "pfPrintArea"; area.innerHTML = pfFormHTML(); document.body.appendChild(area);
+  setTimeout(function () { window.print(); }, 200);
+}
+function pfWord() {
+  var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>ใบส่งซ่อม ' + esc(PF.r.requestNo) + '</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--><style>@page Section1{size:21cm 29.7cm;margin:1.2cm 1.4cm}div.Section1{page:Section1}' + PF_CSS + '</style></head><body><div class="Section1">' + pfFormHTML() + "</div></body></html>";
+  var blob = new Blob(["﻿", html], { type: "application/msword" }), a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "ใบส่งซ่อม-" + String(PF.r.requestNo).replace(/[\/\\]/g, "-") + ".doc"; document.body.appendChild(a); a.click();
+  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
 function viewJobDetail(id) {
   var r = find(id); if (!r) return;
   $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:600px"><div class="modal-head"><h3>รายละเอียดงาน ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
@@ -468,7 +580,7 @@ function viewJobDetail(id) {
     "<div>เงื่อนไขส่งพัสดุ: " + esc(dash(r.warehouseReason)) + "</div><div>เลขพัสดุ: " + esc(dash(r.warehouseNo)) + "</div>" +
     "<div>เจ้าหน้าที่พัสดุ: " + esc(dash(r.warehouseStaff)) + "</div><div>วันที่พัสดุส่งกลับช่าง: " + fmtDate(r.warehouseDoneDate) + "</div>" +
     "<div>วันที่เสร็จสิ้น: " + fmtDate(r.completedDate) + "</div><div>ระยะเวลารวม: " + (r.completedDate ? daysBetween(r.createdAt, r.completedDate) + " วัน" : "-") + "</div></div>" +
-    ((isAdmin() || isStaff()) && r.status !== "cancelled" ? '<div style="margin-top:14px"><button class="btn btn-sky btn-sm" onclick="openLineShare(\'' + r.id + '\')">💬 ส่งข้อความ LINE</button> <span class="hint">เลือกผู้รับจากเพื่อนใน LINE ของท่านเอง</span></div>' : "") +
+    ((isAdmin() || isStaff()) && r.status !== "cancelled" ? '<div style="margin-top:14px"><button class="btn btn-sky btn-sm" onclick="openLineShare(\'' + r.id + '\')">💬 ส่งข้อความ LINE</button> ' + printFormBtn(r) + ' <span class="hint">เลือกผู้รับจากเพื่อนใน LINE ของท่านเอง</span></div>' : "") +
     '<h3 style="margin-top:16px">ประวัติการดำเนินการ</h3><div id="histBox" class="hint">กำลังโหลด...</div></div></div></div>';
   rpc("fix_history_of", { p_id: id }).then(function (h) {
     var box = $("histBox"); if (!box) return;
@@ -701,7 +813,7 @@ function writerHTML() {
   var sent = REQS.filter(function (r) { return ["new", "assigned"].indexOf(r.status) < 0 && mine(r) && (!IDENTITY || r.assignedWriter === IDENTITY); }).slice(0, 10);
   return '<div class="card" style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><h2 style="margin:0">📋 คิวส่งซ่อม</h2>' + (lockedToMe ? '<span class="lock-note">🔒 แสดงงานของคุณ</span>' : '<select class="inp" style="max-width:260px" onchange="IDENTITY=this.value;renderView()"><option value="">ดูทุกคน</option>' + (RESP.writers || []).map(function (w) { return '<option value="' + attr(w.name) + '"' + (IDENTITY === w.name ? " selected" : "") + ">" + esc(w.name) + "</option>"; }).join("") + "</select>") + "</div>" +
     (!editable ? readonlyBanner("ผู้เขียนใบส่งซ่อม") : '<p class="hint">บันทึกวันที่ส่งซ่อมเท่านั้น — เลขช่างจะออกโดยช่างตอนรับใบส่งซ่อม</p>') +
-    (queue.length === 0 ? '<div class="empty">✅<br>ไม่มีงานรอส่งซ่อม</div>' : queue.map(function (r) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + '</div><div class="req-sub">รับผิดชอบโดย ' + esc(dash(r.assignedWriter)) + " → ช่าง " + esc((r.assignedTechnicians || []).join(", ")) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (editable && (isAdmin() || r.iAmWriter) ? "<button class=\"btn btn-primary btn-sm\" onclick=\"openModal('writerSend','" + r.id + "','บันทึกวันที่ส่งซ่อม')\">บันทึกส่งซ่อมแล้ว</button>" : "") + "</div>"); }).join("")) +
+    (queue.length === 0 ? '<div class="empty">✅<br>ไม่มีงานรอส่งซ่อม</div>' : queue.map(function (r) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + '</div><div class="req-sub">รับผิดชอบโดย ' + esc(dash(r.assignedWriter)) + " → ช่าง " + esc((r.assignedTechnicians || []).join(", ")) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + printFormBtn(r) + (editable && (isAdmin() || r.iAmWriter) ? "<button class=\"btn btn-primary btn-sm\" onclick=\"openModal('writerSend','" + r.id + "','บันทึกวันที่ส่งซ่อม')\">บันทึกส่งซ่อมแล้ว</button>" : "") + "</div>"); }).join("")) +
     '</div><div class="card"><h3>ประวัติล่าสุด</h3>' + fullHistoryTable(sent, "ประวัติผู้เขียนใบส่งซ่อม") + "</div>";
 }
 function technicianHTML() {
@@ -713,7 +825,7 @@ function technicianHTML() {
   var row = function (r, label, onclick) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + '</div><div class="req-sub">' + causeLine(r) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (can(r) ? '<button class="btn btn-primary btn-sm" onclick="' + onclick + '">' + label + "</button>" : "") + "</div>"); };
   var h = function (t, n) { return '<h3 style="margin-top:16px">' + t + " (" + n + ")</h3>"; }, none = '<div class="hint">ไม่มีงาน</div>';
   return '<div class="card" style="margin-bottom:18px"><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px"><h2 style="margin:0">🔧 งานของช่าง</h2>' + (lockedToMe ? '<span class="lock-note">🔒 แสดงงานของคุณ</span>' : '<select class="inp" style="max-width:260px" onchange="IDENTITY=this.value;renderView()"><option value="">ดูทุกคน</option>' + (RESP.technicians || []).map(function (t) { return '<option value="' + attr(t.name) + '"' + (IDENTITY === t.name ? " selected" : "") + ">" + esc(t.name) + "</option>"; }).join("") + "</select>") + "</div>" + (!editable ? readonlyBanner("ช่าง") : "") +
-    h("มอบหมายแล้ว รอใบส่งซ่อม — ตรวจสอบเบื้องต้นได้", pre.length) + '<p class="hint">ยังออกเลขช่างไม่ได้จนกว่าใบส่งซ่อมจากผู้เขียนจะมาถึง • ถ้าผู้เขียนใช้ระบบไม่สะดวก ช่างกด "บันทึกส่งซ่อมแทนผู้เขียน" เมื่อได้รับใบส่งซ่อมแล้ว (ระบบบันทึกชื่อผู้กดไว้ในประวัติ)</p>' + (pre.length === 0 ? none : pre.map(function (r) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + '</div><div class="req-sub">' + causeLine(r) + (r.preCheckDate ? " · ตรวจสอบเบื้องต้นแล้ว " + fmtDateTime(r.preCheckDate) : "") + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (can(r) && !r.preCheckDate ? "<button class=\"btn btn-ghost btn-sm\" onclick=\"techPrecheck('" + r.id + "')\">บันทึกว่าตรวจสอบเบื้องต้นแล้ว</button>" : "") + (can(r) ? "<button class=\"btn btn-primary btn-sm\" onclick=\"openModal('writerSend','" + r.id + "','บันทึกวันที่ส่งซ่อม (แทนผู้เขียนใบส่งซ่อม)')\">บันทึกส่งซ่อมแทนผู้เขียน</button>" : "") + "</div>"); }).join("")) +
+    h("มอบหมายแล้ว รอใบส่งซ่อม — ตรวจสอบเบื้องต้นได้", pre.length) + '<p class="hint">ยังออกเลขช่างไม่ได้จนกว่าใบส่งซ่อมจากผู้เขียนจะมาถึง • ถ้าผู้เขียนใช้ระบบไม่สะดวก ช่างกด "บันทึกส่งซ่อมแทนผู้เขียน" เมื่อได้รับใบส่งซ่อมแล้ว (ระบบบันทึกชื่อผู้กดไว้ในประวัติ)</p>' + (pre.length === 0 ? none : pre.map(function (r) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + '</div><div class="req-sub">' + causeLine(r) + (r.preCheckDate ? " · ตรวจสอบเบื้องต้นแล้ว " + fmtDateTime(r.preCheckDate) : "") + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (can(r) && !r.preCheckDate ? "<button class=\"btn btn-ghost btn-sm\" onclick=\"techPrecheck('" + r.id + "')\">บันทึกว่าตรวจสอบเบื้องต้นแล้ว</button>" : "") + printFormBtn(r) + (can(r) ? "<button class=\"btn btn-primary btn-sm\" onclick=\"openModal('writerSend','" + r.id + "','บันทึกวันที่ส่งซ่อม (แทนผู้เขียนใบส่งซ่อม)')\">บันทึกส่งซ่อมแทนผู้เขียน</button>" : "") + "</div>"); }).join("")) +
     h("รอรับใบส่งซ่อม — รับพร้อมออกเลขช่าง", toRecv.length) + (toRecv.length === 0 ? none : toRecv.map(function (r) { return row(r, "รับใบส่งซ่อม + ออกเลข", "openModal('techReceive','" + r.id + "','รับใบส่งซ่อม — กรอกเลขช่าง',{numberLabel:'เลขช่าง (กรอกเอง)',numberPlaceholder:'เช่น ชซ-2569-0001'})"); }).join("")) +
     h("รอตรวจสอบ", recv.length) + (recv.length === 0 ? none : recv.map(function (r) { return row(r, "ตรวจสอบแล้ว", "openModal('techInspect','" + r.id + "','บันทึกว่าตรวจสอบแล้ว')"); }).join("")) +
     h("ตรวจสอบแล้ว — เลือกแนวทาง", insp.length) + (insp.length === 0 ? none : insp.map(function (r) { return rowBox('<div><div class="req-title">' + esc(r.requestNo) + " · " + esc(r.itemName) + ' <span style="color:var(--slate-400);font-weight:400">(' + esc(dash(r.repairOrderNo)) + ')</span></div><div class="req-sub">' + causeLine(r) + '</div></div><div style="display:flex;gap:6px;flex-wrap:wrap">' + detailBtn(r.id) + (can(r) ? "<button class=\"btn btn-primary btn-sm\" onclick=\"openModal('techRepairedDone','" + r.id + "','ซ่อมเองได้ — บันทึกว่าซ่อมเสร็จ (จบงาน)')\">ซ่อมเองได้ ✓ เสร็จแล้ว</button><button class=\"btn btn-sky btn-sm\" onclick=\"openModal('techSendWarehouse','" + r.id + "','ซ่อมเองไม่ได้ — ส่งพัสดุ',{selectLabel:'เงื่อนไขก่อนส่งพัสดุ',selectOptions:WAREHOUSE_REASONS})\">ซ่อมเองไม่ได้ → ส่งพัสดุ</button>" : "") + "</div>"); }).join("")) +
