@@ -541,7 +541,7 @@ function pfFromAsset() { var a = PF && PF.info.asset; if (!a) return; PF.v.purch
 async function pfSave() { try { await rpc("fix_print_save", { p_id: PF.id, p_fields: PF.v }); PRINT_REP = null; $("pfMsg").className = "msg ok"; $("pfMsg").textContent = "บันทึกแล้ว"; } catch (e) { $("pfMsg").className = "msg err"; $("pfMsg").textContent = "บันทึกไม่สำเร็จ: " + (e.message || e); } }
 /* ---- ใบส่งซ่อมแบบเหมือนต้นฉบับ: PDF = ภาพแบบฟอร์มต้นฉบับ + ข้อความวางตามตำแหน่ง (A4 หน้าเดียว)
         Word = เติมข้อมูลลงไฟล์ต้นฉบับ .docx (repair-form-template.docx) โดยตรง ---- */
-var PF_BG = "repair-form-bg.png?v=11.5", PF_TPL = "repair-form-template.docx?v=11.5";
+var PF_BG = "repair-form-bg.png?v=11.8", PF_TPL = "repair-form-template.docx?v=11.8";
 var JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js", JSZIP_SRI = "sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG";
 /* ความกว้างโดยประมาณ หน่วย = จุด 1 ตัว (ใช้แบ่งบรรทัดและเติมจุดให้ยาวเท่าเดิม) */
 function pfW(t) { var w = 0; String(t || "").replace(/[\s\S]/g, function (c) { w += c === "." ? 1 : c === "…" ? 3 : c === " " ? 1.2 : /[ัิ-ฺ็-๎]/.test(c) ? 0 : 2.4; return c; }); return w; }
@@ -591,13 +591,13 @@ function pfFormHTML() {
     at(155.0, 50.0, d.qty, { c: 1, fs: 14 }) + at(165, 50.0, lc[0], { w: 38, fs: 14 }) + at(165, 55.6, lc[1], { w: 38, fs: 14 }) + at(165, 61.2, lc[2], { w: 38, fs: 14 }) +
     at(39.5, 72.0, d.purchaseYear, { c: 1 }) + at(85.5, 72.0, d.price, { c: 1 }) +
     at(157.7, 77.3, d.senderName, { c: 1 }) + at(157.7, 82.4, d.senderPosition, { c: 1 }) +
-    at(108.6, 131.8, "เรียน " + S.deputyPos, { sz: fit("เรียน " + S.deputyPos, 91), w: 92 }) +
+    at(108.2, 131.8, "เรียน " + S.deputyPos, { sz: fit("เรียน " + S.deputyPos, 91), w: 92 }) +
     at(156.5, 157.0, S.headName ? "(" + S.headName + ")" : "", sg) + at(156.6, 162.6, S.headPos1, sg) + at(156.3, 168.3, S.headPos2, sg) +
     at(120.7, 185.3, "เห็นควรอนุมัติตามที่" + S.headPos2 + "เสนอ", { sz: fit("เห็นควรอนุมัติตามที่" + S.headPos2 + "เสนอ", 79), w: 80 }) +
     at(159.3, 205.0, S.deputyName ? "(" + S.deputyName + ")" : "", sg) + at(160.0, 210.6, S.deputyPos, sg) +
     at(85, 243.8, S.directorName, { sz: fit(S.directorName, 46), w: 47, tc: 1 }) + at(81, 249.4, S.directorPos, { sz: fit(S.directorPos, 58), w: 59, tc: 1 }) + "</div>";
 }
-var PF_PT = 12, PF_PT2 = 13;  /* ขนาดตัวอักษรข้อมูลจากระบบ (เล็กกว่าแบบฟอร์ม 13/14pt เพื่อให้ใส่ข้อความยาวได้) */
+var PF_PT = 13, PF_PT2 = 14;  /* ขนาดตัวอักษรข้อมูลจากระบบ (เล็กกว่าแบบฟอร์ม 13/14pt เพื่อให้ใส่ข้อความยาวได้) */
 /* ตัวเลขอารบิกเสมอ: ฟอนต์ TH SarabunIT๙ แสดงเลข 0-9 เป็นเลขไทย จึงให้ตัวเลขใช้ฟอนต์ PSK/New ถ้าไม่มีใช้ Tahoma (ย่อให้ขนาดใกล้เคียง) */
 var PF_DIGITS = "@font-face{font-family:'pfdig';src:local('TH SarabunPSK'),local('THSarabunPSK'),local('TH Sarabun New'),local('THSarabunNew');unicode-range:U+0030-0039}" +
   "@font-face{font-family:'pfdig2';src:local('Tahoma');unicode-range:U+0030-0039;size-adjust:72%}";
