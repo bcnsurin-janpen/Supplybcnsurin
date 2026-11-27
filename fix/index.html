@@ -430,9 +430,18 @@ function lineText(r, to) {
   L.push("ดูรายละเอียด: " + location.origin + location.pathname);
   return L.join("\n");
 }
-function openLineShare(id) {
+/* หลังบันทึกขั้นตอนสำเร็จ: ถามว่าจะส่ง LINE แจ้งคนถัดไปไหม (ไม่บังคับ) */
+function offerLine(id, to) {
+  if (!(isAdmin() || isStaff())) return;
+  var r = find(id); if (!r) return; var lab = (LINE_TO.filter(function (o) { return o[0] === to; })[0] || [0, "ผู้เกี่ยวข้อง"])[1];
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:420px"><div class="modal-head"><h3>✅ บันทึกแล้ว — ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
+    "<p>ต้องการส่ง LINE แจ้ง <b>" + esc(lab) + "</b> ไหม?</p>" +
+    "<div style=\"display:flex;gap:8px;flex-wrap:wrap\"><button class=\"btn btn-primary\" onclick=\"openLineShare('" + r.id + "','" + to + "')\">💬 ส่ง LINE</button><button class=\"btn btn-ghost\" onclick=\"closeModal()\">ไม่ส่ง</button></div>" +
+    '<p class="hint" style="margin-top:8px">ส่งภายหลังได้ที่ ℹ️ ดูรายละเอียด → 💬 ส่งข้อความ LINE</p></div></div></div>';
+}
+function openLineShare(id, preset) {
   var r = find(id); if (!r) return;
-  var def = r.status === "assigned" ? "writer" : (["writer_sent", "tech_received", "tech_inspected", "tech_final_repair"].indexOf(r.status) >= 0 ? "tech" : (r.status === "tech_done" || r.status === "warehouse_in_progress" ? "warehouse" : "requester"));
+  var def = preset || (r.status === "assigned" ? "writer" : (["writer_sent", "tech_received", "tech_inspected", "tech_final_repair"].indexOf(r.status) >= 0 ? "tech" : (r.status === "tech_done" || r.status === "warehouse_in_progress" ? "warehouse" : "requester")));
   $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:520px"><div class="modal-head"><h3>💬 ส่งข้อความ LINE — ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
     '<label class="field"><span class="lab">ส่งถึง</span><select id="lineTo" class="inp">' + LINE_TO.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === def ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("") + "</select></label>" +
     '<label class="field"><span class="lab">ข้อความ (แก้ได้)</span><textarea id="lineMsg" class="inp" rows="9" maxlength="1500"></textarea></label>' +
@@ -622,6 +631,8 @@ async function modalConfirm() {
     techFinalRepair: ["fix_tech_final", { p_id: id, p_date: date }, "บันทึกซ่อมขั้นสุดท้ายเสร็จ จบงานแล้ว"]
   }[t];
   var ok = await act(map[0], map[1], map[2]); if (!ok && $("modalOk")) $("modalOk").disabled = false;
+  var next = { writerSend: "tech", techReceive: "requester", techRepairedDone: "requester", techSendWarehouse: "warehouse", warehouseComplete: "tech", techFinalRepair: "requester" }[t];
+  if (ok && next) offerLine(id, next);
 }
 
 /* ---------- ดาวน์โหลด CSV (กันสูตร Excel) ---------- */
@@ -805,7 +816,7 @@ function centralHTML() {
 function pickBtn(id) { var b = $("assignBtn-" + id), p = ASSIGN_PICKS[id]; if (b) b.disabled = !(p.writer && p.techs.length > 0 && p.techs.length <= 2); }
 function setWriterPick(id, v) { if (!canAct("dispatcher")) return; ASSIGN_PICKS[id].writer = v; pickBtn(id); }
 function toggleTechPick(id, t, on) { if (!canAct("dispatcher")) return; var l = ASSIGN_PICKS[id].techs; if (on) { if (l.indexOf(t) < 0) l.push(t); } else ASSIGN_PICKS[id].techs = l.filter(function (x) { return x !== t; }); pickBtn(id); }
-async function assignRequest(id) { var p = ASSIGN_PICKS[id]; if (!p || !p.writer || !p.techs.length) return; if (p.techs.length > 2) { showToast("เลือกช่างได้ไม่เกิน 2 คน", true); return; } if (await act("fix_assign", { p_id: id, p_writer: p.writer, p_techs: p.techs }, "มอบหมายงานแล้ว", false)) delete ASSIGN_PICKS[id]; }
+async function assignRequest(id) { var p = ASSIGN_PICKS[id]; if (!p || !p.writer || !p.techs.length) return; if (p.techs.length > 2) { showToast("เลือกช่างได้ไม่เกิน 2 คน", true); return; } if (await act("fix_assign", { p_id: id, p_writer: p.writer, p_techs: p.techs }, "มอบหมายงานแล้ว", false)) { delete ASSIGN_PICKS[id]; offerLine(id, "writer"); } }
 
 /* ---------- ผู้เขียนใบส่งซ่อม / ช่าง / พัสดุ ---------- */
 function rowBox(inner) { return '<div class="req-row" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' + inner + "</div>"; }
