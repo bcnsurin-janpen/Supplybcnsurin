@@ -515,7 +515,7 @@ async function openPrintForm(id) {
   Array.prototype.forEach.call(document.querySelectorAll("[data-pf]"), function (el) { el.addEventListener("input", function () { PF.v[el.getAttribute("data-pf")] = el.value; pfRender(); }); });
   PF.can = can; pfMatRender();
   Array.prototype.forEach.call(document.querySelectorAll("[data-pft]"), function (el) { if (!can.header) el.disabled = true; el.addEventListener("change", function () { var k = el.getAttribute("data-pft"); PF.v.types = PF.v.types.filter(function (x) { return x !== k; }); if (el.checked) PF.v.types.push(k); pfRender(); }); });
-  pfRender();
+  pfRender(); pfFontReady().then(function () { if (PF && PF.id === id) pfRender(); });
 }
 function pfMatRender() {
   var box = $("pfMat"); if (!box) return; var can = PF.can || {}, M = PF.v.materials;
@@ -541,7 +541,7 @@ function pfFromAsset() { var a = PF && PF.info.asset; if (!a) return; PF.v.purch
 async function pfSave() { try { await rpc("fix_print_save", { p_id: PF.id, p_fields: PF.v }); PRINT_REP = null; $("pfMsg").className = "msg ok"; $("pfMsg").textContent = "บันทึกแล้ว"; } catch (e) { $("pfMsg").className = "msg err"; $("pfMsg").textContent = "บันทึกไม่สำเร็จ: " + (e.message || e); } }
 /* ---- ใบส่งซ่อมแบบเหมือนต้นฉบับ: PDF = ภาพแบบฟอร์มต้นฉบับ + ข้อความวางตามตำแหน่ง (A4 หน้าเดียว)
         Word = เติมข้อมูลลงไฟล์ต้นฉบับ .docx (repair-form-template.docx) โดยตรง ---- */
-var PF_BG = "repair-form-bg.png?v=11.8", PF_TPL = "repair-form-template.docx?v=11.8";
+var PF_BG = "repair-form-bg.png?v=11.10", PF_TPL = "repair-form-template.docx?v=11.10";
 var JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js", JSZIP_SRI = "sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG";
 /* ความกว้างโดยประมาณ หน่วย = จุด 1 ตัว (ใช้แบ่งบรรทัดและเติมจุดให้ยาวเท่าเดิม) */
 function pfW(t) { var w = 0; String(t || "").replace(/[\s\S]/g, function (c) { w += c === "." ? 1 : c === "…" ? 3 : c === " " ? 1.2 : /[ัิ-ฺ็-๎]/.test(c) ? 0 : 2.4; return c; }); return w; }
@@ -572,18 +572,23 @@ function pfHasThaiFont() {
 }
 /* ขนาดตัวอักษรชื่อผู้ลงนาม = ขนาดตัวอักษรของแบบฟอร์ม: วัดจากคำ "นักจัดการงานทั่วไปปฏิบัติการ" ซึ่งบนแบบฟอร์มกว้าง 108pt */
 function pfSignPt() {
-  try { var c = document.createElement("canvas").getContext("2d"); c.font = "100px " + (pfHasThaiFont() ? "'TH SarabunPSK','TH Sarabun New','Sarabun','TH SarabunIT๙',Tahoma,sans-serif" : "Tahoma,sans-serif");
-    var w = c.measureText("นักจัดการงานทั่วไปปฏิบัติการ").width; return w ? Math.min(16, Math.max(7, 10800 / w)) : 13; } catch (e) { return 13; }
+  try { var c = document.createElement("canvas").getContext("2d"); c.font = "100px 'pfsarabun','TH SarabunPSK','TH Sarabun New',Tahoma,sans-serif";
+    var w = c.measureText("นักจัดการงานทั่วไปปฏิบัติการ").width; return w ? Math.min(16, Math.max(6, 10800 / w)) : 13 * PF_SCALE; } catch (e) { return 13 * PF_SCALE; }
+}
+/* รอฟอนต์ที่แนบกับระบบโหลดเสร็จก่อนแสดง/พิมพ์ (สูงสุด 3 วินาที) */
+function pfFontReady() {
+  if (!document.getElementById("pfCss")) { var st = document.createElement("style"); st.id = "pfCss"; st.textContent = PF_CSS; document.head.appendChild(st); }
+  try { if (!document.fonts || !document.fonts.load) return Promise.resolve(); return Promise.race([document.fonts.load("20px pfsarabun", "ใบส่งซ่อม 0123"), new Promise(function (r) { setTimeout(r, 3000); })]).catch(function () {}); } catch (e) { return Promise.resolve(); }
 }
 function pfFormHTML() {
   var cap = function (mm, pt) { return mm / (0.74 * pt / 13); };  /* 1 หน่วย = ความกว้างจุด 1 ตัวที่ขนาดตัวอักษร pt */
   var d = pfData(), T = pfTypes(), it = pfSplit(d.item, [cap(78, PF_PT2), cap(78, PF_PT2)]), lc = pfSplit(d.loc, [cap(37, PF_PT2), cap(37, PF_PT2), cap(37, PF_PT2)]), cs = pfSplit(d.cause, [cap(50, PF_PT2), cap(50, PF_PT2), cap(50, PF_PT2)]);
   var at = function (x, y, txt, opt) { opt = opt || {}; if (!String(txt || "").trim()) return ""; return '<div class="pfo" style="left:' + x + "mm;top:" + y + "mm;" + (opt.w ? "width:" + opt.w + "mm;" : "") + (opt.c ? "transform:translateX(-50%);text-align:center;" : "") + (opt.tc ? "text-align:center;" : "") + (opt.sz ? "font-size:" + opt.sz.toFixed(2) + "pt;" : "") + '"' + (opt.fs ? ' data-big="1"' : "") + ">" + esc(txt) + "</div>"; };
   var S = pfSigners(), sz = pfSignPt(), sg = { c: 1, sz: sz };
-  var fit = function (t, mm) { var w = pfW(t); return w ? Math.min(sz, sz * cap(mm * 0.85, sz) / w) : sz; };  /* ข้อความยาวเกินช่อง: ลดขนาดให้พอดี */
+  var fit = function (t, mm) { var w = pfW(t); return w ? Math.min(sz, sz * cap(mm * 0.85, sz / PF_SCALE) / w) : sz; };  /* ข้อความยาวเกินช่อง: ลดขนาดให้พอดี */
   var tick = function (x, on) { return on ? '<div class="pfo pf-tick" style="left:' + x + 'mm;top:29.2mm">✓</div>' : ""; };
-  return '<div class="pf-page' + (pfHasThaiFont() ? "" : " pf-fb") + '"><img class="pf-bg" src="' + PF_BG + '" alt="">' + at(10, 5.6, "เลขแจ้งซ่อม " + (PF.r.requestNo || "")) +
-    at(142.3, 23.4, d.docDay, { c: 1 }) + at(171.2, 23.4, d.docMonth, { c: 1 }) + at(196.2, 23.4, d.docYear, { c: 1 }) +
+  return '<div class="pf-page"><img class="pf-bg" src="' + PF_BG + '" alt="">' + at(10, 5.6, "เลขแจ้งซ่อม " + (PF.r.requestNo || "")) +
+    at(142.3, 23.4, d.docDay, { c: 1 }) + at(168.2, 23.4, d.docMonth, { c: 1 }) + at(196.2, 23.4, d.docYear, { c: 1 }) +
     tick(31.6, T.material) + tick(67.0, T.building) + tick(109.4, T.improve) + tick(146.4, T.other) + at(160, 28.9, d.typeOther, { w: 40 }) +
     at(45, 39.2, d.unit, { w: 82 }) +
     at(9, 50.0, it[0], { w: 79, fs: 14 }) + at(9, 55.6, it[1], { w: 79, fs: 14 }) + at(30, 61.2, d.asset, { w: 59, fs: 14 }) +
@@ -597,17 +602,19 @@ function pfFormHTML() {
     at(159.3, 205.0, S.deputyName ? "(" + S.deputyName + ")" : "", sg) + at(160.0, 210.6, S.deputyPos, sg) +
     at(85, 243.8, S.directorName, { sz: fit(S.directorName, 46), w: 47, tc: 1 }) + at(81, 249.4, S.directorPos, { sz: fit(S.directorPos, 58), w: 59, tc: 1 }) + "</div>";
 }
-var PF_PT = 13, PF_PT2 = 14;  /* ขนาดตัวอักษรข้อมูลจากระบบ (เล็กกว่าแบบฟอร์ม 13/14pt เพื่อให้ใส่ข้อความยาวได้) */
+var PF_PT = 14, PF_PT2 = 14;  /* ทุกช่องขนาดเดียวกัน (หน่วยเทียบเท่า TH SarabunPSK) */
+var PF_SCALE = 0.70;  /* ฟอนต์ที่แนบกับระบบ (th-sarabun-new.woff) ตัวใหญ่กว่า TH SarabunPSK ที่ขนาดเดียวกัน ~1.43 เท่า */  /* ขนาดตัวอักษรข้อมูลจากระบบ (เล็กกว่าแบบฟอร์ม 13/14pt เพื่อให้ใส่ข้อความยาวได้) */
 /* ตัวเลขอารบิกเสมอ: ฟอนต์ TH SarabunIT๙ แสดงเลข 0-9 เป็นเลขไทย จึงให้ตัวเลขใช้ฟอนต์ PSK/New ถ้าไม่มีใช้ Tahoma (ย่อให้ขนาดใกล้เคียง) */
-var PF_DIGITS = "@font-face{font-family:'pfdig';src:local('TH SarabunPSK'),local('THSarabunPSK'),local('TH Sarabun New'),local('THSarabunNew');unicode-range:U+0030-0039}" +
-  "@font-face{font-family:'pfdig2';src:local('Tahoma');unicode-range:U+0030-0039;size-adjust:72%}";
-var PF_CSS = PF_DIGITS + ".pf-page{position:relative;width:210mm;height:297mm;overflow:hidden;background:#fff;margin:0 auto}.pf-bg{position:absolute;left:0;top:0;width:210mm;height:297mm}.pfo{position:absolute;white-space:nowrap;overflow:hidden;font-family:'pfdig','pfdig2','TH SarabunPSK','TH Sarabun New','Sarabun','TH SarabunIT๙',Tahoma,sans-serif;font-size:" + PF_PT + "pt;font-weight:normal;line-height:5mm;color:#000}.pfo[data-big]{font-size:" + PF_PT2 + "pt}.pf-fb .pfo{font-family:Tahoma,sans-serif;font-size:7.5pt;line-height:5mm}.pf-fb .pfo[data-big]{font-size:8pt}.pf-tick{font-size:13pt;font-weight:700;line-height:4mm}.pf-fb .pf-tick{font-size:10pt}";
+/* ฟอนต์ TH Sarabun New แนบมากับระบบ: ทุกเครื่องได้ตัวอักษรขนาดและรูปแบบเดียวกัน ตัวเลขเป็นอารบิกเสมอ ไม่ขึ้นกับฟอนต์ในเครื่อง */
+var PF_DIGITS = "@font-face{font-family:'pfsarabun';src:url('th-sarabun-new.woff') format('woff');font-display:block}";
+var PF_CSS = PF_DIGITS + ".pf-page{position:relative;width:210mm;height:297mm;overflow:hidden;background:#fff;margin:0 auto}.pf-bg{position:absolute;left:0;top:0;width:210mm;height:297mm}.pfo{position:absolute;white-space:nowrap;overflow:hidden;font-family:'pfsarabun','TH SarabunPSK','TH Sarabun New',Tahoma,sans-serif;font-size:" + (PF_PT * PF_SCALE).toFixed(2) + "pt;font-weight:normal;line-height:5mm;color:#000}.pfo[data-big]{font-size:" + (PF_PT2 * PF_SCALE).toFixed(2) + "pt}.pf-fb .pfo{font-family:Tahoma,sans-serif;font-size:7.5pt;line-height:5mm}.pf-fb .pfo[data-big]{font-size:8pt}.pf-tick{font-size:13pt;font-weight:700;line-height:4mm}.pf-fb .pf-tick{font-size:10pt}";
 function pfRender() {
   var p = $("pfPreview"); if (!p) return;
   if (!document.getElementById("pfCss")) { var st = document.createElement("style"); st.id = "pfCss"; st.textContent = PF_CSS; document.head.appendChild(st); }
   p.style.width = "210mm"; p.style.padding = "0"; p.innerHTML = pfFormHTML();
 }
-function pfPrint() {
+async function pfPrint() {
+  await pfFontReady();
   var old = document.getElementById("pfPrintArea"); if (old) old.remove();
   var st = document.getElementById("pfPrintStyle");
   if (!st) { st = document.createElement("style"); st.id = "pfPrintStyle"; st.textContent = "#pfPrintArea{display:none}@media print{@page{size:A4;margin:0}html,body{margin:0!important;padding:0!important}body>*{display:none!important}body>#pfPrintArea{display:block!important}#pfPrintArea .pf-page{page-break-after:avoid;break-after:avoid}}"; document.head.appendChild(st); }
