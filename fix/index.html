@@ -382,7 +382,7 @@ async function afterLogin() {
   try { REQS = await rpc("fix_list"); } catch (e) { REQS = []; }
   ROLE = "requester"; renderShell(); startPoll();
 }
-async function logout() { stopPoll(); await sb.auth.signOut(); ME = null; REQS = []; ASSETS = null; SET = {}; RESP = {}; MEMBERS = []; EXPANDED = null; ASSIGN_PICKS = {}; IDENTITY = ""; ROLE = "requester"; closeGate(); showLogin(); }
+async function logout() { stopPoll(); await sb.auth.signOut(); ME = null; REQS = []; PRINT_REP = null; ASSETS = null; SET = {}; RESP = {}; MEMBERS = []; EXPANDED = null; ASSIGN_PICKS = {}; IDENTITY = ""; ROLE = "requester"; closeGate(); showLogin(); }
 function startPoll() { stopPoll(); pollT = setInterval(function () { if (!document.hidden && !document.querySelector(".modal-overlay") && ME) reload(true); }, 30000); }
 function stopPoll() { if (pollT) { clearInterval(pollT); pollT = null; } }
 
@@ -403,6 +403,7 @@ function renderView() {
   if (ROLE === "requester") { refreshReqList(); bindRequesterForm(); loadAssets(); }
   if (ROLE === "assets") { ASSET_SHOWN = 300; loadAssets().then(refreshAssetList); }
   if (ROLE === "admin") loadAdminTab();
+  if (ROLE === "dashboard" && isStaff() && !PRINT_REP) loadPrintRep().then(function () { if (ROLE === "dashboard" && PRINT_REP) renderView(); });
   eyes(body);
 }
 function badgeHTML(status) { var s = STATUS[status] || STATUS.new; return '<span class="badge badge-' + s.color + '">' + s.label + "</span>"; }
@@ -469,7 +470,13 @@ function lineCopy() {
 /* ---------- ใบส่งซ่อม: แก้ข้อมูลก่อนพิมพ์ → พิมพ์/บันทึกเป็น PDF หรือดาวน์โหลด Word ----------
    ข้อมูลหลัก (รายการ อาการ จำนวน สถานที่ เลขครุภัณฑ์) มาจากระบบ แก้ผ่าน "แก้ไขคำแจ้งซ่อม" (บันทึกประวัติ)
    ช่องเฉพาะบนกระดาษเก็บไว้กับใบแจ้งซ่อม (fix_print_save) • ปีที่จัดซื้อ/ราคาดึงจากทะเบียนครุภัณฑ์ได้ */
-var PF_SIGNERS = { head: ["นางพัชรพิมล ดีรุณ", "นักจัดการงานทั่วไปปฏิบัติการ", "หัวหน้าหน่วยบริหารทั่วไป"], deputy: ["นายวรรณชาติ ตาเลิศ", "รองผู้อำนวยการด้านบริหารและยุทธศาสตร์"] };
+/* ผู้ลงนามในใบส่งซ่อม: ผู้ดูแลแก้ได้ที่ ผู้ดูแลระบบ > ผู้ลงนามในใบส่งซ่อม (เก็บใน fix_settings key form_signers) */
+var PF_SIGN_DEF = { headName: "นางพัชรพิมล  ดีรุณ", headPos1: "นักจัดการงานทั่วไปปฏิบัติการ", headPos2: "หัวหน้าหน่วยบริหารทั่วไป",
+  deputyName: "นายวรรณชาติ  ตาเลิศ", deputyPos: "รองผู้อำนวยการด้านบริหารและยุทธศาสตร์", directorName: "", directorPos: "" };
+var PF_SIGN_FIELDS = [["headName", "ช่อง 3: ชื่อ-สกุล (หัวหน้าหน่วยบริหารทั่วไป)"], ["headPos1", "ช่อง 3: ตำแหน่ง บรรทัดที่ 1"], ["headPos2", "ช่อง 3: ตำแหน่ง บรรทัดที่ 2 (ใช้ในข้อความช่อง 4 \"เห็นควรอนุมัติตามที่...เสนอ\" ด้วย)"],
+  ["deputyName", "ช่อง 4: ชื่อ-สกุล (รองผู้อำนวยการ)"], ["deputyPos", "ช่อง 4: ตำแหน่ง (ใช้ในหัวข้อช่อง 3 \"เรียน ...\" ด้วย)"],
+  ["directorName", "ช่อง 5: ชื่อ-สกุล ผู้อำนวยการ (เว้นว่าง = เขียนมือ)"], ["directorPos", "ช่อง 5: ตำแหน่ง ผู้อำนวยการ (เว้นว่าง = เขียนมือ)"]];
+function pfSigners() { var s = (SET && SET.form_signers) || {}, o = {}; Object.keys(PF_SIGN_DEF).forEach(function (k) { o[k] = typeof s[k] === "string" ? s[k] : PF_SIGN_DEF[k]; }); return o; }
 var PF_TYPES = [["material", "ซ่อมแซมวัสดุ/ครุภัณฑ์"], ["building", "ซ่อมแซมอาคารสิ่งก่อสร้าง"], ["improve", "ปรับปรุงและต่อเติม"], ["other", "อื่น ๆ"]];
 var PF_MONTHS = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
 var PF = null;
@@ -503,8 +510,8 @@ async function openPrintForm(id) {
     inp("purchaseYear", "ปีที่จัดซื้อ", "", 1) + inp("price", "ราคา (บาท)", "", 1) + '<div class="hint" style="grid-column:span 2;align-self:end">ประวัติการซ่อม และรายการวัสดุที่ใช้ซ่อม เว้นว่างไว้ให้พัสดุและช่างเขียนบนกระดาษ</div>' +
     inp("senderName", "ลงชื่อผู้ส่งซ่อม (ชื่อในวงเล็บ)", "", 2) + inp("senderPosition", "ตำแหน่ง", "", 2) + "</div>" +
     '<div id="pfMsg" class="msg" role="status"></div><div style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"><button class="btn btn-primary" onclick="pfSave()">💾 บันทึก</button><button class="btn" onclick="pfPrint()">🖨️ พิมพ์ / บันทึกเป็น PDF</button><button class="btn" onclick="pfWord()">⬇️ ดาวน์โหลด Word</button></div>' +
-    '<p class="hint">PDF: กด "พิมพ์" แล้วเลือกเครื่องพิมพ์ "บันทึกเป็น PDF" • Word: ได้ไฟล์ .doc เปิดแก้ใน Microsoft Word ได้ (หน้าตาใกล้เคียงแบบฟอร์ม อาจต้องจัดบรรทัดเล็กน้อย)</p>' +
-    '<div style="border:1px solid #ddd;border-radius:8px;overflow:auto;max-height:480px;background:#f4f4f4;padding:10px"><div id="pfPreview" style="background:#fff;width:190mm;margin:0 auto;padding:6mm;box-shadow:0 1px 4px rgba(0,0,0,.15)"></div></div></div></div></div>';
+    '<p class="hint">PDF: กด "พิมพ์" แล้วเลือกเครื่องพิมพ์ "บันทึกเป็น PDF" • Word: ได้ไฟล์ .docx ที่เติมข้อมูลลงแบบฟอร์มต้นฉบับ เปิดแก้ใน Microsoft Word ได้</p>' +
+    '<div style="border:1px solid #ddd;border-radius:8px;overflow:auto;max-height:520px;background:#f4f4f4;padding:10px"><div id="pfPreview" style="background:#fff;width:210mm;margin:0 auto;box-shadow:0 1px 4px rgba(0,0,0,.15)"></div></div></div></div></div>';
   Array.prototype.forEach.call(document.querySelectorAll("[data-pf]"), function (el) { el.addEventListener("input", function () { PF.v[el.getAttribute("data-pf")] = el.value; pfRender(); }); });
   PF.can = can; pfMatRender();
   Array.prototype.forEach.call(document.querySelectorAll("[data-pft]"), function (el) { if (!can.header) el.disabled = true; el.addEventListener("change", function () { var k = el.getAttribute("data-pft"); PF.v.types = PF.v.types.filter(function (x) { return x !== k; }); if (el.checked) PF.v.types.push(k); pfRender(); }); });
@@ -531,51 +538,116 @@ function pfMatRender() {
   if (can.materials && M.length < 8) { var add = document.createElement("button"); add.className = "btn btn-ghost btn-sm"; add.style.marginTop = "6px"; add.textContent = "+ เพิ่มรายการวัสดุ"; add.addEventListener("click", function () { M.push({ name: "", qty: "", price: "" }); pfMatRender(); }); box.appendChild(add); }
 }
 function pfFromAsset() { var a = PF && PF.info.asset; if (!a) return; PF.v.purchaseYear = a.acquired ? String(a.acquired).split("/").pop() : ""; PF.v.price = a.price ? pfMoney(a.price) : ""; ["purchaseYear", "price"].forEach(function (k) { var el = document.querySelector('[data-pf="' + k + '"]'); if (el) el.value = PF.v[k]; }); pfRender(); }
-async function pfSave() { try { await rpc("fix_print_save", { p_id: PF.id, p_fields: PF.v }); $("pfMsg").className = "msg ok"; $("pfMsg").textContent = "บันทึกแล้ว"; } catch (e) { $("pfMsg").className = "msg err"; $("pfMsg").textContent = "บันทึกไม่สำเร็จ: " + (e.message || e); } }
-function pfDots(v, n) { v = String(v == null ? "" : v).trim(); return v ? '<span class="pf-v">' + esc(v) + "</span>" : '<span class="pf-d">' + new Array(n || 20).join(".") + "</span>"; }
-function pfBox(on) { return '<span class="pf-box">' + (on ? "✓" : "&nbsp;") + "</span>"; }
-/* มีฟอนต์ TH Sarabun ในเครื่องไหม (ถ้าไม่มี ใช้ Tahoma ตัวเล็กลงให้พอดี A4 หน้าเดียว) */
+async function pfSave() { try { await rpc("fix_print_save", { p_id: PF.id, p_fields: PF.v }); PRINT_REP = null; $("pfMsg").className = "msg ok"; $("pfMsg").textContent = "บันทึกแล้ว"; } catch (e) { $("pfMsg").className = "msg err"; $("pfMsg").textContent = "บันทึกไม่สำเร็จ: " + (e.message || e); } }
+/* ---- ใบส่งซ่อมแบบเหมือนต้นฉบับ: PDF = ภาพแบบฟอร์มต้นฉบับ + ข้อความวางตามตำแหน่ง (A4 หน้าเดียว)
+        Word = เติมข้อมูลลงไฟล์ต้นฉบับ .docx (repair-form-template.docx) โดยตรง ---- */
+var PF_BG = "repair-form-bg.png?v=11.3", PF_TPL = "repair-form-template.docx?v=11.3";
+var JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js", JSZIP_SRI = "sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG";
+/* ความกว้างโดยประมาณ หน่วย = จุด 1 ตัว (ใช้แบ่งบรรทัดและเติมจุดให้ยาวเท่าเดิม) */
+function pfW(t) { var w = 0; String(t || "").replace(/[\s\S]/g, function (c) { w += c === "." ? 1 : c === "…" ? 3 : c === " " ? 1.2 : /[ัิ-ฺ็-๎]/.test(c) ? 0 : 2.4; return c; }); return w; }
+function pfSplit(text, caps) {
+  var words = String(text || "").trim().split(/\s+/).filter(Boolean), lines = caps.map(function () { return ""; }), li = 0;
+  words.forEach(function (wd) {
+    while (li < caps.length) {
+      var cand = lines[li] ? lines[li] + " " + wd : wd;
+      if (pfW(cand) <= caps[li] || (!lines[li] && li === caps.length - 1)) { lines[li] = cand; return; }
+      if (!lines[li]) { var cut = ""; for (var i = 0; i < wd.length && pfW(cut + wd[i]) <= caps[li]; i++) cut += wd[i]; lines[li] = cut; wd = wd.slice(cut.length); }
+      li++;
+    }
+  });
+  return lines;
+}
+function pfTypes() { var v = PF.v; return { material: v.types.indexOf("material") >= 0, building: v.types.indexOf("building") >= 0, improve: v.types.indexOf("improve") >= 0, other: v.types.indexOf("other") >= 0 }; }
+function pfData() {
+  var r = PF.r, v = PF.v;
+  return { docDay: v.docDay, docMonth: v.docMonth, docYear: v.docYear, typeOther: v.typeOther, unit: v.unit, item: r.itemName || "", asset: r.assetNo || "", cause: r.cause || "",
+    qty: String(r.quantity == null ? "" : r.quantity), loc: r.location || "", purchaseYear: v.purchaseYear, price: v.price, senderName: v.senderName, senderPosition: v.senderPosition };
+}
+/* ---------- PDF / พิมพ์ ---------- */
+/* มีฟอนต์ TH Sarabun ไหม (ถ้าไม่มี ใช้ Tahoma ตัวเล็กลงให้ขนาดใกล้เคียงแบบฟอร์ม) */
 function pfHasThaiFont() {
-  try { var c = document.createElement("canvas").getContext("2d"), t = "ใบส่งซ่อมทดสอบ";
-    c.font = "40px monospace"; var w0 = c.measureText(t).width;
-    return ["TH SarabunPSK", "TH Sarabun New", "Sarabun"].some(function (f) { c.font = "40px '" + f + "', monospace"; return c.measureText(t).width !== w0; });
+  try { var c = document.createElement("canvas").getContext("2d"), t = "ใบส่งซ่อมทดสอบ"; c.font = "40px monospace"; var w0 = c.measureText(t).width;
+    return ["TH SarabunPSK", "TH Sarabun New", "TH SarabunIT๙"].some(function (f) { c.font = "40px '" + f + "', monospace"; return c.measureText(t).width !== w0; });
   } catch (e) { return false; }
 }
-function pfFormHTML() {
-  var r = PF.r, v = PF.v, T = function (k) { return v.types.indexOf(k) >= 0; }, S = PF_SIGNERS, emp = '<span class="pf-box">&nbsp;</span>';
-  return '<div class="pf' + (pfHasThaiFont() ? "" : " pf-fb") + '">' +
-    '<div class="pf-top"><div class="pf-small">เลขแจ้งซ่อม ' + esc(r.requestNo) + '</div><table class="pf-rcv"><tr><td><b>ส่วนซ่อมบำรุง/ส่วนเทคโนโลยีสารสนเทศ</b><br>รับเลขที่ ' + pfDots(r.repairOrderNo, 30) + "<br>วันที่ " + pfDots(r.techReceivedDate ? fmtDate(r.techReceivedDate) : "", 34) + '</td><td><b>ส่วนพัสดุและทรัพย์สิน</b><br>รับเลขที่ ' + pfDots(r.warehouseNo, 22) + "<br>วันที่ " + pfDots(r.warehouseReceivedDate ? fmtDate(r.warehouseReceivedDate) : "", 24) + "</td></tr></table></div>" +
-    '<div class="pf-title"><b style="font-size:1.35em">ใบส่งซ่อม</b> <span style="float:right">วันที่ ' + pfDots(v.docDay, 10) + " เดือน " + pfDots(v.docMonth, 22) + " พ.ศ. " + pfDots(v.docYear, 12) + "</span></div>" +
-    "<div style=\"white-space:nowrap\">เรื่อง ขออนุมัติ &nbsp;" + PF_TYPES.map(function (t) { return pfBox(T(t[0])) + " " + t[1] + (t[0] === "other" ? " " + pfDots(v.typeOther, 14) : ""); }).join(" &nbsp;") + "</div>" +
-    "<div>เรียน ผู้อำนวยการวิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</div>" +
-    '<div style="text-indent:2em">ด้วยส่วน/หน่วย/งาน ' + pfDots(v.unit, 60) + " มีความประสงค์ที่จะส่งซ่อมแซมปรับปรุงโดยมีรายการดังนี้</div>" +
-    '<table class="pf-t"><tr><th style="width:38%">รายการที่แจ้งซ่อมแซม</th><th style="width:30%">สาเหตุ/อาการเสีย</th><th style="width:10%">จำนวน</th><th>สถานที่</th></tr>' +
-    '<tr><td style="height:16mm;vertical-align:top">' + esc(r.itemName) + '<br><span class="pf-small">หมายเลขครุภัณฑ์ (' + (r.assetNo ? esc(r.assetNo) : "................................") + ")</span></td><td style=\"vertical-align:top\">" + esc(r.cause || "") + '</td><td style="text-align:center;vertical-align:top">' + esc(r.quantity) + '</td><td style="vertical-align:top">' + esc(r.location || "") + "</td></tr></table>" +
-    '<table class="pf-plain"><tr><td style="width:55%;vertical-align:top"><div style="text-indent:2em">จึงเรียนมาเพื่อโปรดพิจารณาอนุมัติ</div>ปีที่จัดซื้อ ' + pfDots(v.purchaseYear, 16) + " ราคา " + pfDots(v.price, 18) + " บาท<br>ประวัติการซ่อม จำนวน " + pfDots(v.repairCount, 6) + " ครั้ง ยอดเงินรวม " + pfDots(v.repairTotal, 16) + ' บาท<br><span class="pf-small">หมายเหตุ 1. ขอความกรุณาเขียน 1 รายการ/1 ใบส่งซ่อม<br>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2. ผู้ตรวจรับงานซ่อม ควรจะเป็นผู้ที่ส่งซ่อม</span></td>' +
-    '<td style="text-align:center;vertical-align:bottom;white-space:nowrap"><br>ลงชื่อ......................................ผู้ส่งซ่อม<br>(' + (v.senderName ? esc(v.senderName) : "..........................................................") + ")<br>ตำแหน่ง " + pfDots(v.senderPosition, 36) + "</td></tr></table>" +
-    '<table class="pf-t pf-low"><tr><td style="width:52%;vertical-align:top">1. ช่างได้ตรวจสอบตามรายการที่ขออนุมัติซ่อมแล้วผลปรากฏว่า<br>' + emp + " ซ่อมได้ " + emp + " ไม่ใช้อะไหล่ " + emp + " เบิกวัสดุในคลัง " + emp + " จัดซื้อวัสดุ<br>" + emp + " ซ่อมไม่ได้ " + emp + " จ้างเอกชน " + emp + " แทงชำรุด " + emp + " ซื้อทดแทน<br>บันทึกการซ่อมแซม/เหตุผล<br>..................................................................................<br>..................................................................................<br>" +
-    'รายการวัสดุที่ใช้ซ่อมแซม/วัสดุที่ขอจัดซื้อ<table class="pf-t"><tr><th style="width:12%">ลำดับ</th><th>รายการ</th><th style="width:15%">จำนวน</th><th style="width:18%">ราคา</th></tr>' + (function () { var M = (v.materials || []).filter(function (m) { return m.name || m.qty || m.price; }), out = ""; for (var i = 0; i < Math.max(4, M.length); i++) { var m = M[i]; out += m ? "<tr><td style=\"text-align:center\">" + (i + 1) + "</td><td>" + esc(m.name) + "</td><td style=\"text-align:center\">" + esc(m.qty) + "</td><td style=\"text-align:right\">" + esc(m.price ? pfMoney(m.price) : "") + "</td></tr>" : "<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>"; } return out; })() + "</table>" +
-    "สรุปงาน<br>" + emp + " ซ่อมเสร็จแล้ว<br>" + emp + ' รอดำเนินการ (เบิกวัสดุ/จัดซื้อวัสดุ/จ้างเอกชน/ซื้อทดแทน)<div style="text-align:center;margin-top:4px">ลงชื่อ..................................................<br>(....................................................)<br>ช่างผู้ดำเนินการตรวจสอบและซ่อมแซม<br>วันที่..................................................</div></td>' +
-    '<td style="vertical-align:top">2. ความเห็นของเจ้าหน้าที่ส่วนพัสดุและสินทรัพย์<br>' + emp + " เพื่อโปรดพิจารณาอนุมัติตามที่ช่างเสนอ<br>" + emp + ' อื่นๆ......................................................<div style="text-align:center">ลงชื่อ.............................................<br>(.............................................)<br>วันที่.............................................</div><hr>' +
-    "3. เรียน รองผู้อำนวยการด้านบริหารและยุทธศาสตร์<br>" + emp + " เพื่อโปรดพิจารณาอนุมัติตามที่ช่างเสนอ<br>" + emp + ' อื่นๆ......................................................<div style="text-align:center">ลงชื่อ.............................................<br>(' + esc(S.head[0]) + ")<br>" + esc(S.head[1]) + "<br>" + esc(S.head[2]) + "<br>วันที่.............................................</div><hr>" +
-    "4. เรียน ผู้อำนวยการวิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>" + emp + " เห็นควรอนุมัติตามที่หัวหน้าหน่วยบริหารทั่วไปเสนอ<br>" + emp + ' อื่นๆ......................................................<div style="text-align:center">ลงชื่อ.............................................<br>(' + esc(S.deputy[0]) + ")<br>" + esc(S.deputy[1]) + "<br>วันที่.............................................</div></td></tr>" +
-    '<tr><td colspan="2" style="text-align:center">5. ความเห็นของผู้อำนวยการวิทยาลัยพยาบาลบรมราชชนนี สุรินทร์<br>' + emp + " อนุมัติให้ดำเนินการตามเสนอ &nbsp; " + emp + " ไม่อนุมัติ เนื่องจาก ......................................................<br>ลงชื่อ.......................................................<br>(...........................................................)<br>ตำแหน่ง.......................................................<br>วันที่.......................................................</td></tr>" +
-    '<tr><td colspan="2" style="text-align:center">' + emp + " เจ้าหน้าที่ได้มาดำเนินการซ่อมให้เรียบร้อยแล้ว<br>(ลงชื่อ)...........................................................<br>(.............................................................) ผู้ตรวจรับงานซ่อม<br>วันที่..............................................................</td></tr></table></div>";
+/* ขนาดตัวอักษรชื่อผู้ลงนาม = ขนาดตัวอักษรของแบบฟอร์ม: วัดจากคำ "นักจัดการงานทั่วไปปฏิบัติการ" ซึ่งบนแบบฟอร์มกว้าง 108pt */
+function pfSignPt() {
+  try { var c = document.createElement("canvas").getContext("2d"); c.font = "100px " + (pfHasThaiFont() ? "'TH SarabunPSK','TH Sarabun New','Sarabun','TH SarabunIT๙',Tahoma,sans-serif" : "Tahoma,sans-serif");
+    var w = c.measureText("นักจัดการงานทั่วไปปฏิบัติการ").width; return w ? Math.min(16, Math.max(7, 10800 / w)) : 13; } catch (e) { return 13; }
 }
-var PF_CSS = ".pf{font-family:'TH SarabunPSK','TH Sarabun New','Sarabun',Tahoma,sans-serif;font-size:15pt;line-height:1.15;color:#000}.pf.pf-fb{font-family:Tahoma,sans-serif;font-size:9.5pt;line-height:1.3}.pf.pf-fb .pf-small,.pf.pf-fb .pf-rcv td,.pf.pf-fb .pf-low,.pf.pf-fb .pf-low .pf-t{font-size:8.5pt}.pf.pf-fb .pf-title span{font-size:9.5pt}.pf .pf-small{font-size:13pt}.pf-top{overflow:hidden}.pf-top .pf-small{float:left}.pf-rcv{float:right;border-collapse:separate;border-spacing:4px 0}.pf-rcv td{border:1px solid #000;padding:1px 6px;font-size:13pt;vertical-align:top}.pf-title{margin:4px 0 2px;text-align:center}.pf-title span{font-size:15pt}.pf-t{width:100%;border-collapse:collapse;margin:3px 0}.pf-t th,.pf-t td{border:1px solid #000;padding:2px 5px}.pf-t th{font-weight:400}.pf-plain{width:100%;border-collapse:collapse}.pf-plain td{padding:2px 4px}.pf-low{font-size:14pt}.pf-low .pf-t{font-size:13pt}.pf-box{display:inline-block;width:11pt;height:11pt;border:1px solid #000;text-align:center;line-height:11pt;font-size:10pt;vertical-align:middle}.pf-v{border-bottom:1px dotted #000;padding:0 4px}.pf-d{color:#000;letter-spacing:-1px}.pf hr{border:0;border-top:1px solid #000;margin:4px -5px}";
-function pfRender() { var p = $("pfPreview"); if (!p) return; if (!document.getElementById("pfCss")) { var st = document.createElement("style"); st.id = "pfCss"; st.textContent = PF_CSS; document.head.appendChild(st); } p.innerHTML = pfFormHTML(); }
+function pfFormHTML() {
+  var cap = function (mm, pt) { return mm / (0.74 * pt / 13); };  /* 1 หน่วย = ความกว้างจุด 1 ตัวที่ขนาดตัวอักษร pt */
+  var d = pfData(), T = pfTypes(), it = pfSplit(d.item, [cap(78, PF_PT2), cap(78, PF_PT2)]), lc = pfSplit(d.loc, [cap(37, PF_PT2), cap(37, PF_PT2), cap(37, PF_PT2)]), cs = pfSplit(d.cause, [cap(50, PF_PT2), cap(50, PF_PT2), cap(50, PF_PT2)]);
+  var at = function (x, y, txt, opt) { opt = opt || {}; if (!String(txt || "").trim()) return ""; return '<div class="pfo" style="left:' + x + "mm;top:" + y + "mm;" + (opt.w ? "width:" + opt.w + "mm;" : "") + (opt.c ? "transform:translateX(-50%);text-align:center;" : "") + (opt.tc ? "text-align:center;" : "") + (opt.sz ? "font-size:" + opt.sz.toFixed(2) + "pt;" : "") + '"' + (opt.fs ? ' data-big="1"' : "") + ">" + esc(txt) + "</div>"; };
+  var S = pfSigners(), sz = pfSignPt(), sg = { c: 1, sz: sz };
+  var fit = function (t, mm) { var w = pfW(t); return w ? Math.min(sz, sz * cap(mm * 0.85, sz) / w) : sz; };  /* ข้อความยาวเกินช่อง: ลดขนาดให้พอดี */
+  var tick = function (x, on) { return on ? '<div class="pfo pf-tick" style="left:' + x + 'mm;top:29.2mm">✓</div>' : ""; };
+  return '<div class="pf-page' + (pfHasThaiFont() ? "" : " pf-fb") + '"><img class="pf-bg" src="' + PF_BG + '" alt="">' + at(10, 9, "เลขแจ้งซ่อม " + (PF.r.requestNo || "")) +
+    at(142.3, 23.4, d.docDay, { c: 1 }) + at(171.2, 23.4, d.docMonth, { c: 1 }) + at(196.2, 23.4, d.docYear, { c: 1 }) +
+    tick(31.6, T.material) + tick(67.0, T.building) + tick(109.4, T.improve) + tick(146.4, T.other) + at(160, 28.9, d.typeOther, { w: 40 }) +
+    at(45, 39.2, d.unit, { w: 82 }) +
+    at(9, 50.0, it[0], { w: 79, fs: 14 }) + at(9, 55.6, it[1], { w: 79, fs: 14 }) + at(30, 61.2, d.asset, { w: 59, fs: 14 }) +
+    at(95, 50.0, cs[0], { w: 51, fs: 14 }) + at(95, 55.6, cs[1], { w: 51, fs: 14 }) + at(95, 61.2, cs[2], { w: 51, fs: 14 }) +
+    at(155.0, 50.0, d.qty, { c: 1, fs: 14 }) + at(165, 50.0, lc[0], { w: 38, fs: 14 }) + at(165, 55.6, lc[1], { w: 38, fs: 14 }) + at(165, 61.2, lc[2], { w: 38, fs: 14 }) +
+    at(39.5, 72.0, d.purchaseYear, { c: 1 }) + at(85.5, 72.0, d.price, { c: 1 }) +
+    at(157.7, 77.3, d.senderName, { c: 1 }) + at(157.7, 82.4, d.senderPosition, { c: 1 }) +
+    at(108.6, 131.8, "เรียน " + S.deputyPos, { sz: fit("เรียน " + S.deputyPos, 91), w: 92 }) +
+    at(156.5, 157.0, S.headName ? "(" + S.headName + ")" : "", sg) + at(156.6, 162.6, S.headPos1, sg) + at(156.3, 168.3, S.headPos2, sg) +
+    at(120.7, 185.3, "เห็นควรอนุมัติตามที่" + S.headPos2 + "เสนอ", { sz: fit("เห็นควรอนุมัติตามที่" + S.headPos2 + "เสนอ", 79), w: 80 }) +
+    at(159.3, 205.0, S.deputyName ? "(" + S.deputyName + ")" : "", sg) + at(160.0, 210.6, S.deputyPos, sg) +
+    at(85, 243.8, S.directorName, { sz: fit(S.directorName, 46), w: 47, tc: 1 }) + at(81, 249.4, S.directorPos, { sz: fit(S.directorPos, 58), w: 59, tc: 1 }) + "</div>";
+}
+var PF_PT = 11, PF_PT2 = 12;  /* ขนาดตัวอักษรข้อมูลจากระบบ (เล็กกว่าแบบฟอร์ม 13/14pt เพื่อให้ใส่ข้อความยาวได้) */
+var PF_CSS = ".pf-page{position:relative;width:210mm;height:297mm;overflow:hidden;background:#fff;margin:0 auto}.pf-bg{position:absolute;left:0;top:0;width:210mm;height:297mm}.pfo{position:absolute;white-space:nowrap;overflow:hidden;font-family:'TH SarabunPSK','TH Sarabun New','Sarabun','TH SarabunIT๙',Tahoma,sans-serif;font-size:" + PF_PT + "pt;font-weight:normal;line-height:5mm;color:#000}.pfo[data-big]{font-size:" + PF_PT2 + "pt}.pf-fb .pfo{font-family:Tahoma,sans-serif;font-size:7.5pt;line-height:5mm}.pf-fb .pfo[data-big]{font-size:8pt}.pf-tick{font-size:13pt;font-weight:700;line-height:4mm}.pf-fb .pf-tick{font-size:10pt}";
+function pfRender() {
+  var p = $("pfPreview"); if (!p) return;
+  if (!document.getElementById("pfCss")) { var st = document.createElement("style"); st.id = "pfCss"; st.textContent = PF_CSS; document.head.appendChild(st); }
+  p.style.width = "210mm"; p.style.padding = "0"; p.innerHTML = pfFormHTML();
+}
 function pfPrint() {
   var old = document.getElementById("pfPrintArea"); if (old) old.remove();
   var st = document.getElementById("pfPrintStyle");
-  if (!st) { st = document.createElement("style"); st.id = "pfPrintStyle"; st.textContent = "#pfPrintArea{display:none}@media print{@page{size:A4;margin:10mm 12mm}body>*{display:none!important}body>#pfPrintArea{display:block!important}}"; document.head.appendChild(st); }
+  if (!st) { st = document.createElement("style"); st.id = "pfPrintStyle"; st.textContent = "#pfPrintArea{display:none}@media print{@page{size:A4;margin:0}html,body{margin:0!important;padding:0!important}body>*{display:none!important}body>#pfPrintArea{display:block!important}#pfPrintArea .pf-page{page-break-after:avoid;break-after:avoid}}"; document.head.appendChild(st); }
   var area = document.createElement("div"); area.id = "pfPrintArea"; area.innerHTML = pfFormHTML(); document.body.appendChild(area);
-  setTimeout(function () { window.print(); }, 200);
+  var img = area.querySelector("img"), done = false, go = function () { if (done) return; done = true; setTimeout(function () { window.print(); }, 150); };
+  if (img && !img.complete) { img.onload = go; img.onerror = go; setTimeout(go, 2500); } else go();
 }
-function pfWord() {
-  var html = '<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>ใบส่งซ่อม ' + esc(PF.r.requestNo) + '</title><!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>100</w:Zoom></w:WordDocument></xml><![endif]--><style>@page Section1{size:21cm 29.7cm;margin:1.2cm 1.4cm}div.Section1{page:Section1}' + PF_CSS + '</style></head><body><div class="Section1">' + pfFormHTML() + "</div></body></html>";
-  var blob = new Blob(["﻿", html], { type: "application/msword" }), a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = "ใบส่งซ่อม-" + String(PF.r.requestNo).replace(/[\/\\]/g, "-") + ".doc"; document.body.appendChild(a); a.click();
-  setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+/* ---------- Word: เติมข้อมูลลงไฟล์ต้นฉบับ ---------- */
+function loadJsZip() {
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  return new Promise(function (ok, fail) { var sc = document.createElement("script"); sc.src = JSZIP_URL; sc.integrity = JSZIP_SRI; sc.crossOrigin = "anonymous"; sc.onload = function () { window.JSZip ? ok(window.JSZip) : fail(new Error("โหลดตัวสร้างไฟล์ Word ไม่สำเร็จ")); }; sc.onerror = function () { fail(new Error("โหลดตัวสร้างไฟล์ Word ไม่สำเร็จ ตรวจอินเทอร์เน็ตแล้วลองใหม่")); }; document.head.appendChild(sc); });
+}
+function pfXml(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function pfFillDocx(xml, d, T, reqNo) {
+  var R = 0.85;  /* ข้อความจากระบบเล็กกว่าแบบฟอร์ม 2pt (ประมาณ 85%) */
+  var it = pfSplit(d.item, [(101 - 4) / R, (103 - 4) / R]), lc = pfSplit(d.loc, [44 / R, 44 / R, 44 / R]);
+  var vals = { docDay: d.docDay, docMonth: d.docMonth, docYear: d.docYear, typeOther: d.typeOther, unit: d.unit, item1: it[0], item2: it[1], asset: d.asset, cause: d.cause, qty: d.qty, loc1: lc[0], loc2: lc[1], loc3: lc[2], purchaseYear: d.purchaseYear, price: d.price, senderName: d.senderName, senderPosition: d.senderPosition };
+  var LEFT = { cause: 1, unit: 1, typeOther: 1, item1: 1, item2: 1, loc1: 1, loc2: 1, loc3: 1 };
+  var calc = function (k, N, ch) {
+    var fw = ch === "…" ? 3 : 1, v = String(vals[k] == null ? "" : vals[k]).trim();
+    if (!v) return { lead: 0, v: "", fill: Math.max(1, Math.round(N / fw)) };
+    var rest = Math.max(0, Math.floor((N - pfW(v) * R - 2.4) / fw)), lead = LEFT[k] ? 0 : Math.floor(rest / 2);
+    return { lead: lead, v: " " + v + " ", fill: rest - lead };
+  };
+  var rep = function (c, n) { return new Array(Math.max(0, n) + 1).join(c); };
+  var S = pfSigners(); vals.directorName = S.directorName; vals.directorPos = S.directorPos;
+  xml = xml.replace(/\{\{sp:(\w+):(\d+):([^}]*)\}\}/g, function (m, k, n, orig) { var nv = S[k] || ""; if (orig.charAt(0) === "(") nv = "(" + nv + ")"; return rep(" ", +n + Math.round((pfW(orig) - pfW(nv)) / 2 / 1.2)); });
+  xml = xml.replace(/\{\{sg:(\w+)\}\}/g, function (m, k) { return pfXml(S[k] || ""); });
+  xml = xml.replace(/\{\{chk_(\w+)\}\}/g, function (m, k) { return T[k] ? "rIdChkY" : "rIdChkN"; });
+  xml = xml.replace(/\{\{reqNo\}\}/g, reqNo ? pfXml("เลขแจ้งซ่อม " + reqNo) : "");
+  xml = xml.replace(/\{\{l:(\w+):(\d+):(.)\}\}/g, function (m, k, n, ch) { return rep(ch, calc(k, +n, ch).lead); });
+  xml = xml.replace(/\{\{v:(\w+)\}\}/g, function (m, k) { return pfXml(calc(k, 0, ".").v); });
+  return xml.replace(/\{\{f:(\w+):(\d+):(.)\}\}/g, function (m, k, n, ch) { return rep(ch, calc(k, +n, ch).fill); });
+}
+async function pfWord() {
+  try {
+    var Z = await loadJsZip(), res = await fetch(PF_TPL, { cache: "no-cache" }); if (!res.ok) throw new Error("ไม่พบไฟล์ต้นฉบับใบส่งซ่อม (" + res.status + ")");
+    var zip = await Z.loadAsync(await res.arrayBuffer()), xml = await zip.file("word/document.xml").async("string");
+    zip.file("word/document.xml", pfFillDocx(xml, pfData(), pfTypes(), PF.r.requestNo));
+    var blob = await zip.generateAsync({ type: "blob", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }), a = document.createElement("a");
+    a.href = URL.createObjectURL(blob); a.download = "ใบส่งซ่อม-" + String(PF.r.requestNo).replace(/[\/\\]/g, "-") + ".docx"; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  } catch (e) { $("pfMsg").className = "msg err"; $("pfMsg").textContent = "สร้างไฟล์ Word ไม่สำเร็จ: " + (e.message || e); }
 }
 
 function viewJobDetail(id) {
@@ -639,12 +711,23 @@ async function modalConfirm() {
 const DRILLDOWN_COLS = [
   { key: "requestNo", label: "เลขแจ้ง" }, { key: "createdAt", label: "วันที่แจ้ง", date: true }, { key: "repairOrderNo", label: "เลขส่งซ่อม (เลขช่าง)" },
   { key: "writerSentDate", label: "วันที่ส่งซ่อม", date: true }, { key: "warehouseNo", label: "เลขพัสดุ" }, { key: "warehouseReceivedDate", label: "วันที่พัสดุรับงานซ่อม", date: true },
-  { key: "itemName", label: "รายการ" }, { key: "requesterName", label: "ผู้แจ้งซ่อม" }, { key: "assignedWriter", label: "ผู้ส่งซ่อม" },
+  { key: "itemName", label: "รายการ" }, { key: "assetNo", label: "เลขครุภัณฑ์" }, { key: "quantity", label: "จำนวน" }, { key: "cause", label: "สาเหตุ/อาการเสีย" }, { key: "location", label: "สถานที่" }, { key: "requesterName", label: "ผู้แจ้งซ่อม" }, { key: "assignedWriter", label: "ผู้ส่งซ่อม" },
   { key: "assignedTechnicians", label: "ช่างผู้ซ่อม", join: true }, { key: "warehouseStaff", label: "เจ้าหน้าที่พัสดุ" }, { key: "warehouseReason", label: "เงื่อนไข" },
   { key: "warehouseDoneDate", label: "วันที่พัสดุส่งกลับช่าง", date: true }, { key: "completedDate", label: "วันที่ซ่อมเสร็จ", date: true },
+  { pf: "types", label: "เรื่อง (ใบส่งซ่อม)" }, { pf: "unit", label: "ส่วน/หน่วย/งาน" }, { pf: "purchaseYear", label: "ปีที่จัดซื้อ" }, { pf: "price", label: "ราคา (บาท)" },
   { key: "status", label: "สถานะ", status: true }, { key: "__duration__", label: "รวมเวลา (วัน)" }
 ];
+/* ข้อมูลใบส่งซ่อมในรายงาน: โหลดจาก fix_print_report (ฐานข้อมูลส่งกลับเฉพาะงานที่ผู้ใช้มีสิทธิ์ดูใบส่งซ่อม) */
+var PRINT_REP = null;
+async function loadPrintRep(force) { if (!isStaff()) return; if (PRINT_REP && !force) return; try { PRINT_REP = (await rpc("fix_print_report")) || {}; } catch (e) { PRINT_REP = {}; } }
+function pfRep(r) {
+  var x = PRINT_REP && PRINT_REP[r.id]; if (!x) return null;
+  var f = x.f || {}, types = Array.isArray(f.types) ? f.types : ["material"];
+  return { types: types.map(function (t) { var m = PF_TYPES.find(function (y) { return y[0] === t; }); return t === "other" ? "อื่น ๆ" + (f.typeOther ? " " + f.typeOther : "") : (m ? m[1] : t); }).join(", "),
+    unit: f.unit || "", purchaseYear: f.purchaseYear != null ? f.purchaseYear : (x.ay ? String(x.ay).split("/").pop() : ""), price: f.price != null ? f.price : (x.ap ? pfMoney(x.ap) : "") };
+}
 function cellValue(r, c) {
+  if (c.pf) { var p = pfRep(r); return p && p[c.pf] ? String(p[c.pf]) : "-"; }
   if (c.key === "__duration__") return r.completedDate ? String(daysBetween(r.createdAt, r.completedDate)) : "-";
   if (c.status) return (STATUS[r.status] || {}).label || r.status || "-";
   if (c.join) return (r[c.key] || []).join(", ") || "-";
@@ -661,15 +744,16 @@ window.__tbl = {}; var __tblSeq = 0;
 function fullHistoryTable(rows, title) {
   if (!rows.length) return '<div class="hint">ยังไม่มีข้อมูล</div>';
   var k = "t" + (++__tblSeq); window.__tbl[k] = { rows: rows, title: title };
-  return '<div style="text-align:right;margin-bottom:8px"><button class="btn btn-sky btn-sm" onclick="exportTbl(\'' + k + '\')">⬇️ ส่งออก CSV</button></div><div style="overflow-x:auto"><table class="simple"><thead><tr>' + DRILLDOWN_COLS.map(function (c) { return "<th>" + c.label + "</th>"; }).join("") + "</tr></thead><tbody>" +
-    rows.map(function (r) { return "<tr>" + DRILLDOWN_COLS.map(function (c) { return "<td>" + (c.status ? badgeHTML(r.status) : esc(cellValue(r, c))) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
+  return '<div style="text-align:right;margin-bottom:8px"><button class="btn btn-sky btn-sm" onclick="exportTbl(\'' + k + '\')">⬇️ ส่งออก CSV</button></div><div style="overflow-x:auto"><table class="simple"><thead><tr>' + DRILLDOWN_COLS.map(function (c) { return "<th>" + c.label + "</th>"; }).join("") + "<th>ใบส่งซ่อม</th></tr></thead><tbody>" +
+    rows.map(function (r) { return "<tr>" + DRILLDOWN_COLS.map(function (c) { return "<td>" + (c.status ? badgeHTML(r.status) : esc(cellValue(r, c))) + "</td>"; }).join("") + "<td>" + (printFormBtn(r) || "-") + "</td></tr>"; }).join("") + "</tbody></table></div>";
 }
 function exportTbl(k) { var t = window.__tbl[k]; if (t) downloadCSV(t.rows, t.title); }
-function openDrilldown(title, rows) {
+async function openDrilldown(title, rows) {
   if (!isStaff()) return;
+  await loadPrintRep();
   var k = "t" + (++__tblSeq); window.__tbl[k] = { rows: rows, title: title };
   $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:96vw;width:1100px"><div class="modal-head"><h3>' + esc(title) + " (" + rows.length + ')</h3><div style="display:flex;gap:8px;align-items:center"><button class="btn btn-sky btn-sm" onclick="exportTbl(\'' + k + '\')">⬇️ ส่งออกรายงาน CSV</button><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div></div><div class="modal-body" style="max-height:65vh;overflow:auto">' +
-    (rows.length === 0 ? '<div class="hint">ไม่มีรายการ</div>' : '<table class="simple"><thead><tr>' + DRILLDOWN_COLS.map(function (c) { return "<th>" + c.label + "</th>"; }).join("") + "</tr></thead><tbody>" + rows.map(function (r) { return "<tr>" + DRILLDOWN_COLS.map(function (c) { return "<td>" + (c.status ? badgeHTML(r.status) : esc(cellValue(r, c))) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>") + "</div></div></div>";
+    (rows.length === 0 ? '<div class="hint">ไม่มีรายการ</div>' : '<table class="simple"><thead><tr>' + DRILLDOWN_COLS.map(function (c) { return "<th>" + c.label + "</th>"; }).join("") + "<th>ใบส่งซ่อม</th></tr></thead><tbody>" + rows.map(function (r) { return "<tr>" + DRILLDOWN_COLS.map(function (c) { return "<td>" + (c.status ? badgeHTML(r.status) : esc(cellValue(r, c))) + "</td>"; }).join("") + "<td>" + (printFormBtn(r) || "-") + "</td></tr>"; }).join("") + "</tbody></table>") + "</div></div></div>";
 }
 
 /* ---------- ทะเบียนครุภัณฑ์ (โหลดหลังเข้าระบบเท่านั้น) ---------- */
@@ -899,7 +983,7 @@ function drillCat(c) { openDrilldown("หมวดหมู่: " + c, periodRow
 
 /* ---------- ผู้ดูแลระบบ ---------- */
 function adminHTML() {
-  var tabs = [["members", "ผู้ใช้งานและสิทธิ์"], ["categories", "หมวดหมู่ & ล็อกช่าง"], ["locations", "สถานที่"], ["qr", "QR ประจำห้อง"], ["audit", "ประวัติการใช้งาน (Audit log)"], ["backup", "สำรอง / กู้คืนข้อมูล"]];
+  var tabs = [["members", "ผู้ใช้งานและสิทธิ์"], ["categories", "หมวดหมู่ & ล็อกช่าง"], ["locations", "สถานที่"], ["qr", "QR ประจำห้อง"], ["signers", "ผู้ลงนามในใบส่งซ่อม"], ["audit", "ประวัติการใช้งาน (Audit log)"], ["backup", "สำรอง / กู้คืนข้อมูล"]];
   return '<div class="card"><h2>🔧 ผู้ดูแลระบบ</h2><div class="pill-group" style="margin-top:10px">' + tabs.map(function (t) { return '<button class="pill ' + (ADMIN_TAB === t[0] ? "active" : "") + '" onclick="ADMIN_TAB=\'' + t[0] + '\';renderView()">' + t[1] + "</button>"; }).join("") + '</div><div id="adminBox" class="admin-tabs-content">กำลังโหลด...</div></div>';
 }
 async function loadAdminTab() {
@@ -910,9 +994,24 @@ async function loadAdminTab() {
     else if (ADMIN_TAB === "backup") box.innerHTML = backupHTML();
     else if (ADMIN_TAB === "categories") box.innerHTML = categoriesHTML();
     else if (ADMIN_TAB === "qr") { box.innerHTML = qrAdminHTML(); qrRenderList(); }
+    else if (ADMIN_TAB === "signers") box.innerHTML = signersHTML();
     else box.innerHTML = locationsHTML();
   } catch (e) { box.textContent = errMsg(e); }
 }
+function signersHTML() {
+  var S = pfSigners();
+  return '<p class="hint">ชื่อและตำแหน่งที่พิมพ์ในใบส่งซ่อม (ทั้ง PDF และ Word) — เปลี่ยนเมื่อมีการเปลี่ยนผู้ดำรงตำแหน่ง มีผลกับการพิมพ์ครั้งต่อไปของทุกงาน ใบที่พิมพ์ไปแล้วไม่เปลี่ยน</p>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-top:8px">' +
+    PF_SIGN_FIELDS.map(function (f) { return '<label class="field"><span class="lab">' + esc(f[1]) + '</span><input class="inp" data-sign="' + f[0] + '" maxlength="120" value="' + attr(S[f[0]]) + '" placeholder="' + attr(PF_SIGN_DEF[f[0]] || "เว้นว่างได้") + '"></label>'; }).join("") + "</div>" +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn btn-primary btn-sm" onclick="saveSigners()">💾 บันทึกผู้ลงนาม</button><button class="btn btn-ghost btn-sm" onclick="resetSigners()">คืนค่าตามแบบฟอร์มเดิม</button></div>' +
+    '<p class="hint" style="margin-top:8px">เคล็ดลับ: ชื่อ-สกุลเว้นวรรค 2 ครั้งระหว่างชื่อกับนามสกุลได้ เหมือนแบบฟอร์มเดิม • ช่องผู้อำนวยการถ้าเว้นว่าง จะเหลือเส้นจุดไว้เขียนมือ</p>';
+}
+async function saveSigners() {
+  var o = {}; document.querySelectorAll("[data-sign]").forEach(function (el) { o[el.getAttribute("data-sign")] = el.value.replace(/\s+$/, "").replace(/^\s+/, ""); });
+  try { await rpc("fix_admin_save_signers", { p_data: o }); SET.form_signers = o; showToast("บันทึกผู้ลงนามแล้ว"); loadAdminTab(); }
+  catch (e) { showToast(/function|schema cache|not find/i.test(String(e.message || e)) ? "ยังไม่ได้รันไฟล์ SQL 13 ใน Supabase" : errMsg(e), true); }
+}
+function resetSigners() { if (!confirm("คืนค่าชื่อผู้ลงนามตามแบบฟอร์มเดิม?")) return; document.querySelectorAll("[data-sign]").forEach(function (el) { el.value = PF_SIGN_DEF[el.getAttribute("data-sign")] || ""; }); }
 function membersHTML() {
   return '<p class="hint">เพิ่มผู้ใช้ใหม่: สร้างบัญชีที่ Supabase > Authentication ก่อน (รหัสตั้งต้น 123456789) แล้วเพิ่มอีเมลและสิทธิ์ที่นี่ ผู้ใช้ที่ไม่มีสิทธิ์พิเศษยังแจ้งซ่อมได้ ผู้ดูแลระบบไม่ตั้งหรือรีเซ็ตรหัสผ่านแทนผู้อื่น (ให้ใช้ "ลืมรหัสผ่าน" ที่หน้าเข้าสู่ระบบ)</p><button class="btn btn-primary btn-sm" onclick="openMemberModal(\'\')">➕ เพิ่มผู้ใช้</button>' +
     '<div style="overflow-x:auto;margin-top:10px"><table class="simple"><thead><tr><th>ชื่อ</th><th>ตำแหน่ง</th><th>อีเมล</th><th>สิทธิ์</th><th>สถานะ</th><th></th></tr></thead><tbody>' + MEMBERS.map(function (m) { return "<tr><td>" + esc(m.name) + "</td><td>" + esc(dash(m.position)) + "</td><td>" + esc(m.email) + "</td><td>" + esc((m.groups || []).map(function (g) { return GROUP_LABEL[g] || g; }).join(", ") || "ผู้แจ้งซ่อมทั่วไป") + "</td><td>" + (m.active ? "ใช้งาน" : "ปิดใช้งาน") + "</td><td><button class=\"btn btn-sm btn-ghost\" onclick=\"openMemberModal(" + jsAttr(m.email) + ')">✏️ แก้ไข</button></td></tr>'; }).join("") + "</tbody></table></div>";
