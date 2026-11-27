@@ -436,7 +436,7 @@ function openLineShare(id) {
   $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:520px"><div class="modal-head"><h3>💬 ส่งข้อความ LINE — ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
     '<label class="field"><span class="lab">ส่งถึง</span><select id="lineTo" class="inp">' + LINE_TO.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === def ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("") + "</select></label>" +
     '<label class="field"><span class="lab">ข้อความ (แก้ได้)</span><textarea id="lineMsg" class="inp" rows="9" maxlength="1500"></textarea></label>' +
-    '<p class="hint">ข้อความไม่มีเบอร์โทรหรือข้อมูลส่วนตัว ถ้าเพิ่มเอง โปรดระวัง • กด "เปิด LINE" แล้วเลือกเพื่อนหรือกลุ่มที่จะส่ง (หน้าแชร์ของ LINE แบบเดียวกับระบบยืมพัสดุ ครั้งแรกอาจต้องเข้าสู่ระบบ LINE) ถ้าเปิดไม่ได้ ใช้ "คัดลอกข้อความ" แล้ววางในแชท</p>' +
+    '<p class="hint">ข้อความไม่มีเบอร์โทรหรือข้อมูลส่วนตัว ถ้าเพิ่มเอง โปรดระวัง • กด "เปิด LINE" แล้วเลือกเพื่อนหรือกลุ่มที่จะส่ง (มือถือจะเปิดแอป LINE ให้เลือกเพื่อน • คอมพิวเตอร์ใช้หน้าแชร์ของ LINE แบบเดียวกับระบบยืม ครั้งแรกอาจต้องเข้าสู่ระบบ LINE) ถ้าเปิดไม่ได้ ใช้ "คัดลอกข้อความ" แล้ววางในแชท</p>' +
     '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="lineOpen()">เปิด LINE</button><button class="btn btn-ghost" onclick="lineCopy()">📋 คัดลอกข้อความ</button></div><div id="lineMsgOk" class="msg" role="status"></div></div></div></div>';
   var fill = function () { $("lineMsg").value = lineText(r, $("lineTo").value); };
   $("lineTo").addEventListener("change", fill); fill();
@@ -445,6 +445,10 @@ function openLineShare(id) {
 function lineOpen() {
   var t = $("lineMsg").value.trim(); if (!t) return;
   var url = location.origin + location.pathname, body = t.split("\n").filter(function (x) { return x.indexOf("ดูรายละเอียด: " + url) !== 0; }).join("\n");
+  /* มือถือ (รวมเปิดจากในแอป LINE): ใช้ line.me/R/share เปิดหน้าเลือกเพื่อนในแอป LINE โดยตรง ไม่ต้องเข้าสู่ระบบเว็บ
+     คอมพิวเตอร์: ใช้หน้าแชร์บนเว็บแบบระบบยืมพัสดุ */
+  var ua = navigator.userAgent || "";
+  if (/Android|iPhone|iPad|iPod|Line\//i.test(ua)) { location.href = "https://line.me/R/share?text=" + encodeURIComponent(t); return; }
   window.open("https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(url) + "&text=" + encodeURIComponent(body), "_blank", "noopener");
 }
 function lineCopy() {
