@@ -388,7 +388,7 @@ function stopPoll() { if (pollT) { clearInterval(pollT); pollT = null; } }
 
 function renderShell() {
   $("app").innerHTML = '<div class="topbar"><div class="brand brand-clickable" onclick="setRole(\'requester\')"><div class="brand-icon">🏥</div><div><div class="brand-title">ระบบแจ้งซ่อมออนไลน์</div><div class="brand-sub">วิทยาลัยพยาบาลบรมราชชนนี สุรินทร์</div></div></div>' +
-    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="lock-note" id="whoNote">👤 ' + esc(ME.name) + (isAdmin() ? " (ผู้ดูแลระบบ)" : "") + '</span><button class="logout-btn" style="background:var(--slate-600)" onclick="pwView(false)">🔑 เปลี่ยนรหัสผ่าน</button><button class="logout-btn" onclick="logout()">ออกจากระบบ</button></div></div>' +
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><span class="lock-note" id="whoNote">👤 ' + esc(ME.name) + (isAdmin() ? " (ผู้ดูแลระบบ)" : "") + '</span><button class="logout-btn" style="background:var(--sky-600)" onclick="openManuals()">📘 คู่มือ</button><button class="logout-btn" style="background:var(--emerald-600,#059669)" onclick="openFeedback()">💬 แจ้งปัญหา/ข้อเสนอแนะ</button><button class="logout-btn" style="background:var(--slate-600)" onclick="pwView(false)">🔑 เปลี่ยนรหัสผ่าน</button><button class="logout-btn" onclick="logout()">ออกจากระบบ</button></div></div>' +
     '<div class="tabs" id="tabsRow"></div><div class="body" id="viewBody"></div>' + footerHTML() + '<div id="modalRoot"></div><div id="toastRoot"></div>';
   renderTabs(); renderView();
 }
@@ -541,7 +541,7 @@ function pfFromAsset() { var a = PF && PF.info.asset; if (!a) return; PF.v.purch
 async function pfSave() { try { await rpc("fix_print_save", { p_id: PF.id, p_fields: PF.v }); PRINT_REP = null; $("pfMsg").className = "msg ok"; $("pfMsg").textContent = "บันทึกแล้ว"; } catch (e) { $("pfMsg").className = "msg err"; $("pfMsg").textContent = "บันทึกไม่สำเร็จ: " + (e.message || e); } }
 /* ---- ใบส่งซ่อมแบบเหมือนต้นฉบับ: PDF = ภาพแบบฟอร์มต้นฉบับ + ข้อความวางตามตำแหน่ง (A4 หน้าเดียว)
         Word = เติมข้อมูลลงไฟล์ต้นฉบับ .docx (repair-form-template.docx) โดยตรง ---- */
-var PF_BG = "repair-form-bg.png?v=11.3", PF_TPL = "repair-form-template.docx?v=11.3";
+var PF_BG = "repair-form-bg.png?v=11.5", PF_TPL = "repair-form-template.docx?v=11.5";
 var JSZIP_URL = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js", JSZIP_SRI = "sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG";
 /* ความกว้างโดยประมาณ หน่วย = จุด 1 ตัว (ใช้แบ่งบรรทัดและเติมจุดให้ยาวเท่าเดิม) */
 function pfW(t) { var w = 0; String(t || "").replace(/[\s\S]/g, function (c) { w += c === "." ? 1 : c === "…" ? 3 : c === " " ? 1.2 : /[ัิ-ฺ็-๎]/.test(c) ? 0 : 2.4; return c; }); return w; }
@@ -582,7 +582,7 @@ function pfFormHTML() {
   var S = pfSigners(), sz = pfSignPt(), sg = { c: 1, sz: sz };
   var fit = function (t, mm) { var w = pfW(t); return w ? Math.min(sz, sz * cap(mm * 0.85, sz) / w) : sz; };  /* ข้อความยาวเกินช่อง: ลดขนาดให้พอดี */
   var tick = function (x, on) { return on ? '<div class="pfo pf-tick" style="left:' + x + 'mm;top:29.2mm">✓</div>' : ""; };
-  return '<div class="pf-page' + (pfHasThaiFont() ? "" : " pf-fb") + '"><img class="pf-bg" src="' + PF_BG + '" alt="">' + at(10, 9, "เลขแจ้งซ่อม " + (PF.r.requestNo || "")) +
+  return '<div class="pf-page' + (pfHasThaiFont() ? "" : " pf-fb") + '"><img class="pf-bg" src="' + PF_BG + '" alt="">' + at(10, 5.6, "เลขแจ้งซ่อม " + (PF.r.requestNo || "")) +
     at(142.3, 23.4, d.docDay, { c: 1 }) + at(171.2, 23.4, d.docMonth, { c: 1 }) + at(196.2, 23.4, d.docYear, { c: 1 }) +
     tick(31.6, T.material) + tick(67.0, T.building) + tick(109.4, T.improve) + tick(146.4, T.other) + at(160, 28.9, d.typeOther, { w: 40 }) +
     at(45, 39.2, d.unit, { w: 82 }) +
@@ -597,8 +597,11 @@ function pfFormHTML() {
     at(159.3, 205.0, S.deputyName ? "(" + S.deputyName + ")" : "", sg) + at(160.0, 210.6, S.deputyPos, sg) +
     at(85, 243.8, S.directorName, { sz: fit(S.directorName, 46), w: 47, tc: 1 }) + at(81, 249.4, S.directorPos, { sz: fit(S.directorPos, 58), w: 59, tc: 1 }) + "</div>";
 }
-var PF_PT = 11, PF_PT2 = 12;  /* ขนาดตัวอักษรข้อมูลจากระบบ (เล็กกว่าแบบฟอร์ม 13/14pt เพื่อให้ใส่ข้อความยาวได้) */
-var PF_CSS = ".pf-page{position:relative;width:210mm;height:297mm;overflow:hidden;background:#fff;margin:0 auto}.pf-bg{position:absolute;left:0;top:0;width:210mm;height:297mm}.pfo{position:absolute;white-space:nowrap;overflow:hidden;font-family:'TH SarabunPSK','TH Sarabun New','Sarabun','TH SarabunIT๙',Tahoma,sans-serif;font-size:" + PF_PT + "pt;font-weight:normal;line-height:5mm;color:#000}.pfo[data-big]{font-size:" + PF_PT2 + "pt}.pf-fb .pfo{font-family:Tahoma,sans-serif;font-size:7.5pt;line-height:5mm}.pf-fb .pfo[data-big]{font-size:8pt}.pf-tick{font-size:13pt;font-weight:700;line-height:4mm}.pf-fb .pf-tick{font-size:10pt}";
+var PF_PT = 12, PF_PT2 = 13;  /* ขนาดตัวอักษรข้อมูลจากระบบ (เล็กกว่าแบบฟอร์ม 13/14pt เพื่อให้ใส่ข้อความยาวได้) */
+/* ตัวเลขอารบิกเสมอ: ฟอนต์ TH SarabunIT๙ แสดงเลข 0-9 เป็นเลขไทย จึงให้ตัวเลขใช้ฟอนต์ PSK/New ถ้าไม่มีใช้ Tahoma (ย่อให้ขนาดใกล้เคียง) */
+var PF_DIGITS = "@font-face{font-family:'pfdig';src:local('TH SarabunPSK'),local('THSarabunPSK'),local('TH Sarabun New'),local('THSarabunNew');unicode-range:U+0030-0039}" +
+  "@font-face{font-family:'pfdig2';src:local('Tahoma');unicode-range:U+0030-0039;size-adjust:72%}";
+var PF_CSS = PF_DIGITS + ".pf-page{position:relative;width:210mm;height:297mm;overflow:hidden;background:#fff;margin:0 auto}.pf-bg{position:absolute;left:0;top:0;width:210mm;height:297mm}.pfo{position:absolute;white-space:nowrap;overflow:hidden;font-family:'pfdig','pfdig2','TH SarabunPSK','TH Sarabun New','Sarabun','TH SarabunIT๙',Tahoma,sans-serif;font-size:" + PF_PT + "pt;font-weight:normal;line-height:5mm;color:#000}.pfo[data-big]{font-size:" + PF_PT2 + "pt}.pf-fb .pfo{font-family:Tahoma,sans-serif;font-size:7.5pt;line-height:5mm}.pf-fb .pfo[data-big]{font-size:8pt}.pf-tick{font-size:13pt;font-weight:700;line-height:4mm}.pf-fb .pf-tick{font-size:10pt}";
 function pfRender() {
   var p = $("pfPreview"); if (!p) return;
   if (!document.getElementById("pfCss")) { var st = document.createElement("style"); st.id = "pfCss"; st.textContent = PF_CSS; document.head.appendChild(st); }
@@ -620,9 +623,9 @@ function loadJsZip() {
 function pfXml(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 function pfFillDocx(xml, d, T, reqNo) {
   var R = 0.93;  /* ข้อความจากระบบเล็กกว่าแบบฟอร์ม 1pt (ประมาณ 93%) */
-  var it = pfSplit(d.item, [(101 - 4) / R, (103 - 4) / R]), lc = pfSplit(d.loc, [44 / R, 44 / R, 44 / R]);
-  var vals = { docDay: d.docDay, docMonth: d.docMonth, docYear: d.docYear, typeOther: d.typeOther, unit: d.unit, item1: it[0], item2: it[1], asset: d.asset, cause: d.cause, qty: d.qty, loc1: lc[0], loc2: lc[1], loc3: lc[2], purchaseYear: d.purchaseYear, price: d.price, senderName: d.senderName, senderPosition: d.senderPosition };
-  var LEFT = { cause: 1, unit: 1, typeOther: 1, item1: 1, item2: 1, loc1: 1, loc2: 1, loc3: 1 };
+  var it = pfSplit(d.item, [(101 - 4) / R, (103 - 4) / R]), lc = pfSplit(d.loc, [44 / R, 44 / R, 44 / R]), cz = pfSplit(d.cause, [(62 * 0.95 - 4) / R, (62 * 0.95 - 4) / R, (62 * 0.95 - 4) / R]);
+  var vals = { docDay: d.docDay, docMonth: d.docMonth, docYear: d.docYear, typeOther: d.typeOther, unit: d.unit, item1: it[0], item2: it[1], asset: d.asset, cause: d.cause, cause1: cz[0], cause2: cz[1], cause3: cz[2], qty: d.qty, loc1: lc[0], loc2: lc[1], loc3: lc[2], purchaseYear: d.purchaseYear, price: d.price, senderName: d.senderName, senderPosition: d.senderPosition };
+  var LEFT = { cause: 1, cause1: 1, cause2: 1, cause3: 1, unit: 1, typeOther: 1, item1: 1, item2: 1, loc1: 1, loc2: 1, loc3: 1 };
   var calc = function (k, N, ch) {
     var fw = ch === "…" ? 3 : 1, v = String(vals[k] == null ? "" : vals[k]).trim();
     if (!v) return { lead: 0, v: "", fill: Math.max(1, Math.round(N / fw)) };
@@ -983,7 +986,7 @@ function drillCat(c) { openDrilldown("หมวดหมู่: " + c, periodRow
 
 /* ---------- ผู้ดูแลระบบ ---------- */
 function adminHTML() {
-  var tabs = [["members", "ผู้ใช้งานและสิทธิ์"], ["categories", "หมวดหมู่ & ล็อกช่าง"], ["locations", "สถานที่"], ["qr", "QR ประจำห้อง"], ["signers", "ผู้ลงนามในใบส่งซ่อม"], ["audit", "ประวัติการใช้งาน (Audit log)"], ["backup", "สำรอง / กู้คืนข้อมูล"]];
+  var tabs = [["members", "ผู้ใช้งานและสิทธิ์"], ["categories", "หมวดหมู่ & ล็อกช่าง"], ["locations", "สถานที่"], ["qr", "QR ประจำห้อง"], ["signers", "ผู้ลงนามในใบส่งซ่อม"], ["feedback", "ข้อเสนอแนะจากผู้ใช้"], ["manuals", "คู่มือการใช้งาน"], ["audit", "ประวัติการใช้งาน (Audit log)"], ["backup", "สำรอง / กู้คืนข้อมูล"]];
   return '<div class="card"><h2>🔧 ผู้ดูแลระบบ</h2><div class="pill-group" style="margin-top:10px">' + tabs.map(function (t) { return '<button class="pill ' + (ADMIN_TAB === t[0] ? "active" : "") + '" onclick="ADMIN_TAB=\'' + t[0] + '\';renderView()">' + t[1] + "</button>"; }).join("") + '</div><div id="adminBox" class="admin-tabs-content">กำลังโหลด...</div></div>';
 }
 async function loadAdminTab() {
@@ -995,9 +998,118 @@ async function loadAdminTab() {
     else if (ADMIN_TAB === "categories") box.innerHTML = categoriesHTML();
     else if (ADMIN_TAB === "qr") { box.innerHTML = qrAdminHTML(); qrRenderList(); }
     else if (ADMIN_TAB === "signers") box.innerHTML = signersHTML();
+    else if (ADMIN_TAB === "feedback") { try { FB_ALL = await rpc("fix_admin_feedback", { p_limit: 300 }); } catch (e) { box.innerHTML = '<div class="msg err">' + esc(sql14Msg(e)) + "</div>"; return; } box.innerHTML = adminFeedbackHTML(); }
+    else if (ADMIN_TAB === "manuals") box.innerHTML = adminManualsHTML();
     else box.innerHTML = locationsHTML();
   } catch (e) { box.textContent = errMsg(e); }
 }
+
+/* ---------- แจ้งปัญหา / ข้อเสนอแนะ ถึงผู้ดูแลระบบ (fix_feedback ผ่านฟังก์ชันในฐานข้อมูล) ---------- */
+var FB_KINDS = { problem: "ปัญหาการใช้งาน", suggestion: "ข้อเสนอแนะ", question: "สอบถาม" };
+var FB_STATUS = { new: ["ใหม่", "slate"], in_progress: ["กำลังดำเนินการ", "amber"], done: ["เสร็จแล้ว", "emerald"] };
+var FB_ALL = [];
+function sql14Msg(e) { var m = String((e && e.message) || e || ""); return /function|schema cache|not find|does not exist/i.test(m) ? "ยังไม่ได้รันไฟล์ SQL 14 ใน Supabase" : /too_many/.test(m) ? "ส่งได้วันละไม่เกิน 10 เรื่อง" : errMsg(e); }
+function fbBadge(s) { var x = FB_STATUS[s] || FB_STATUS.new; return '<span class="badge badge-' + x[1] + '">' + x[0] + "</span>"; }
+async function openFeedback() {
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:640px"><div class="modal-head"><h3>💬 แจ้งปัญหา / ข้อเสนอแนะ ถึงผู้ดูแลระบบ</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
+    '<label class="field"><span class="lab">ประเภท</span><select id="fbKind" class="inp">' + Object.keys(FB_KINDS).map(function (k) { return '<option value="' + k + '">' + FB_KINDS[k] + "</option>"; }).join("") + "</select></label>" +
+    '<label class="field"><span class="lab">รายละเอียด<span class="req"> *</span></span><textarea id="fbMsg" class="inp" rows="5" maxlength="2000" placeholder="เช่น ทำอะไรอยู่ กดปุ่มไหน ขึ้นข้อความว่าอะไร หรือข้อเสนอแนะที่อยากให้ปรับปรุง"></textarea></label>' +
+    '<p class="hint">⚠️ ห้ามพิมพ์รหัสผ่าน หรือข้อมูลส่วนบุคคลของผู้อื่น • ผู้ดูแลจะเห็นชื่อและอีเมลของคุณเพื่อตอบกลับ</p>' +
+    '<div id="fbMsgBox" class="msg" role="alert"></div><button class="btn btn-primary btn-block" id="fbSend" onclick="sendFeedback()">ส่งถึงผู้ดูแลระบบ</button>' +
+    '<h3 style="margin-top:18px">เรื่องที่ฉันเคยแจ้ง</h3><div id="fbMine" class="hint">กำลังโหลด...</div></div></div></div>';
+  loadMyFeedback();
+}
+async function loadMyFeedback() {
+  var box = $("fbMine"); if (!box) return;
+  try { var l = await rpc("fix_feedback_mine"); box.className = "";
+    box.innerHTML = !l.length ? '<div class="hint">ยังไม่เคยแจ้ง</div>' : l.map(function (f) { return '<div class="card" style="padding:10px;margin:8px 0"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>#' + f.id + " " + esc(FB_KINDS[f.kind] || f.kind) + "</b><span>" + fbBadge(f.status) + " " + esc(fmtDateTime(f.createdAt)) + '</span></div><div style="white-space:pre-wrap;margin-top:4px">' + esc(f.message) + "</div>" +
+      (f.reply ? '<div class="lock-note" style="margin-top:6px;white-space:pre-wrap">💬 ผู้ดูแลตอบ (' + esc(fmtDateTime(f.repliedAt)) + "): " + esc(f.reply) + "</div>" : "") + "</div>"; }).join("");
+  } catch (e) { box.className = "msg err"; box.textContent = sql14Msg(e); }
+}
+async function sendFeedback() {
+  var m = $("fbMsg").value.trim(), out = $("fbMsgBox"); if (!m) { out.className = "msg err"; out.textContent = "กรุณาพิมพ์รายละเอียด"; return; }
+  $("fbSend").disabled = true;
+  try { await rpc("fix_feedback_submit", { p_kind: $("fbKind").value, p_message: m, p_page: ROLE }); $("fbMsg").value = ""; out.className = "msg ok"; out.textContent = "ส่งถึงผู้ดูแลระบบแล้ว ขอบคุณค่ะ"; loadMyFeedback(); }
+  catch (e) { out.className = "msg err"; out.textContent = sql14Msg(e); }
+  $("fbSend").disabled = false;
+}
+function adminFeedbackHTML() {
+  var n = FB_ALL.filter(function (f) { return f.status !== "done"; }).length;
+  return '<p class="hint">เรื่องที่ผู้ใช้แจ้งเข้ามา (ยังไม่เสร็จ ' + n + " เรื่อง) — เรื่องที่ยังไม่เสร็จแสดงก่อน • พิมพ์คำตอบแล้วกดบันทึก ผู้แจ้งจะเห็นคำตอบในระบบ (และได้อีเมลถ้าติดตั้งสคริปต์แจ้งเตือนไว้)</p>" +
+    (!FB_ALL.length ? '<div class="hint">ยังไม่มีเรื่องแจ้งเข้ามา</div>' : FB_ALL.map(function (f) {
+      return '<div class="card" style="padding:12px;margin:10px 0"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><b>#' + f.id + " " + esc(FB_KINDS[f.kind] || f.kind) + "</b><span>" + fbBadge(f.status) + " " + esc(fmtDateTime(f.createdAt)) + "</span></div>" +
+        '<div class="hint">จาก ' + esc(f.name || "") + " (" + esc(f.email || "") + ")" + (f.roles ? " • สิทธิ์: " + esc(String(f.roles).split(",").map(function (g) { return GROUP_LABEL[g] || g; }).join(", ")) : "") + (f.page ? " • หน้า: " + esc(f.page) : "") + "</div>" +
+        '<div style="white-space:pre-wrap;margin:6px 0">' + esc(f.message) + "</div>" +
+        '<textarea class="inp" id="fbR' + f.id + '" rows="2" maxlength="2000" placeholder="พิมพ์คำตอบถึงผู้แจ้ง">' + esc(f.reply || "") + "</textarea>" +
+        '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;align-items:center"><select class="inp" id="fbS' + f.id + '" style="max-width:200px">' + Object.keys(FB_STATUS).map(function (k) { return '<option value="' + k + '"' + (f.status === k ? " selected" : "") + ">" + FB_STATUS[k][0] + "</option>"; }).join("") + "</select>" +
+        '<button class="btn btn-primary btn-sm" onclick="saveFeedback(' + f.id + ')">บันทึก</button>' + (f.repliedAt ? '<span class="hint">ตอบล่าสุด ' + esc(fmtDateTime(f.repliedAt)) + (f.repliedBy ? " โดย " + esc(f.repliedBy) : "") + "</span>" : "") + "</div></div>";
+    }).join(""));
+}
+async function saveFeedback(id) {
+  try { await rpc("fix_admin_feedback_update", { p_id: id, p_status: $("fbS" + id).value, p_reply: $("fbR" + id).value }); showToast("บันทึกแล้ว"); loadAdminTab(); }
+  catch (e) { showToast(sql14Msg(e), true); }
+}
+
+/* ---------- คู่มือการใช้งาน: หน้า manual.html (ในระบบ) + ไฟล์ที่ผู้ดูแลอัปโหลดไว้ใน Storage bucket "fix-manuals" ---------- */
+var MANUAL_ROLES = [["requester", "ผู้แจ้งซ่อม"], ["central", "ส่วนกลาง (ผู้จ่ายงาน)"], ["writer", "ผู้เขียนใบส่งซ่อม"], ["technician", "ช่าง"], ["warehouse", "เจ้าหน้าที่พัสดุ"], ["supervisor", "ผู้กำกับติดตาม/ผู้บริหาร"], ["admin", "ผู้ดูแลระบบ"]];
+var MANUAL_BUCKET = "fix-manuals", MANUAL_TYPES = { "application/pdf": ".pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx" };
+function myManualRoles() {
+  if (isAdmin()) return MANUAL_ROLES.map(function (r) { return r[0]; });
+  var m = { dispatcher: "central", writer: "writer", technician: "technician", warehouse: "warehouse", supervisor: "supervisor" }, o = ["requester"];
+  (ME && ME.groups || []).forEach(function (g) { if (m[g] && o.indexOf(m[g]) < 0) o.push(m[g]); });
+  return o;
+}
+function manualList() { var l = SET && SET.manuals; return Array.isArray(l) ? l : []; }
+function roleLabel(id) { var r = MANUAL_ROLES.find(function (x) { return x[0] === id; }); return r ? r[1] : id; }
+function fmtSize(n) { n = +n || 0; return n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB"; }
+function openManuals() {
+  var roles = myManualRoles(), files = manualList();
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:640px"><div class="modal-head"><h3>📘 คู่มือการใช้งาน</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
+    roles.map(function (r) {
+      var fs = files.filter(function (f) { return f.role === r; });
+      return '<div class="card" style="padding:10px 12px;margin:8px 0"><b>' + esc(roleLabel(r)) + '</b><div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><a class="btn btn-ghost btn-sm" href="manual.html#' + r + '" target="_blank" rel="noopener">อ่านคู่มือในระบบ</a>' +
+        fs.map(function (f) { return '<button class="btn btn-sky btn-sm" onclick="downloadManual(' + jsAttr(f.path) + "," + jsAttr(f.title) + ')">⬇️ ' + esc(f.title) + " (" + esc(fmtSize(f.size)) + ")</button>"; }).join("") + "</div></div>";
+    }).join("") + '<p class="hint">ไฟล์ปุ่มสีฟ้าคือคู่มือฉบับที่ผู้ดูแลอัปโหลดไว้ (PDF/Word) • มีปัญหาการใช้งาน กดปุ่ม "💬 แจ้งปัญหา/ข้อเสนอแนะ"</p></div></div></div>';
+}
+async function downloadManual(path, title) {
+  try { var r = await sb.storage.from(MANUAL_BUCKET).download(path); if (r.error) throw r.error;
+    var ext = (String(path).match(/\.\w+$/) || [""])[0], url = URL.createObjectURL(r.data), a = document.createElement("a");
+    a.href = url; a.download = String(title).replace(/[\\/:*?"<>|]/g, "_") + ext; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  } catch (e) { showToast("ดาวน์โหลดไม่สำเร็จ: " + (e.message || e), true); }
+}
+function adminManualsHTML() {
+  var files = manualList();
+  return '<p class="hint">อัปโหลดไฟล์คู่มือ (PDF หรือ Word ไม่เกิน 20 MB) แยกตามสิทธิ์ ผู้ใช้เห็นในปุ่ม "📘 คู่มือ" ตามสิทธิ์ของตนเอง • ไฟล์ต้องไม่มีข้อมูลส่วนบุคคล (ภาพหน้าจอให้เบลอชื่อ เบอร์ อีเมลก่อน)</p>' +
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;align-items:end">' +
+    '<label class="field"><span class="lab">คู่มือสำหรับสิทธิ์</span><select id="manRole" class="inp">' + MANUAL_ROLES.map(function (r) { return '<option value="' + r[0] + '">' + esc(r[1]) + "</option>"; }).join("") + "</select></label>" +
+    '<label class="field"><span class="lab">ชื่อเรื่อง</span><input id="manTitle" class="inp" maxlength="150" placeholder="เช่น คู่มือช่าง ฉบับ พ.ย. 2569"></label>' +
+    '<label class="field"><span class="lab">ไฟล์ (PDF / Word .docx)</span><input id="manFile" type="file" class="inp" accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"></label></div>' +
+    '<div id="manMsg" class="msg" role="alert"></div><button class="btn btn-primary btn-sm" id="manBtn" onclick="uploadManual()">⬆️ อัปโหลด</button>' +
+    '<h3 style="margin-top:16px">ไฟล์คู่มือในระบบ (' + files.length + ")</h3>" +
+    (!files.length ? '<div class="hint">ยังไม่มีไฟล์ — ระหว่างนี้ผู้ใช้อ่านคู่มือในระบบ (manual.html) ได้</div>' : '<div style="overflow-x:auto"><table class="simple"><thead><tr><th>สิทธิ์</th><th>ชื่อเรื่อง</th><th>ขนาด</th><th>อัปโหลดเมื่อ</th><th></th></tr></thead><tbody>' +
+      files.map(function (f, i) { return "<tr><td>" + esc(roleLabel(f.role)) + "</td><td>" + esc(f.title) + "</td><td>" + esc(fmtSize(f.size)) + "</td><td>" + esc(fmtDateTime(f.at)) + '</td><td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="downloadManual(' + jsAttr(f.path) + "," + jsAttr(f.title) + ')">ดาวน์โหลด</button> <button class="btn btn-ghost btn-sm" onclick="deleteManual(' + i + ')">ลบ</button></td></tr>'; }).join("") + "</tbody></table></div>");
+}
+async function saveManualList(list) { await rpc("fix_admin_save_manuals", { p_data: list }); SET.manuals = list; }
+async function uploadManual() {
+  var msg = $("manMsg"), f = $("manFile").files[0], title = $("manTitle").value.trim(), role = $("manRole").value, bad = function (t) { msg.className = "msg err"; msg.textContent = t; };
+  if (!f) return bad("กรุณาเลือกไฟล์"); if (!title) return bad("กรุณาตั้งชื่อเรื่อง");
+  var type = f.type || (/\.pdf$/i.test(f.name) ? "application/pdf" : /\.docx$/i.test(f.name) ? "application/vnd.openxmlformats-officedocument.wordprocessingml.document" : "");
+  if (!MANUAL_TYPES[type]) return bad("รับเฉพาะไฟล์ PDF หรือ Word (.docx)"); if (f.size > 20971520) return bad("ไฟล์ใหญ่เกิน 20 MB");
+  var path = role + "/" + Date.now() + MANUAL_TYPES[type];
+  $("manBtn").disabled = true; msg.className = "msg"; msg.textContent = "กำลังอัปโหลด...";
+  try {
+    var up = await sb.storage.from(MANUAL_BUCKET).upload(path, f, { contentType: type, upsert: false }); if (up.error) throw up.error;
+    try { await saveManualList(manualList().concat([{ id: String(Date.now()), role: role, title: title, path: path, size: f.size, type: type, at: new Date().toISOString() }])); }
+    catch (e2) { await sb.storage.from(MANUAL_BUCKET).remove([path]); throw e2; }
+    showToast("อัปโหลดคู่มือแล้ว"); loadAdminTab();
+  } catch (e) { $("manBtn").disabled = false; bad(/bucket|not found|function|schema cache/i.test(String(e.message || e)) ? "ยังไม่ได้รันไฟล์ SQL 14 ใน Supabase (" + (e.message || e) + ")" : "อัปโหลดไม่สำเร็จ: " + (e.message || e)); }
+}
+async function deleteManual(i) {
+  var l = manualList().slice(), f = l[i]; if (!f || !confirm('ลบคู่มือ "' + f.title + '"?')) return;
+  try { var r = await sb.storage.from(MANUAL_BUCKET).remove([f.path]); if (r.error) throw r.error; l.splice(i, 1); await saveManualList(l); showToast("ลบแล้ว"); loadAdminTab(); }
+  catch (e) { showToast("ลบไม่สำเร็จ: " + (e.message || e), true); }
+}
+
 function signersHTML() {
   var S = pfSigners();
   return '<p class="hint">ชื่อและตำแหน่งที่พิมพ์ในใบส่งซ่อม (ทั้ง PDF และ Word) — เปลี่ยนเมื่อมีการเปลี่ยนผู้ดำรงตำแหน่ง มีผลกับการพิมพ์ครั้งต่อไปของทุกงาน ใบที่พิมพ์ไปแล้วไม่เปลี่ยน</p>' +
