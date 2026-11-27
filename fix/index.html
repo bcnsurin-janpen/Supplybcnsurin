@@ -619,14 +619,14 @@ function loadJsZip() {
 }
 function pfXml(t) { return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 function pfFillDocx(xml, d, T, reqNo) {
-  var R = 0.85;  /* ข้อความจากระบบเล็กกว่าแบบฟอร์ม 2pt (ประมาณ 85%) */
+  var R = 0.93;  /* ข้อความจากระบบเล็กกว่าแบบฟอร์ม 1pt (ประมาณ 93%) */
   var it = pfSplit(d.item, [(101 - 4) / R, (103 - 4) / R]), lc = pfSplit(d.loc, [44 / R, 44 / R, 44 / R]);
   var vals = { docDay: d.docDay, docMonth: d.docMonth, docYear: d.docYear, typeOther: d.typeOther, unit: d.unit, item1: it[0], item2: it[1], asset: d.asset, cause: d.cause, qty: d.qty, loc1: lc[0], loc2: lc[1], loc3: lc[2], purchaseYear: d.purchaseYear, price: d.price, senderName: d.senderName, senderPosition: d.senderPosition };
   var LEFT = { cause: 1, unit: 1, typeOther: 1, item1: 1, item2: 1, loc1: 1, loc2: 1, loc3: 1 };
   var calc = function (k, N, ch) {
     var fw = ch === "…" ? 3 : 1, v = String(vals[k] == null ? "" : vals[k]).trim();
     if (!v) return { lead: 0, v: "", fill: Math.max(1, Math.round(N / fw)) };
-    var rest = Math.max(0, Math.floor((N - pfW(v) * R - 2.4) / fw)), lead = LEFT[k] ? 0 : Math.floor(rest / 2);
+    var rest = Math.max(0, Math.floor((N * 0.95 - pfW(v) * R - 2.4) / fw)), lead = LEFT[k] ? 0 : Math.floor(rest / 2);
     return { lead: lead, v: " " + v + " ", fill: rest - lead };
   };
   var rep = function (c, n) { return new Array(Math.max(0, n) + 1).join(c); };
