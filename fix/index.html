@@ -415,6 +415,44 @@ function find(id) { return REQS.find(function (x) { return x.id === id; }); }
 function whoCell(r) { return r.requesterName ? esc(r.requesterName) : '<span class="mask">ปกปิด</span>'; }
 
 /* ---------- รายละเอียด + ประวัติ ---------- */
+/* ---------- ส่งข้อความ LINE แบบแชร์ (ไม่ใช้ LINE OA / ไม่เก็บ LINE ID): เปิดแอป LINE พร้อมข้อความ แล้วผู้ส่งเลือกเพื่อนเอง ---------- */
+var LINE_TO = [["tech", "ช่างผู้รับผิดชอบ"], ["writer", "ผู้เขียนใบส่งซ่อม"], ["requester", "ผู้แจ้งซ่อม"], ["warehouse", "เจ้าหน้าที่พัสดุ"], ["other", "อื่น ๆ"]];
+function lineText(r, to) {
+  var st = (STATUS[r.status] || {}).label || r.status;
+  var ask = { tech: "มีงานซ่อมที่ได้รับมอบหมาย กรุณาตรวจสอบและดำเนินการในระบบ", writer: "กรุณาเขียนใบส่งซ่อมและบันทึกส่งซ่อมในระบบ", requester: "แจ้งความคืบหน้างานแจ้งซ่อมของท่าน", warehouse: "มีงานซ่อมรอดำเนินการด้านพัสดุ กรุณาตรวจสอบในระบบ", other: "" }[to] || "";
+  var L = ["[ระบบแจ้งซ่อมออนไลน์ วพบ.สุรินทร์]"]; if (ask) L.push(ask);
+  L.push("เลขแจ้งซ่อม: " + r.requestNo, "รายการ: " + r.itemName + (r.quantity ? " (" + r.quantity + ")" : ""));
+  if (r.location) L.push("สถานที่: " + r.location);
+  if (r.cause && to !== "requester") L.push("อาการ: " + r.cause);
+  L.push("สถานะ: " + st);
+  if (to === "tech" && (r.assignedTechnicians || []).length) L.push("ช่าง: " + r.assignedTechnicians.join(", "));
+  if (r.repairOrderNo) L.push("เลขช่าง: " + r.repairOrderNo);
+  L.push("ดูรายละเอียด: " + location.origin + location.pathname);
+  return L.join("\n");
+}
+function openLineShare(id) {
+  var r = find(id); if (!r) return;
+  var def = r.status === "assigned" ? "writer" : (["writer_sent", "tech_received", "tech_inspected", "tech_final_repair"].indexOf(r.status) >= 0 ? "tech" : (r.status === "tech_done" || r.status === "warehouse_in_progress" ? "warehouse" : "requester"));
+  $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:520px"><div class="modal-head"><h3>💬 ส่งข้อความ LINE — ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
+    '<label class="field"><span class="lab">ส่งถึง</span><select id="lineTo" class="inp">' + LINE_TO.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === def ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("") + "</select></label>" +
+    '<label class="field"><span class="lab">ข้อความ (แก้ได้)</span><textarea id="lineMsg" class="inp" rows="9" maxlength="1500"></textarea></label>' +
+    '<p class="hint">ข้อความไม่มีเบอร์โทรหรือข้อมูลส่วนตัว ถ้าเพิ่มเอง โปรดระวัง • กด "เปิด LINE" แล้วเลือกเพื่อนหรือกลุ่มที่จะส่ง (หน้าแชร์ของ LINE แบบเดียวกับระบบยืมพัสดุ ครั้งแรกอาจต้องเข้าสู่ระบบ LINE) ถ้าเปิดไม่ได้ ใช้ "คัดลอกข้อความ" แล้ววางในแชท</p>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-primary" onclick="lineOpen()">เปิด LINE</button><button class="btn btn-ghost" onclick="lineCopy()">📋 คัดลอกข้อความ</button></div><div id="lineMsgOk" class="msg" role="status"></div></div></div></div>';
+  var fill = function () { $("lineMsg").value = lineText(r, $("lineTo").value); };
+  $("lineTo").addEventListener("change", fill); fill();
+}
+/* ใช้หน้าแชร์ของ LINE แบบเดียวกับระบบยืมพัสดุ (ใช้ได้ทั้งคอมพิวเตอร์และมือถือ) — ลิงก์ระบบส่งแยกเป็นการ์ดตัวอย่าง */
+function lineOpen() {
+  var t = $("lineMsg").value.trim(); if (!t) return;
+  var url = location.origin + location.pathname, body = t.split("\n").filter(function (x) { return x.indexOf("ดูรายละเอียด: " + url) !== 0; }).join("\n");
+  window.open("https://social-plugins.line.me/lineit/share?url=" + encodeURIComponent(url) + "&text=" + encodeURIComponent(body), "_blank", "noopener");
+}
+function lineCopy() {
+  var ta = $("lineMsg"), ok = function () { $("lineMsgOk").className = "msg ok"; $("lineMsgOk").textContent = "คัดลอกแล้ว นำไปวางในแชท LINE ได้เลย"; };
+  if (navigator.clipboard && window.isSecureContext) { navigator.clipboard.writeText(ta.value).then(ok, function () { ta.select(); document.execCommand("copy"); ok(); }); }
+  else { ta.select(); document.execCommand("copy"); ok(); }
+}
+
 function viewJobDetail(id) {
   var r = find(id); if (!r) return;
   $("modalRoot").innerHTML = '<div class="modal-overlay" onclick="if(event.target===this)closeModal()"><div class="modal-box" style="max-width:600px"><div class="modal-head"><h3>รายละเอียดงาน ' + esc(r.requestNo) + '</h3><button class="modal-close" onclick="closeModal()" aria-label="ปิด">✕</button></div><div class="modal-body">' +
@@ -430,6 +468,7 @@ function viewJobDetail(id) {
     "<div>เงื่อนไขส่งพัสดุ: " + esc(dash(r.warehouseReason)) + "</div><div>เลขพัสดุ: " + esc(dash(r.warehouseNo)) + "</div>" +
     "<div>เจ้าหน้าที่พัสดุ: " + esc(dash(r.warehouseStaff)) + "</div><div>วันที่พัสดุส่งกลับช่าง: " + fmtDate(r.warehouseDoneDate) + "</div>" +
     "<div>วันที่เสร็จสิ้น: " + fmtDate(r.completedDate) + "</div><div>ระยะเวลารวม: " + (r.completedDate ? daysBetween(r.createdAt, r.completedDate) + " วัน" : "-") + "</div></div>" +
+    ((isAdmin() || isStaff()) && r.status !== "cancelled" ? '<div style="margin-top:14px"><button class="btn btn-sky btn-sm" onclick="openLineShare(\'' + r.id + '\')">💬 ส่งข้อความ LINE</button> <span class="hint">เลือกผู้รับจากเพื่อนใน LINE ของท่านเอง</span></div>' : "") +
     '<h3 style="margin-top:16px">ประวัติการดำเนินการ</h3><div id="histBox" class="hint">กำลังโหลด...</div></div></div></div>';
   rpc("fix_history_of", { p_id: id }).then(function (h) {
     var box = $("histBox"); if (!box) return;
